@@ -1,3 +1,11 @@
 packages:
-  - 'frontend'
   - 'backend'
+  # - 'frontend'   # เพิ่มเมื่อมี Next.js frontend (Phase 4)
+
+# pnpm 10+ บล็อก build script ของ dependency โดยค่าเริ่มต้น
+# Prisma ต้องรัน postinstall เพื่อเตรียม engine จึงต้องอนุญาตไว้
+allowBuilds:
+  '@parcel/watcher': true
+  '@prisma/engines': true
+  prisma: true
+  unrs-resolver: true

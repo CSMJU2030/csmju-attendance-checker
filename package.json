@@ -1,5 +1,21 @@
 {
   "name": "csmju-attendance-checker",
+  "version": "1.0.0",
   "private": true,
-  "packageManager": "pnpm@9.15.9"
+  "description": "CSMJU Student Service - reference implementation ของ CSMJU2030 Subsystem Standard v1.0",
+  "scripts": {
+    "build": "pnpm --filter backend build",
+    "start:dev": "pnpm --filter backend start:dev",
+    "test": "pnpm --filter backend test",
+    "test:e2e": "pnpm --filter backend test:e2e",
+    "test:integration": "pnpm --filter backend test:integration",
+    "prisma:migrate": "pnpm --filter backend prisma:migrate",
+    "prisma:seed": "pnpm --filter backend prisma:seed",
+    "conformance": "node standards/conformance/run.js",
+    "checks": "./standards/scripts/run-all-checks.sh ."
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "pnpm@12.3.4"
 }

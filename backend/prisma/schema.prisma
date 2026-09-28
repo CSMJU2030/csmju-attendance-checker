@@ -1,0 +1,92 @@
+// CSMJU Student Service (Demo Subsystem) - OWN database schema.
+//
+// Naming follows the CSMJU2030 Subsystem Standard: PostgreSQL tables are plural
+// snake_case and every column is snake_case through @map, while Prisma/TypeScript
+// field names stay camelCase. Application code is therefore unchanged.
+//
+// This database belongs to the subsystem only. It never contains Core Hub
+// users, passwords, sessions or key material. `Student.coreUserId` is an
+// EXTERNAL identity reference to a Core Hub user id - nothing more.
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../generated/prisma"
+  moduleFormat = "cjs"
+}
+
+// The connection string is supplied by prisma.config.ts (CLI) and by the
+// PrismaPg adapter in PrismaService (runtime) - always this subsystem's own
+// DATABASE_URL, never the Core Hub database.
+datasource db {
+  provider = "postgresql"
+}
+
+enum EnrollmentStatus {
+  ENROLLED
+  DROPPED
+  COMPLETED
+}
+
+model Student {
+  id String @id @default(uuid())
+
+  /// External identity reference to a Core Hub user (`sub` claim).
+  /// Optional: a business record may exist before the person ever logs in.
+  coreUserId String? @unique @map("core_user_id")
+
+  studentCode String @unique @map("student_code")
+  firstName   String @map("first_name")
+  lastName    String @map("last_name")
+  email       String @unique
+  faculty     String
+  major       String
+  year        Int
+
+  enrollments Enrollment[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([faculty, major])
+  @@map("students")
+}
+
+model Course {
+  id String @id @default(uuid())
+
+  courseCode  String  @unique @map("course_code")
+  name        String
+  credits     Int
+  description String?
+
+  enrollments Enrollment[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("courses")
+}
+
+model Enrollment {
+  id String @id @default(uuid())
+
+  studentId String @map("student_id")
+  courseId  String @map("course_id")
+
+  status     EnrollmentStatus @default(ENROLLED)
+  enrolledAt DateTime         @default(now()) @map("enrolled_at")
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  course  Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  /// One enrollment record per (student, course) pair. Re-enrolling after a
+  /// drop reactivates the existing record, so a duplicate ACTIVE enrollment is
+  /// impossible at the database level.
+  @@unique([studentId, courseId])
+  @@index([studentId, status])
+  @@index([courseId, status])
+  @@map("enrollments")
+}

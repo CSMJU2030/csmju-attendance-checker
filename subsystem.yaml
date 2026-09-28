@@ -13,19 +13,21 @@ public_endpoints:
   - GET /api/health
   - GET /auth/callback
 
-# conformance ใช้ probes ตรวจสัญญา API — ประกาศไม่ครบ = ขึ้น SKIP = ยังไม่ผ่าน
 probes:
-  collection: /api/v1/<resources>
-  not_found: /api/v1/<resources>/99999999-9999-4999-8999-999999999999
-  invalid_id: /api/v1/<resources>/not-a-uuid
+  collection: /api/v1/courses
+  not_found: /api/v1/courses/99999999-9999-4999-8999-999999999999
+  invalid_id: /api/v1/courses/not-a-uuid
   create:
-    path: /api/v1/<resources>
+    path: /api/v1/courses
     allowed_role: staff
     denied_role: student
     invalid_body:
-      someRequiredField: ""
+      course_code: nope
+      credits: 999
     valid_body:
-      someRequiredField: value
+      courseCode: CS777
+      name: Conformance Probe
+      credits: 3
 
 owners:
   pl: "@csmju2030/pl-attendance-checker"
