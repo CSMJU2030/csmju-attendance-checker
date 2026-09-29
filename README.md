@@ -40,11 +40,21 @@ pnpm start:dev:frontend         # frontend → http://localhost:3102
 
 ทะเบียนใน Core Hub ต้องมี `callback_url = http://localhost:3102/auth/callback`
 
+## รันด้วย Docker
+
+```bash
+docker compose up --build        # db :5434 · backend :3002 · frontend :3102
+```
+
+ต้องมี Core Hub รันบนเครื่อง host (:3000 / :3100) · `BACKEND_URL` และ `NEXT_PUBLIC_*` ของ frontend
+ถูกฝังตอน build image เปลี่ยนค่าแล้วต้อง `docker compose build` ใหม่
+
 ## ทดสอบ
 
 ```bash
 pnpm --filter backend test
 pnpm --filter backend test:e2e
+pnpm --filter frontend test
 pnpm --filter frontend typecheck
 pnpm --filter frontend lint
 pnpm --filter frontend build

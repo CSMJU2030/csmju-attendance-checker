@@ -16,7 +16,7 @@ import {
   type Tone,
 } from "@csmju2030/design-system";
 import { apiRequest } from "@/lib/api-client";
-import { errorMessage } from "@/lib/errors";
+import { classifyCheckInFailure } from "@/lib/check-in";
 import type { AttendanceRecordView } from "@/lib/types";
 
 type Phase = "idle" | "locating" | "submitting";
@@ -116,14 +116,12 @@ export function CheckInForm() {
       return;
     }
 
-    const message = errorMessage(response.error);
-    if (response.status === 400 && message.includes("รหัส")) {
-      setCodeError(message);
+    const failure = classifyCheckInFailure(response.status, response.error);
+    if (failure.kind === "field") {
+      setCodeError(failure.message);
       inputRef.current?.focus();
-    } else if (response.status === 409 || response.status === 400) {
-      setNotice({ tone: "warning", title: "เช็คชื่อไม่สำเร็จ", message });
-    } else if (response.status !== 401) {
-      setNotice({ tone: "danger", title: "เช็คชื่อไม่สำเร็จ", message });
+    } else if (failure.kind === "notice") {
+      setNotice({ tone: failure.tone, title: failure.title, message: failure.message });
     }
   }
 

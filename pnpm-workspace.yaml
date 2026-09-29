@@ -7,5 +7,8 @@ packages:
 allowBuilds:
   '@parcel/watcher': true
   '@prisma/engines': true
+  # esbuild (via vitest) ships a prebuilt binary per platform; its install
+  # script is only a fallback and is not needed
+  esbuild: false
   prisma: true
   unrs-resolver: true

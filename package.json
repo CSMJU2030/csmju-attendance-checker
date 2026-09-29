@@ -7,7 +7,7 @@
     "build": "pnpm --filter backend build && pnpm --filter frontend build",
     "start:dev": "pnpm --filter backend start:dev",
     "start:dev:frontend": "pnpm --filter frontend dev",
-    "test": "pnpm --filter backend test",
+    "test": "pnpm --filter backend test && pnpm --filter frontend test",
     "test:e2e": "pnpm --filter backend test:e2e",
     "test:integration": "pnpm --filter backend test:integration",
     "prisma:migrate": "pnpm --filter backend prisma:migrate",
