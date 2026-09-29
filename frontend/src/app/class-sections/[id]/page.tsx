@@ -2,16 +2,25 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import {
   Alert,
+  ButtonLink,
   Card,
   CardTitle,
-  DescriptionList,
+  ChevronRightIcon,
+  ClockIcon,
   EmptyState,
+  ExternalLinkIcon,
   MapPinIcon,
   PageHeader,
-  formatDateTime,
+  PencilIcon,
+  PresentationIcon,
+  StatCard,
+  UsersIcon,
+  formatDate,
+  formatNumber,
   formatTerm,
+  formatTime,
 } from "@csmju2030/design-system";
-import { SectionActions } from "@/components/features/section-actions";
+import { DeleteSectionCard, OpenSessionAction } from "@/components/features/section-actions";
 import { SessionStatusBadge } from "@/components/features/session-status";
 import { ApiErrorView } from "@/components/shared/api-error-view";
 import { apiGet, getMe } from "@/lib/api-server";
@@ -40,13 +49,19 @@ export default async function ClassSectionPage({
   }
   const section = result.data;
   const canManage = canManageSection(me.data, section.ownerCoreUserId, "manage");
+  const canEdit = canManageSection(me.data, section.ownerCoreUserId, "update");
 
   const sessions = canManage
     ? await apiGet<AttendanceSession[]>(`/api/v1/attendance-sessions?classSectionId=${section.id}&limit=50`)
     : null;
   const sessionList = sessions?.ok ? sessions.data : [];
+  const sessionTotal = sessions?.ok ? (sessions.meta?.total ?? sessionList.length) : 0;
   const openSession = sessionList.find((session) => session.status === "OPEN") ?? null;
+  const closed = sessionList.filter((session) => session.status === "CLOSED");
+  const averageAttendance =
+    closed.length > 0 ? Math.round(closed.reduce((sum, session) => sum + session.recordCount, 0) / closed.length) : null;
   const label = `${section.courseCode} ${section.courseName} กลุ่ม ${section.sectionCode}`;
+  const mapUrl = `https://www.google.com/maps?q=${section.latitude},${section.longitude}`;
 
   return (
     <>
@@ -54,43 +69,73 @@ export default async function ClassSectionPage({
         title={`${section.courseCode} ${section.courseName}`}
         description={`กลุ่ม ${section.sectionCode} · ${formatTerm(section.term, section.academicYear)}`}
         back={{ href: "/class-sections", label: "กลุ่มเรียน" }}
+        actions={
+          <>
+            {canEdit ? (
+              <ButtonLink href={`/class-sections/${section.id}/edit`} variant="secondary">
+                <PencilIcon size={16} />
+                แก้ไข
+              </ButtonLink>
+            ) : null}
+            {canManage ? <OpenSessionAction sectionId={section.id} openSessionId={openSession?.id ?? null} /> : null}
+          </>
+        }
       />
 
       {saved === "1" ? <Alert tone="success" title="บันทึกกลุ่มเรียนแล้ว" /> : null}
 
-      <SectionActions
-        sectionId={section.id}
-        sectionLabel={label}
-        openSessionId={openSession?.id ?? null}
-        sessionCount={sessions?.ok ? (sessions.meta?.total ?? sessionList.length) : 0}
-        canOpen={canManage}
-        canEdit={canManageSection(me.data, section.ownerCoreUserId, "update")}
-        canDelete={canManageSection(me.data, section.ownerCoreUserId, "delete") && sessions?.ok === true}
-      />
+      {canManage && sessions?.ok ? (
+        <section aria-label="สรุปกลุ่มเรียน" className="grid gap-4 sm:grid-cols-3">
+          <StatCard label="รอบเช็คชื่อทั้งหมด" value={formatNumber(sessionTotal)} unit="รอบ" icon={<PresentationIcon />} />
+          <StatCard
+            label="เฉลี่ยต่อรอบ"
+            value={averageAttendance === null ? "-" : formatNumber(averageAttendance)}
+            unit={averageAttendance === null ? undefined : "คน"}
+            hint={averageAttendance === null ? "ยังไม่มีรอบที่ปิดแล้ว" : `จาก ${closed.length} รอบที่ปิดแล้ว`}
+            icon={<UsersIcon />}
+            tone="neutral"
+          />
+          <StatCard
+            label="นับว่าสายหลังเปิดรอบ"
+            value={formatNumber(section.lateAfterMinutes)}
+            unit="นาที"
+            icon={<ClockIcon />}
+            tone="warning"
+          />
+        </section>
+      ) : null}
 
       <Card className="flex flex-col gap-4">
-        <CardTitle>กติกาการเช็คชื่อ</CardTitle>
-        <DescriptionList
-          items={[
-            { term: "รัศมีเช็คชื่อ", value: <span className="tabular-nums">{section.radiusMeters} เมตร</span> },
-            {
-              term: "นับว่าสาย",
-              value: <span className="tabular-nums">เมื่อเช็คชื่อหลังเปิดรอบเกิน {section.lateAfterMinutes} นาที</span>,
-            },
-            {
-              term: "จุดเช็คชื่อ (ละติจูด, ลองจิจูด)",
-              value: (
-                <span className="font-mono text-sm tabular-nums">
-                  {section.latitude.toFixed(6)}, {section.longitude.toFixed(6)}
-                </span>
-              ),
-            },
-          ]}
-        />
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <CardTitle>จุดเช็คชื่อ</CardTitle>
+          <a
+            href={mapUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex min-h-11 items-center gap-1 text-sm font-semibold text-primary hover:underline"
+          >
+            ดูบนแผนที่
+            <ExternalLinkIcon size={16} />
+            <span className="sr-only">(เปิดในแท็บใหม่)</span>
+          </a>
+        </div>
+        <div className="flex items-start gap-3">
+          <span aria-hidden className="flex size-11 shrink-0 items-center justify-center rounded-md bg-primary-soft text-primary">
+            <MapPinIcon />
+          </span>
+          <p className="text-body">
+            นักศึกษาต้องอยู่ภายใน <span className="font-semibold text-ink tabular-nums">{section.radiusMeters} เมตร</span> จากจุด{" "}
+            <span className="font-mono text-sm text-ink tabular-nums">
+              {section.latitude.toFixed(6)}, {section.longitude.toFixed(6)}
+            </span>{" "}
+            และเช็คชื่อหลังเปิดรอบเกิน{" "}
+            <span className="font-semibold text-ink tabular-nums">{section.lateAfterMinutes} นาที</span> จะนับว่ามาสาย
+          </p>
+        </div>
       </Card>
 
       {canManage ? (
-        <Card flush className="flex flex-col gap-4">
+        <Card flush className="flex flex-col">
           <div className="px-4 pt-4 md:px-6 md:pt-6">
             <CardTitle>รอบเช็คชื่อ</CardTitle>
           </div>
@@ -98,26 +143,40 @@ export default async function ClassSectionPage({
             <ApiErrorView error={sessions.error} retryHref={`/class-sections/${section.id}`} />
           ) : sessionList.length === 0 ? (
             <EmptyState
-              icon={MapPinIcon}
+              icon={PresentationIcon}
               title="ยังไม่เคยเปิดรอบเช็คชื่อ"
               description="กดเปิดรอบเช็คชื่อเมื่อเริ่มคาบเรียน ระบบจะแสดงรหัสให้นักศึกษากรอก"
             />
           ) : (
-            <ul className="flex flex-col divide-y divide-line">
+            <ul className="mt-2 flex flex-col divide-y divide-line border-t border-line">
               {sessionList.map((session) => (
                 <li key={session.id}>
                   <Link
                     href={`/attendance-sessions/${session.id}`}
-                    className="flex flex-col gap-1 px-4 py-3 hover:bg-primary-soft sm:flex-row sm:items-center sm:justify-between md:px-6"
+                    className="group flex items-center gap-4 px-4 py-4 transition-colors duration-fast hover:bg-primary-soft md:px-6"
                   >
-                    <span className="text-ink tabular-nums">เปิดเมื่อ {formatDateTime(session.openedAt)}</span>
+                    <span className="flex min-w-0 flex-1 flex-col gap-1 sm:flex-row sm:items-center sm:gap-4">
+                      <span className="font-semibold text-ink tabular-nums sm:w-48">
+                        {formatDate(session.openedAt)}{" "}
+                        <span className="font-normal text-body">{formatTime(session.openedAt)}</span>
+                      </span>
+                      <span className="text-sm text-body tabular-nums">
+                        เช็คชื่อ {formatNumber(session.recordCount)} คน
+                        {session.lateCount > 0 ? ` · สาย ${formatNumber(session.lateCount)} คน` : ""}
+                      </span>
+                    </span>
                     <SessionStatusBadge status={session.status} />
+                    <ChevronRightIcon size={20} className="shrink-0 text-muted group-hover:text-primary" />
                   </Link>
                 </li>
               ))}
             </ul>
           )}
         </Card>
+      ) : null}
+
+      {canManageSection(me.data, section.ownerCoreUserId, "delete") && sessions?.ok ? (
+        <DeleteSectionCard sectionId={section.id} sectionLabel={label} sessionCount={sessionTotal} />
       ) : null}
     </>
   );

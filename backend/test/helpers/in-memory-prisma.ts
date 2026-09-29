@@ -103,6 +103,21 @@ class Table {
     return sorted.slice(start, args.take === undefined ? undefined : start + args.take);
   }
 
+  /** `groupBy({ by, where, _count: { _all: true } })` - the only shape this codebase uses. */
+  async groupBy({ by, where }: { by: string[]; where?: Row; _count?: Row }): Promise<Row[]> {
+    const groups = new Map<string, Row>();
+    for (const row of this.rows.filter((candidate) => matches(candidate, where))) {
+      const key = JSON.stringify(by.map((field) => row[field]));
+      const group = groups.get(key) ?? {
+        ...Object.fromEntries(by.map((field) => [field, row[field]])),
+        _count: { _all: 0 },
+      };
+      group._count._all += 1;
+      groups.set(key, group);
+    }
+    return [...groups.values()];
+  }
+
   async count({ where }: { where?: Row } = {}): Promise<number> {
     return this.rows.filter((row) => matches(row, where)).length;
   }

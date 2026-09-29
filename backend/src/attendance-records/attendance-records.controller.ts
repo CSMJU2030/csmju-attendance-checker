@@ -18,6 +18,12 @@ export class AttendanceRecordsController {
     return this.records.checkIn(dto, user);
   }
 
+  @Get('me/summary')
+  @RequirePermissions(Permission.ATTENDANCE_RECORD_READ_OWN)
+  summaryMine(@CurrentUser() user: CoreHubIdentity) {
+    return this.records.summaryMine(user);
+  }
+
   @Get('me')
   @RequirePermissions(Permission.ATTENDANCE_RECORD_READ_OWN)
   async findMine(@Query() query: PaginationQueryDto, @CurrentUser() user: CoreHubIdentity) {

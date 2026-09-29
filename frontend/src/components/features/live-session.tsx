@@ -42,6 +42,9 @@ export function LiveSession({ initialSession, sectionLabel }: { initialSession: 
   const [closing, setClosing] = useState(false);
   const [closeError, setCloseError] = useState<string | null>(null);
   const codeCard = useRef<HTMLDivElement>(null);
+  // Records present at the first load are "old"; anything after is marked new.
+  const seen = useRef<Set<string> | null>(null);
+  const [fresh, setFresh] = useState<Set<string>>(new Set());
 
   const open = session.status === "OPEN";
 
@@ -66,7 +69,20 @@ export function LiveSession({ initialSession, sectionLabel }: { initialSession: 
     );
     setLoadedRecords(true);
     if (result.ok) {
-      setRecords(result.data);
+      const newest = [...result.data].sort((a, b) => b.checkedInAt.localeCompare(a.checkedInAt));
+      if (seen.current === null) {
+        seen.current = new Set(newest.map((record) => record.id));
+      } else {
+        const arrived = newest.filter((record) => !seen.current!.has(record.id)).map((record) => record.id);
+        if (arrived.length > 0) {
+          arrived.forEach((id) => seen.current!.add(id));
+          setFresh((current) => new Set([...current, ...arrived]));
+          window.setTimeout(() => {
+            setFresh((current) => new Set([...current].filter((id) => !arrived.includes(id))));
+          }, 15_000);
+        }
+      }
+      setRecords(newest);
       setTotal(result.meta?.total ?? result.data.length);
       setRecordsError(null);
     } else if (result.status !== 401) {
@@ -195,10 +211,14 @@ export function LiveSession({ initialSession, sectionLabel }: { initialSession: 
       <Card flush className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center justify-between gap-2 px-4 pt-4 md:px-6 md:pt-6">
           <CardTitle>นักศึกษาที่เช็คชื่อแล้ว</CardTitle>
-          <div className="flex gap-2 text-sm tabular-nums" aria-live="polite">
-            <Badge tone="info">ทั้งหมด {total} คน</Badge>
-            <Badge tone="warning">มาสาย {late} คน</Badge>
-          </div>
+          <p className="flex gap-4 text-body tabular-nums" aria-live="polite">
+            <span>
+              ทั้งหมด <span className="font-heading text-xl font-semibold text-ink">{total}</span> คน
+            </span>
+            <span>
+              มาสาย <span className="font-heading text-xl font-semibold text-warning">{late}</span> คน
+            </span>
+          </p>
         </div>
 
         {recordsError ? (
@@ -216,33 +236,38 @@ export function LiveSession({ initialSession, sectionLabel }: { initialSession: 
             description={open ? "รายชื่อจะขึ้นที่นี่อัตโนมัติเมื่อนักศึกษาเช็คชื่อ" : "ไม่มีนักศึกษาเช็คชื่อในรอบนี้"}
           />
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead className="bg-surface-muted text-sm font-semibold text-ink">
-                <tr>
-                  <th scope="col" className="px-4 py-3 md:px-6">อีเมล</th>
-                  <th scope="col" className="px-4 py-3 md:px-6">เวลา</th>
-                  <th scope="col" className="px-4 py-3 md:px-6">สถานะ</th>
-                  <th scope="col" className="hidden px-4 py-3 text-right sm:table-cell md:px-6">ระยะห่าง (เมตร)</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-line">
-                {records.map((record) => {
-                  const status = ATTENDANCE_STATUS[record.status];
-                  return (
-                    <tr key={record.id} className="h-12 hover:bg-primary-soft">
-                      <td className="break-words px-4 text-sm text-ink md:px-6">{record.email}</td>
-                      <td className="whitespace-nowrap px-4 text-sm tabular-nums md:px-6">{formatTime(record.checkedInAt)}</td>
-                      <td className="px-4 md:px-6">
-                        <Badge tone={status.tone}>{status.label}</Badge>
-                      </td>
-                      <td className="hidden px-4 text-right tabular-nums sm:table-cell md:px-6">{record.distanceMeters}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+          <ul className="flex flex-col divide-y divide-line border-t border-line">
+            {records.map((record) => {
+              const status = ATTENDANCE_STATUS[record.status];
+              const isNew = fresh.has(record.id);
+              return (
+                <li
+                  key={record.id}
+                  className={
+                    "flex items-center gap-3 px-4 py-3 transition-colors duration-slow md:px-6 " +
+                    (isNew ? "bg-success-soft" : "")
+                  }
+                >
+                  <span
+                    aria-hidden
+                    className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary-soft text-sm font-semibold uppercase text-primary"
+                  >
+                    {record.email.charAt(0)}
+                  </span>
+                  <span className="flex min-w-0 flex-1 flex-col">
+                    <span className="truncate text-ink" title={record.email}>
+                      {record.email}
+                    </span>
+                    <span className="text-sm text-body tabular-nums">
+                      {formatTime(record.checkedInAt)} · ห่าง {record.distanceMeters} เมตร
+                    </span>
+                  </span>
+                  {isNew ? <Badge tone="success">ใหม่</Badge> : null}
+                  <Badge tone={status.tone}>{status.label}</Badge>
+                </li>
+              );
+            })}
+          </ul>
         )}
       </Card>
 

@@ -485,6 +485,36 @@ describe('Attendance Checker (e2e)', () => {
       expect(mine.body.data[0]).toMatchObject({ attendanceSessionId: sessionId, status: 'PRESENT' });
     });
 
+    it('reports check-in counts on the session and a summary for the student', async () => {
+      const opened = await openSession();
+      const sessionId = opened.body.data.id;
+      expect(opened.body.data).toMatchObject({ recordCount: 0, lateCount: 0 });
+      await checkIn({ code: opened.body.data.code.code, ...ROOM }).expect(201);
+
+      const session = await request(app.getHttpServer())
+        .get(`/api/v1/attendance-sessions/${sessionId}`)
+        .set(bearer(staffToken))
+        .expect(200);
+      expect(session.body.data).toMatchObject({ recordCount: 1, lateCount: 0 });
+
+      const list = await request(app.getHttpServer())
+        .get(`/api/v1/attendance-sessions?classSectionId=${sectionId}`)
+        .set(bearer(staffToken))
+        .expect(200);
+      expect(list.body.data[0]).toMatchObject({ id: sessionId, recordCount: 1, lateCount: 0 });
+
+      const summary = await request(app.getHttpServer())
+        .get('/api/v1/attendance-records/me/summary')
+        .set(bearer(studentToken))
+        .expect(200);
+      expect(summary.body.data).toEqual({ total: 1, present: 1, late: 0 });
+
+      await request(app.getHttpServer())
+        .get('/api/v1/attendance-records/me/summary')
+        .set(bearer(staffToken))
+        .expect(403);
+    });
+
     it('stops accepting codes once the session is closed', async () => {
       const opened = await openSession();
       const sessionId = opened.body.data.id;

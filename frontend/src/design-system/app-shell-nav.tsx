@@ -23,7 +23,7 @@ function NavLinks({ nav, pathname, onNavigate }: { nav: NavItem[]; pathname: str
               onClick={onNavigate}
               aria-current={active ? "page" : undefined}
               className={
-                "flex min-h-11 items-center gap-3 rounded-sm px-3 font-medium transition-colors duration-fast " +
+                "flex min-h-11 items-center gap-3 rounded-sm px-3 font-semibold transition-colors duration-fast " +
                 (active ? "bg-primary-soft text-primary" : "text-body hover:bg-primary-soft")
               }
             >

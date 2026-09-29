@@ -85,7 +85,7 @@ export default async function ClassSectionsPage({
       <Card>
         <form method="get" className="flex flex-col gap-4 md:flex-row md:items-end" role="search">
           <div className="flex flex-1 flex-col gap-2">
-            <label htmlFor="q" className="font-medium text-ink">
+            <label htmlFor="q" className="font-semibold text-ink">
               ค้นหา
             </label>
             <TextInput id="q" name="q" type="search" defaultValue={q} placeholder="รหัสวิชาหรือชื่อวิชา" />
@@ -154,7 +154,7 @@ function ClassSectionTable({ sections }: { sections: ClassSection[] }) {
         {sections.map((section) => (
           <li key={section.id}>
             <Link href={`/class-sections/${section.id}`} className="flex flex-col gap-1 p-4 hover:bg-primary-soft">
-              <span className="font-medium text-ink">
+              <span className="font-semibold text-ink">
                 {section.courseCode} {section.courseName}
               </span>
               <span className="text-sm text-muted">
@@ -188,7 +188,7 @@ function ClassSectionTable({ sections }: { sections: ClassSection[] }) {
                 <td className="px-6 tabular-nums">{formatTerm(section.term, section.academicYear)}</td>
                 <td className="px-6 text-right tabular-nums">{section.radiusMeters}</td>
                 <td className="px-6 text-right">
-                  <Link href={`/class-sections/${section.id}`} className="font-medium text-primary hover:underline">
+                  <Link href={`/class-sections/${section.id}`} className="font-semibold text-primary hover:underline">
                     ดูรายละเอียด
                   </Link>
                 </td>

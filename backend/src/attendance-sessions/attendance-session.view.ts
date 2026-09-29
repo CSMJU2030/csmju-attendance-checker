@@ -8,9 +8,23 @@ export interface AttendanceSessionView {
   status: AttendanceSession['status'];
   openedAt: Date;
   closedAt: Date | null;
+  /** Students who checked in to this session. */
+  recordCount: number;
+  /** Of those, how many were LATE. */
+  lateCount: number;
 }
 
-export function toSessionView(session: AttendanceSession): AttendanceSessionView {
+export interface SessionCounts {
+  recordCount: number;
+  lateCount: number;
+}
+
+export const NO_COUNTS: SessionCounts = { recordCount: 0, lateCount: 0 };
+
+export function toSessionView(
+  session: AttendanceSession,
+  counts: SessionCounts = NO_COUNTS,
+): AttendanceSessionView {
   return {
     id: session.id,
     classSectionId: session.classSectionId,
@@ -18,5 +32,7 @@ export function toSessionView(session: AttendanceSession): AttendanceSessionView
     status: session.status,
     openedAt: session.openedAt,
     closedAt: session.closedAt,
+    recordCount: counts.recordCount,
+    lateCount: counts.lateCount,
   };
 }

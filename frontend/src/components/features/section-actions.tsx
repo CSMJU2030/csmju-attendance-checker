@@ -2,38 +2,28 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Alert, Button, ButtonLink, ConfirmDialog, MapPinIcon, PencilIcon, TrashIcon } from "@csmju2030/design-system";
+import { Alert, Button, ButtonLink, Card, CardTitle, ConfirmDialog, PresentationIcon, TrashIcon } from "@csmju2030/design-system";
 import { apiRequest } from "@/lib/api-client";
 import { errorMessage } from "@/lib/errors";
 import type { AttendanceSession } from "@/lib/types";
 
-/** Open-session and delete actions on the section page. */
-export function SectionActions({
-  sectionId,
-  sectionLabel,
-  openSessionId,
-  sessionCount,
-  canEdit,
-  canDelete,
-  canOpen,
-}: {
-  sectionId: string;
-  sectionLabel: string;
-  openSessionId: string | null;
-  sessionCount: number;
-  canEdit: boolean;
-  canDelete: boolean;
-  canOpen: boolean;
-}) {
+/** Primary action of the section page: open a session, or go to the open one. */
+export function OpenSessionAction({ sectionId, openSessionId }: { sectionId: string; openSessionId: string | null }) {
   const router = useRouter();
   const [opening, setOpening] = useState(false);
-  const [openError, setOpenError] = useState<string | null>(null);
-  const [confirmDelete, setConfirmDelete] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  async function openSession() {
-    setOpenError(null);
+  if (openSessionId) {
+    return (
+      <ButtonLink href={`/attendance-sessions/${openSessionId}`}>
+        <PresentationIcon size={16} />
+        แสดงรหัสรอบที่เปิดอยู่
+      </ButtonLink>
+    );
+  }
+
+  async function open() {
+    setError(null);
     setOpening(true);
     const result = await apiRequest<AttendanceSession>("POST", "/api/v1/attendance-sessions", { classSectionId: sectionId });
     setOpening(false);
@@ -42,80 +32,98 @@ export function SectionActions({
       return;
     }
     if (result.status !== 401) {
-      setOpenError(errorMessage(result.error));
+      setError(errorMessage(result.error));
       router.refresh();
     }
   }
 
+  return (
+    <div className="flex flex-col gap-2">
+      <Button onClick={open} loading={opening}>
+        <PresentationIcon size={16} />
+        เปิดรอบเช็คชื่อ
+      </Button>
+      {error ? (
+        <Alert tone="warning" title="เปิดรอบเช็คชื่อไม่สำเร็จ">
+          {error}
+        </Alert>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * Deleting sits in its own card at the end of the page, away from the everyday
+ * actions. A section with attendance history cannot be deleted: the button is
+ * disabled and the card says why (section 10.1).
+ */
+export function DeleteSectionCard({
+  sectionId,
+  sectionLabel,
+  sessionCount,
+}: {
+  sectionId: string;
+  sectionLabel: string;
+  sessionCount: number;
+}) {
+  const router = useRouter();
+  const [confirm, setConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const blocked = sessionCount > 0;
+
   async function remove() {
-    setDeleteError(null);
+    setError(null);
     setDeleting(true);
     const result = await apiRequest<{ id: string; deleted: true }>("DELETE", `/api/v1/class-sections/${sectionId}`);
     setDeleting(false);
     if (result.ok) {
-      setConfirmDelete(false);
+      setConfirm(false);
       router.push("/class-sections?deleted=1");
       router.refresh();
       return;
     }
     if (result.status !== 401) {
-      setDeleteError(errorMessage(result.error));
+      setError(errorMessage(result.error));
     }
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-start gap-2">
-        {canOpen ? (
-          openSessionId ? (
-            <ButtonLink href={`/attendance-sessions/${openSessionId}`}>
-              <MapPinIcon size={16} />
-              ไปยังรอบเช็คชื่อที่เปิดอยู่
-            </ButtonLink>
-          ) : (
-            <Button onClick={openSession} loading={opening}>
-              <MapPinIcon size={16} />
-              เปิดรอบเช็คชื่อ
-            </Button>
-          )
-        ) : null}
-        {canEdit ? (
-          <ButtonLink href={`/class-sections/${sectionId}/edit`} variant="secondary">
-            <PencilIcon size={16} />
-            แก้ไข
-          </ButtonLink>
-        ) : null}
-        {canDelete ? (
-          <Button
-            id="delete-section"
-            variant="ghost"
-            className="text-danger"
-            onClick={() => setConfirmDelete(true)}
-            disabled={sessionCount > 0}
-            disabledReason="ลบไม่ได้ เพราะกลุ่มเรียนนี้มีประวัติการเช็คชื่อแล้ว"
-          >
-            <TrashIcon size={16} />
-            ลบ
-          </Button>
-        ) : null}
+    <Card className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col gap-1">
+        <CardTitle>ลบกลุ่มเรียน</CardTitle>
+        <p id="delete-section-reason" className="text-body">
+          {blocked
+            ? `ลบไม่ได้ เพราะกลุ่มเรียนนี้มีประวัติการเช็คชื่อแล้ว ${sessionCount} รอบ`
+            : "ลบกลุ่มเรียนนี้ถาวร ใช้เมื่อสร้างผิดหรือไม่ได้ใช้แล้วเท่านั้น"}
+        </p>
       </div>
-
-      {openError ? <Alert tone="warning" title="เปิดรอบเช็คชื่อไม่สำเร็จ">{openError}</Alert> : null}
+      <Button
+        id="delete-section"
+        variant="danger"
+        onClick={() => setConfirm(true)}
+        disabled={blocked}
+        aria-describedby="delete-section-reason"
+        className="shrink-0"
+      >
+        <TrashIcon size={16} />
+        ลบกลุ่มเรียน
+      </Button>
 
       <ConfirmDialog
-        open={confirmDelete}
+        open={confirm}
         title={`ลบกลุ่มเรียน "${sectionLabel}"?`}
         confirmLabel="ลบกลุ่มเรียน"
         loading={deleting}
-        error={deleteError}
+        error={error}
         onConfirm={remove}
         onCancel={() => {
-          setConfirmDelete(false);
-          setDeleteError(null);
+          setConfirm(false);
+          setError(null);
         }}
       >
         กลุ่มเรียนนี้จะถูกลบถาวร และเปิดรอบเช็คชื่อไม่ได้อีก
       </ConfirmDialog>
-    </div>
+    </Card>
   );
 }

@@ -50,13 +50,13 @@ RESULT: 63 passed · 0 failed · 0 skipped
 | ตรวจ | ผล |
 |---|---|
 | `pnpm --filter backend typecheck` · `lint` · `build` | ผ่าน |
-| `pnpm --filter backend test` | 11 suites · 81 tests ผ่าน |
-| `pnpm --filter backend test:e2e` | 2 suites · 60 tests ผ่าน |
+| `pnpm --filter backend test` | 11 suites · 85 tests ผ่าน |
+| `pnpm --filter backend test:e2e` | 2 suites · 61 tests ผ่าน |
 | `pnpm --filter frontend typecheck` · `lint` · `build` | ผ่าน (11 routes) |
 | smoke test ผ่าน SSO จริง (Core Hub handoff → `/auth/callback` → cookie) | ทุกหน้าของ staff/student/ผู้ที่ยังไม่ล็อกอิน แสดงถูกต้อง · เช็คชื่อผ่าน proxy สำเร็จ · ออกจากระบบล้าง cookie |
-| browser E2E (Chrome headless · Playwright + axe-core, นอก repo) | **71 passed · 0 failed** — SSO จริงทั้งอาจารย์/นักศึกษา · สร้างกลุ่มเรียน + "ใช้ตำแหน่งปัจจุบัน" (จำลอง GPS) · เปิดรอบ รหัส 6 หลัก นับถอยหลัง · นักศึกษา: รหัสผิด → error ใต้ช่อง, นอกรัศมี → แจ้งระยะ, ในรัศมี → สำเร็จ, ซ้ำ → แจ้ง · รายชื่ออัปเดตเอง · ConfirmDialog (Esc, focus กลับจุดเดิม) · ลบถูกปิดพร้อมเหตุผลเมื่อมีประวัติ · ค้นหา/ว่าง · drawer มือถือ · skip link · ออกจากระบบ · axe 0 critical/serious ทุกหน้าที่ตรวจ · ไม่มี horizontal scroll ที่ 360/768/1280px ทุกหน้า |
+| browser E2E (Chrome headless · Playwright + axe-core, นอก repo) | **73 passed · 0 failed** — ตัวเลขสรุปในหน้าแรกของนักศึกษา/อาจารย์ · SSO จริงทั้งอาจารย์/นักศึกษา · สร้างกลุ่มเรียน + "ใช้ตำแหน่งปัจจุบัน" (จำลอง GPS) · เปิดรอบ รหัส 6 หลัก นับถอยหลัง · นักศึกษา: รหัสผิด → error ใต้ช่อง, นอกรัศมี → แจ้งระยะ, ในรัศมี → สำเร็จ, ซ้ำ → แจ้ง · รายชื่ออัปเดตเอง · ConfirmDialog (Esc, focus กลับจุดเดิม) · ลบถูกปิดพร้อมเหตุผลเมื่อมีประวัติ · ค้นหา/ว่าง · drawer มือถือ · skip link · ออกจากระบบ · axe 0 critical/serious ทุกหน้าที่ตรวจ · ไม่มี horizontal scroll ที่ 360/768/1280px ทุกหน้า |
 | `pnpm --filter frontend test` (vitest) | 6 files · **46 tests ผ่าน** — error mapping ตาม 9.3 · การจัดประเภท error ของการเช็คชื่อ · สิทธิ์/เมนูตามบทบาท · validation ฟอร์มกลุ่มเรียน + แปลง พ.ศ.→ค.ศ. · รูปแบบวันที่ Asia/Bangkok · ตรวจแล้วว่า test ตีตกเมื่อแก้โค้ดให้ผิด |
-| Lighthouse 12 (production build · มือถือ = slow 4G + CPU 4x) | 8 หน้า: performance **94–100** · accessibility **100 ทุกหน้า** · best-practices 100 · CLS 0 · LCP มือถือ ≤ 2.4 s · JS แรกเข้า ~145 KB (gzip) ต่ำกว่างบ 250 KB |
+| Lighthouse 12 (production build · มือถือ = slow 4G + CPU 4x) | 8 หน้า: performance **94–100** · accessibility **100 ทุกหน้า** · best-practices 100 · CLS ≤ 0.002 · JS แรกเข้า ~132 KB (gzip) · **LCP มือถือ 2.5–2.7 s (ค่ากลาง 3 รอบ 2.39–2.55 s) ชนเพดาน 2.5 s ของข้อ 15** — ดูหัวข้อ "สิ่งที่ยังทำไม่ได้" |
 | Docker (`docker compose up --build`) | build ผ่านทั้ง 2 image · db/api/web healthy · migration 3 ตัวรันบนฐานข้อมูลเปล่า · frontend ส่ง `/api` ต่อให้ backend ได้ · backend ตรวจ token จริงผ่าน JWKS ของ Core Hub บน host · สร้างกลุ่มเรียน → เปิดรอบ → นักศึกษาเช็คชื่อ `PRESENT` · นักศึกษาสร้างกลุ่มเรียน → 403 · ไม่มี `.env`/กุญแจใน image · RAM ขณะรันรวม ~170 MB |
 | dependency whitelist (ARC-02/03) | เครื่องนี้ไม่มี `jq` สคริปต์จึงข้าม — ตรวจด้วย node กับ `allowed-deps.json` แทน: ผ่านทุกตัว |
 | `prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --exit-code` | No difference detected |
@@ -78,6 +78,8 @@ RESULT: 63 passed · 0 failed · 0 skipped
 - `backend/src/app.module.ts` · `config/configuration.ts` · `prisma/prisma.service.ts` · `.env.example` — ผูกโมดูลใหม่และค่าตั้งของระบบนี้
 - `backend/test/` — e2e ของโดเมนใหม่ และปรับ in-memory Prisma ให้มีตารางใหม่
 - ลบ `backend/src/{students,courses,enrollments}/` — เป็นโดเมนตัวอย่างของ demo ที่ไม่ใช้ในระบบนี้
+- `backend/src/attendance-sessions/` — รอบเช็คชื่อส่ง `recordCount` / `lateCount` (นับด้วย `groupBy` ครั้งเดียวต่อหน้า)
+- `backend/src/attendance-records/` — `GET /api/v1/attendance-records/me/summary` → `{ total, present, late }` ของนักศึกษาเอง
 - `frontend/` — Next.js 16 App Router + Tailwind 3 (ดูหัวข้อ "frontend" ด้านล่าง)
 - `pnpm-workspace.yaml` · `package.json` — เพิ่ม workspace `frontend` และ script `start:dev:frontend`
 - `subsystem.yaml` — `base_url` เปลี่ยนเป็น frontend `http://localhost:3102`
@@ -151,8 +153,10 @@ Permission ต่อ role:
     และ component ชื่อ/props ตามข้อ 7 ไว้ที่ `src/design-system/` โดย `tsconfig` map ชื่อ package มาที่โฟลเดอร์นี้
     — โค้ดหน้าจอ import จาก `@csmju2030/design-system` อยู่แล้ว เมื่อได้ package จริงให้ติดตั้งแล้วลบโฟลเดอร์ตัวแทนทิ้ง
 11. ใช้ Tailwind 3 (ไม่ใช่ 4) เพราะ Tailwind 4 ต้องใช้ `@tailwindcss/postcss` ซึ่งไม่อยู่ใน whitelist
-12. ฟอนต์: `@fontsource/*` และ `next/font/local` ต้องมีไฟล์ฟอนต์ที่ไม่อยู่ใน whitelist จึงใช้ font stack ของ token ไปก่อน
-    (IBM Plex Sans Thai ถ้ามีในเครื่อง ไม่งั้นใช้ฟอนต์ไทยของระบบ) — ไม่โหลดจาก CDN
+12. ฟอนต์: self-host ใน `frontend/public/fonts/` 4 ไฟล์ (~72 KB) — IBM Plex Sans Thai (ตัวไทย) + Inter (ตัวละติน) น้ำหนัก 400/600
+    ผ่าน `@font-face` + `unicode-range` · `font-display: swap` · preload เฉพาะไทย 400/600 · ไลเซนส์ SIL OFL อยู่ข้างไฟล์
+    `@fontsource/*` ไม่อยู่ใน whitelist จึงเก็บไฟล์เอง · Plus Jakarta Sans (หัวเรื่อง) ไม่ได้โหลดเพราะเกินงบ 4 ไฟล์ ตัวละตินในหัวเรื่องจึงใช้ Inter
+    · มีแค่ 400/600 จึงใช้ `font-semibold` แทน `font-bold`/`font-medium` และปิด `font-synthesis-weight` กันตัวหนาปลอม (ข้อ 4.1)
 13. ไอคอน Lucide ฝังเป็น SVG ใน `src/design-system/icons.tsx` เพราะ `lucide-react` ไม่อยู่ใน whitelist
 14. type ของ API เขียนตาม DTO ของ backend ใน `src/lib/types.ts` เพราะ backend ยังไม่มี `openapi.json` ให้ generate
 15. ข้อความ error: แสดง `error.message` ของ backend เฉพาะ `BAD_REQUEST`/`CONFLICT` ที่เป็นภาษาไทย (ข้อความของโดเมนนี้)
@@ -166,6 +170,10 @@ Permission ต่อ role:
   — แจ้ง PL ว่าเช็กนี้ให้ผลต่างกันระหว่างเครื่องพัฒนากับ CI
 - ยังไม่ได้ทดสอบบนมือถือจริงและ screen reader (NVDA/VoiceOver) — ทดสอบด้วย Chrome headless ที่จำลองจอ 360px + touch
 - GPS ใช้ได้เฉพาะ secure context (`https` หรือ `localhost`) — ถ้าเปิดผ่าน IP ในวง LAN แบบ http นักศึกษาจะเช็คชื่อไม่ได้
+- **LCP บนมือถือชนเพดาน 2.5 s** (Lighthouse slow 4G + CPU 4x): ทดลองแล้วว่าไม่ได้มาจากฟอนต์ (ปิด preload แล้วแย่ลงเป็น 2.55–2.66 s)
+  สาเหตุคือเนื้อหาหน้า stream ตามหลัง skeleton ของ `loading.tsx` (มาตรฐานบังคับให้มีทุก route) และ Lighthouse นับว่ารอ JS
+  ทำ streaming ให้ส่วนที่ไม่ต้องรอข้อมูลขึ้นก่อนแล้ว · performance score ยังผ่าน (94–99) · ถ้าต้องให้ต่ำกว่า 2.5 s ชัด ๆ
+  ต้องตัดสินว่าจะเอา `loading.tsx` ออกจากหน้าที่ไม่ต้องรอข้อมูลหรือไม่ — ขอความเห็น PL
 - unit test ของ frontend ครอบคลุมเฉพาะ logic ล้วน — ยังไม่มี component test เพราะ `@testing-library/react`
   ต้องใช้ `@testing-library/dom` ซึ่งไม่อยู่ใน whitelist (พฤติกรรม component ตรวจด้วย browser E2E แทน)
 - image ของ backend ใหญ่ (1.77 GB) เพราะ runtime ติดตั้ง dependency ของ Prisma CLI ไว้รัน `migrate deploy` ตอนเริ่ม — ยังไม่ได้ลดขนาด

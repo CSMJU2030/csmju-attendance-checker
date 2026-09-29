@@ -16,7 +16,7 @@ export function AttendanceRecordList({ records }: { records: AttendanceRecordVie
         return (
           <li key={record.id} className="flex flex-col gap-2 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-col gap-1">
-              <p className="font-medium text-ink">
+              <p className="font-semibold text-ink">
                 {section ? `${section.courseCode} ${section.courseName}` : "กลุ่มเรียนถูกลบไปแล้ว"}
               </p>
               <p className="text-sm text-muted tabular-nums">

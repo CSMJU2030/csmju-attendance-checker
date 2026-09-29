@@ -3,6 +3,7 @@ import { CoreHubIdentity, SubsystemRole } from '../auth/core-hub-identity';
 import { ClassSectionsService } from '../class-sections/class-sections.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AttendanceSessionsService } from './attendance-sessions.service';
+import { QueryAttendanceSessionsDto } from './dto/query-attendance-sessions.dto';
 
 const NOW = new Date(Date.UTC(2026, 8, 29, 2, 0, 0));
 
@@ -42,6 +43,7 @@ describe('AttendanceSessionsService - business rules', () => {
       count: jest.Mock;
     };
     classSection: { findMany: jest.Mock };
+    attendanceRecord: { groupBy: jest.Mock };
   };
   let sections: { findOne: jest.Mock };
   let service: AttendanceSessionsService;
@@ -58,6 +60,7 @@ describe('AttendanceSessionsService - business rules', () => {
         count: jest.fn().mockResolvedValue(0),
       },
       classSection: { findMany: jest.fn().mockResolvedValue([SECTION]) },
+      attendanceRecord: { groupBy: jest.fn().mockResolvedValue([]) },
     };
     sections = { findOne: jest.fn().mockResolvedValue(SECTION) };
     service = new AttendanceSessionsService(
@@ -106,6 +109,39 @@ describe('AttendanceSessionsService - business rules', () => {
     });
     await expect(service.close(SESSION.id, OWNER, NOW)).rejects.toMatchObject({ status: 409 });
     await expect(service.getCode(SESSION.id, OWNER, NOW)).rejects.toMatchObject({ status: 409 });
+  });
+
+  it('reports how many students checked in and how many were late', async () => {
+    prisma.attendanceRecord.groupBy.mockResolvedValue([
+      { attendanceSessionId: SESSION.id, status: 'PRESENT', _count: { _all: 10 } },
+      { attendanceSessionId: SESSION.id, status: 'LATE', _count: { _all: 3 } },
+    ]);
+
+    await expect(service.findOne(SESSION.id, OWNER)).resolves.toMatchObject({
+      recordCount: 13,
+      lateCount: 3,
+    });
+    expect(prisma.attendanceRecord.groupBy).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { attendanceSessionId: { in: [SESSION.id] } } }),
+    );
+  });
+
+  it('counts each listed session separately, with zero for sessions nobody joined', async () => {
+    const other = { ...SESSION, id: '33333333-3333-4333-8333-333333333333' };
+    prisma.attendanceSession.findMany.mockResolvedValue([SESSION, other]);
+    prisma.attendanceSession.count.mockResolvedValue(2);
+    prisma.attendanceRecord.groupBy.mockResolvedValue([
+      { attendanceSessionId: SESSION.id, status: 'PRESENT', _count: { _all: 4 } },
+    ]);
+
+    const { items } = await service.findAll(
+      Object.assign(new QueryAttendanceSessionsDto(), { classSectionId: SECTION.id }),
+      OWNER,
+    );
+    expect(items.map((item) => [item.recordCount, item.lateCount])).toEqual([
+      [4, 0],
+      [0, 0],
+    ]);
   });
 
   it('returns 404 for an unknown session', async () => {

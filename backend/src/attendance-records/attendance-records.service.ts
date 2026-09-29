@@ -24,6 +24,12 @@ type SectionSummary = Pick<
 
 export type AttendanceRecordView = AttendanceRecord & { classSection: SectionSummary | null };
 
+export interface AttendanceSummary {
+  total: number;
+  present: number;
+  late: number;
+}
+
 function summarize(section: ClassSection): SectionSummary {
   return {
     courseCode: section.courseCode,
@@ -157,5 +163,20 @@ export class AttendanceRecordsService {
     });
 
     return { items, total };
+  }
+
+  /** How many times the student checked in, on time and late. */
+  async summaryMine(user: CoreHubIdentity): Promise<AttendanceSummary> {
+    const groups = await this.prisma.attendanceRecord.groupBy({
+      by: ['status'],
+      where: { coreUserId: user.id },
+      _count: { _all: true },
+    });
+
+    const count = (status: AttendanceStatus) =>
+      groups.find((group) => group.status === status)?._count._all ?? 0;
+    const present = count(AttendanceStatus.PRESENT);
+    const late = count(AttendanceStatus.LATE);
+    return { total: present + late, present, late };
   }
 }

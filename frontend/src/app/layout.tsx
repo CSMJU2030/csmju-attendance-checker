@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
+import { preload } from "react-dom";
 import { CsmjuAppShell } from "@csmju2030/design-system";
 import { AccessGate } from "@/components/shared/access-gate";
 import { getMe } from "@/lib/api-server";
@@ -22,6 +23,10 @@ export const viewport: Viewport = {
 export const dynamic = "force-dynamic";
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
+  // Section 4.1: preload only the Thai 400/600 files; Latin loads on demand.
+  preload("/fonts/ibm-plex-sans-thai-thai-400.woff2", { as: "font", type: "font/woff2", crossOrigin: "anonymous" });
+  preload("/fonts/ibm-plex-sans-thai-thai-600.woff2", { as: "font", type: "font/woff2", crossOrigin: "anonymous" });
+
   const me = await getMe();
   const user = me.ok ? { email: me.data.email, coreRole: me.data.coreRole } : null;
 

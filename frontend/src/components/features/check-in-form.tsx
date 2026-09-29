@@ -5,11 +5,13 @@ import {
   Alert,
   Badge,
   Button,
+  ButtonLink,
   Card,
   CheckCircleIcon,
   ClockIcon,
   FormField,
-  TextInput,
+  KeyRoundIcon,
+  MapPinIcon,
   fieldA11y,
   formatDateTime,
   formatTerm,
@@ -18,6 +20,7 @@ import {
 import { apiRequest } from "@/lib/api-client";
 import { classifyCheckInFailure } from "@/lib/check-in";
 import type { AttendanceRecordView } from "@/lib/types";
+import { CodeInput } from "./code-input";
 
 type Phase = "idle" | "locating" | "submitting";
 
@@ -28,6 +31,12 @@ interface Notice {
 }
 
 const CODE_PATTERN = /^\d{6}$/;
+
+const STEPS = [
+  { title: "กรอกรหัส", detail: "ดูรหัส 6 หลักจากจอในห้องเรียน", icon: <KeyRoundIcon size={16} /> },
+  { title: "อนุญาตตำแหน่ง", detail: "เพื่อยืนยันว่าคุณอยู่ในห้อง", icon: <MapPinIcon size={16} /> },
+  { title: "ได้ผลทันที", detail: "มาตรงเวลาหรือมาสาย", icon: <CheckCircleIcon size={16} /> },
+];
 const CODE_HINT = "รหัส 6 หลักที่อาจารย์แสดงในห้องเรียน รหัสเปลี่ยนทุก 2 นาที";
 
 const GEO_ERROR: Record<number, Notice> = {
@@ -129,39 +138,43 @@ export function CheckInForm() {
     const late = result.status === "LATE";
     const section = result.classSection;
     return (
-      <Card className="flex flex-col gap-4" aria-live="polite">
-        <div className="flex items-start gap-3">
-          <span className={late ? "text-warning" : "text-success"}>
-            {late ? <ClockIcon size={32} /> : <CheckCircleIcon size={32} />}
+      <Card flush className="flex flex-col" aria-live="polite">
+        <div className={"flex flex-col items-center gap-3 px-6 py-8 text-center " + (late ? "bg-warning-soft" : "bg-success-soft")}>
+          <span
+            aria-hidden
+            className={"flex size-16 items-center justify-center rounded-full bg-surface " + (late ? "text-warning" : "text-success")}
+          >
+            {late ? <ClockIcon size={48} /> : <CheckCircleIcon size={48} />}
           </span>
-          <div className="flex flex-col gap-1">
-            <h2 className="font-heading text-xl font-semibold text-ink">เช็คชื่อสำเร็จ</h2>
-            <div>
-              <Badge tone={late ? "warning" : "success"}>{late ? "มาสาย" : "มาตรงเวลา"}</Badge>
-            </div>
-          </div>
+          <h2 className="font-heading text-2xl font-semibold text-ink">เช็คชื่อสำเร็จ</h2>
+          <Badge tone={late ? "warning" : "success"}>{late ? "มาสาย" : "มาตรงเวลา"}</Badge>
         </div>
-        <dl className="grid gap-3 text-body sm:grid-cols-2">
+        <dl className="flex flex-col divide-y divide-line px-6 text-body">
           {section ? (
-            <div className="flex flex-col gap-1 sm:col-span-2">
-              <dt className="text-sm text-muted">รายวิชา</dt>
-              <dd className="text-ink">
-                {section.courseCode} {section.courseName} · กลุ่ม {section.sectionCode} ·{" "}
-                {formatTerm(section.term, section.academicYear)}
+            <div className="flex flex-col gap-1 py-4">
+              <dt className="text-sm text-body">รายวิชา</dt>
+              <dd className="font-semibold text-ink">
+                {section.courseCode} {section.courseName}
+              </dd>
+              <dd className="text-sm">
+                กลุ่ม {section.sectionCode} · {formatTerm(section.term, section.academicYear)}
               </dd>
             </div>
           ) : null}
-          <div className="flex flex-col gap-1">
-            <dt className="text-sm text-muted">เวลาเช็คชื่อ</dt>
-            <dd className="text-ink tabular-nums">{formatDateTime(result.checkedInAt)}</dd>
+          <div className="flex items-center justify-between gap-4 py-4">
+            <dt className="text-sm text-body">เวลาเช็คชื่อ</dt>
+            <dd className="text-right font-semibold text-ink tabular-nums">{formatDateTime(result.checkedInAt)}</dd>
           </div>
-          <div className="flex flex-col gap-1">
-            <dt className="text-sm text-muted">ระยะห่างจากจุดเช็คชื่อ</dt>
-            <dd className="text-ink tabular-nums">{result.distanceMeters} เมตร</dd>
+          <div className="flex items-center justify-between gap-4 py-4">
+            <dt className="text-sm text-body">ระยะห่างจากจุดเช็คชื่อ</dt>
+            <dd className="font-semibold text-ink tabular-nums">{result.distanceMeters} เมตร</dd>
           </div>
         </dl>
-        <div>
-          <Button variant="secondary" onClick={() => setResult(null)}>
+        <div className="flex flex-col gap-2 border-t border-line p-6 sm:flex-row">
+          <ButtonLink href="/attendance-records" variant="secondary">
+            ดูประวัติการเช็คชื่อ
+          </ButtonLink>
+          <Button variant="ghost" onClick={() => setResult(null)}>
             เช็คชื่อรายวิชาอื่น
           </Button>
         </div>
@@ -189,18 +202,14 @@ export function CheckInForm() {
           hint={CODE_HINT}
           error={codeError}
         >
-          <TextInput
+          <CodeInput
             ref={inputRef}
             {...fieldA11y("code", { error: codeError, hint: CODE_HINT, required: true })}
             name="code"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            pattern="[0-9]*"
-            maxLength={6}
             value={code}
-            onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
+            invalid={Boolean(codeError)}
+            onChange={setCode}
             onBlur={() => code && setCodeError(validate(code))}
-            className="min-h-14 text-center font-mono text-2xl tracking-[0.3em] tabular-nums"
           />
         </FormField>
 
@@ -208,13 +217,26 @@ export function CheckInForm() {
           {phase === "locating" ? "กำลังหาตำแหน่งของอุปกรณ์" : phase === "submitting" ? "กำลังบันทึกการเช็คชื่อ" : ""}
         </div>
 
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <Button type="submit" size="lg" loading={busy} className="w-full sm:w-auto">
-            {phase === "locating" ? "กำลังหาตำแหน่ง..." : phase === "submitting" ? "กำลังเช็คชื่อ..." : "เช็คชื่อ"}
-          </Button>
-          <p className="text-sm text-muted">ระบบจะขอใช้ตำแหน่งของอุปกรณ์เพื่อยืนยันว่าคุณอยู่ในห้องเรียน</p>
-        </div>
+        <Button type="submit" size="lg" loading={busy} className="w-full">
+          {phase === "locating" ? "กำลังหาตำแหน่ง..." : phase === "submitting" ? "กำลังเช็คชื่อ..." : "เช็คชื่อ"}
+        </Button>
       </form>
+
+      <ol className="mt-6 grid gap-4 border-t border-line pt-6 text-sm text-body sm:grid-cols-3">
+        {STEPS.map((step, index) => (
+          <li key={step.title} className="flex gap-3">
+            <span aria-hidden className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary-soft text-primary">
+              {step.icon}
+            </span>
+            <span className="flex flex-col">
+              <span className="font-semibold text-ink">
+                {index + 1}. {step.title}
+              </span>
+              {step.detail}
+            </span>
+          </li>
+        ))}
+      </ol>
     </Card>
   );
 }

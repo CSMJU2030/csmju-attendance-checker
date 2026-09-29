@@ -147,12 +147,12 @@ export function PageHeader({
     <header className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
       <div className="flex flex-col gap-2">
         {back ? (
-          <Link href={back.href} className="inline-flex w-fit items-center gap-1 text-sm font-medium text-primary hover:underline">
+          <Link href={back.href} className="inline-flex w-fit items-center gap-1 text-sm font-semibold text-primary hover:underline">
             <ChevronLeftIcon size={16} />
             {back.label}
           </Link>
         ) : null}
-        <h1 className="font-heading text-2xl font-bold text-ink md:text-3xl">{title}</h1>
+        <h1 className="font-heading text-2xl font-semibold text-ink md:text-3xl">{title}</h1>
         {description ? <p className="text-body">{description}</p> : null}
       </div>
       {actions ? <div className="flex flex-wrap gap-2">{actions}</div> : null}
@@ -182,6 +182,51 @@ export function CardTitle({ children, as: Tag = "h2" }: { children: ReactNode; a
   return <Tag className="font-heading text-lg font-semibold text-ink md:text-xl">{children}</Tag>;
 }
 
+/* -------------------------------------------------------------- StatCard */
+
+const STAT_ICON_TONE: Record<Tone, string> = {
+  success: "bg-success-soft text-success",
+  warning: "bg-warning-soft text-warning",
+  danger: "bg-danger-soft text-danger",
+  info: "bg-primary-soft text-primary",
+  neutral: "bg-surface-muted text-body",
+};
+
+/** One headline number with its label (section 7.1 Data display). */
+export function StatCard({
+  label,
+  value,
+  unit,
+  hint,
+  icon,
+  tone = "info",
+}: {
+  label: string;
+  value: ReactNode;
+  unit?: string;
+  hint?: ReactNode;
+  icon?: ReactNode;
+  tone?: Tone;
+}) {
+  return (
+    <div className="flex items-start gap-4 rounded-lg border border-line bg-surface p-4 md:p-6">
+      {icon ? (
+        <span aria-hidden className={cx("flex size-11 shrink-0 items-center justify-center rounded-md", STAT_ICON_TONE[tone])}>
+          {icon}
+        </span>
+      ) : null}
+      <div className="flex min-w-0 flex-col gap-1">
+        <p className="text-sm text-body">{label}</p>
+        <p className="font-heading text-2xl font-semibold text-ink tabular-nums md:text-3xl">
+          {value}
+          {unit ? <span className="ml-1 text-base font-normal text-body">{unit}</span> : null}
+        </p>
+        {hint ? <p className="text-sm text-body">{hint}</p> : null}
+      </div>
+    </div>
+  );
+}
+
 /* ---------------------------------------------------------------- Feedback */
 
 export type Tone = "success" | "warning" | "danger" | "info" | "neutral";
@@ -197,7 +242,7 @@ const BADGE_TONE: Record<Tone, string> = {
 /** Status is always spelled out in text, never color alone (section 12.1.9). */
 export function Badge({ tone = "neutral", children }: { tone?: Tone; children: ReactNode }) {
   return (
-    <span className={cx("inline-flex items-center gap-1 rounded-sm border px-2 text-sm font-medium", BADGE_TONE[tone])}>
+    <span className={cx("inline-flex items-center gap-1 rounded-sm border px-2 text-sm font-semibold", BADGE_TONE[tone])}>
       {children}
     </span>
   );
@@ -308,7 +353,7 @@ export function FormField({
 }) {
   return (
     <div className="flex flex-col gap-2">
-      <label htmlFor={id} className="font-medium text-ink">
+      <label htmlFor={id} className="font-semibold text-ink">
         {label}
         {required ? (
           <span className="text-danger" aria-hidden>
@@ -392,7 +437,7 @@ export function Pagination({
   if (totalPages <= 1) {
     return null;
   }
-  const link = "inline-flex min-h-11 items-center gap-1 rounded-sm px-3 font-medium text-primary hover:bg-primary-soft";
+  const link = "inline-flex min-h-11 items-center gap-1 rounded-sm px-3 font-semibold text-primary hover:bg-primary-soft";
   return (
     <nav aria-label="เลขหน้า" className="flex flex-wrap items-center justify-between gap-2">
       <p className="text-sm text-muted tabular-nums">

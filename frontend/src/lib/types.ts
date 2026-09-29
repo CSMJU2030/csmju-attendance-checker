@@ -54,6 +54,10 @@ export interface AttendanceSession {
   status: AttendanceSessionStatus;
   openedAt: string;
   closedAt: string | null;
+  /** Students who checked in to this session. */
+  recordCount: number;
+  /** Of those, how many were LATE. */
+  lateCount: number;
 }
 
 export interface CurrentCode {
@@ -85,6 +89,13 @@ export interface SectionSummary {
 }
 
 export type AttendanceRecordView = AttendanceRecord & { classSection: SectionSummary | null };
+
+/** GET /api/v1/attendance-records/me/summary */
+export interface AttendanceSummary {
+  total: number;
+  present: number;
+  late: number;
+}
 
 export interface PageMeta {
   total: number;

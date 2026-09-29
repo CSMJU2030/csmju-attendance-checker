@@ -49,7 +49,7 @@ describe('AttendanceRecordsService.checkIn - business rules', () => {
   let prisma: {
     attendanceSession: { findMany: jest.Mock };
     classSection: { findUnique: jest.Mock };
-    attendanceRecord: { findUnique: jest.Mock; create: jest.Mock };
+    attendanceRecord: { groupBy: jest.Mock; findUnique: jest.Mock; create: jest.Mock };
   };
   let service: AttendanceRecordsService;
 
@@ -58,6 +58,7 @@ describe('AttendanceRecordsService.checkIn - business rules', () => {
       attendanceSession: { findMany: jest.fn().mockResolvedValue([SESSION]) },
       classSection: { findUnique: jest.fn().mockResolvedValue(SECTION) },
       attendanceRecord: {
+        groupBy: jest.fn().mockResolvedValue([]),
         findUnique: jest.fn().mockResolvedValue(null),
         create: jest.fn().mockImplementation(({ data }) => Promise.resolve({ id: 'rec-1', ...data })),
       },
@@ -148,5 +149,21 @@ describe('AttendanceRecordsService.checkIn - business rules', () => {
     await expect(
       service.checkIn({ code: codeAt(now), ...ROOM }, STUDENT, now),
     ).rejects.toMatchObject({ status: 400 });
+  });
+
+  it('summarises the own check-ins of the student by status', async () => {
+    prisma.attendanceRecord.groupBy.mockResolvedValue([
+      { status: 'PRESENT', _count: { _all: 7 } },
+      { status: 'LATE', _count: { _all: 2 } },
+    ]);
+
+    await expect(service.summaryMine(STUDENT)).resolves.toEqual({ total: 9, present: 7, late: 2 });
+    expect(prisma.attendanceRecord.groupBy).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { coreUserId: STUDENT.id } }),
+    );
+  });
+
+  it('summarises a student with no check-ins as zeros', async () => {
+    await expect(service.summaryMine(STUDENT)).resolves.toEqual({ total: 0, present: 0, late: 0 });
   });
 });

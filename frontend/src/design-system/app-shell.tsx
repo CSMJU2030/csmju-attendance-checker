@@ -45,7 +45,7 @@ export function CsmjuAppShell({
       <header className="sticky top-0 z-header flex h-header items-center gap-2 border-b border-line bg-surface px-4 md:px-6">
         {user ? <MobileNav nav={nav} /> : null}
         <Link href="/" className="flex min-w-0 items-center gap-2">
-          <span className="rounded-sm bg-primary px-2 font-heading text-sm font-bold text-inverse" lang="en">
+          <span className="rounded-sm bg-primary px-2 font-heading text-sm font-semibold text-inverse" lang="en">
             CSMJU
           </span>
           <span className="truncate font-heading font-semibold text-ink">{displayName}</span>
@@ -54,7 +54,7 @@ export function CsmjuAppShell({
         <div className="ml-auto flex items-center gap-2">
           <a
             href={portalUrl}
-            className="hidden min-h-11 items-center gap-1 rounded-sm px-3 text-sm font-medium text-primary hover:bg-primary-soft sm:inline-flex"
+            className="hidden min-h-11 items-center gap-1 rounded-sm px-3 text-sm font-semibold text-primary hover:bg-primary-soft sm:inline-flex"
           >
             <ArrowLeftIcon size={16} />
             กลับหน้าหลัก
@@ -80,13 +80,13 @@ export function CsmjuAppShell({
                     <RoleBadge coreRole={user.coreRole} />
                   </div>
                 </div>
-                <a href={portalUrl} className="text-sm font-medium text-primary hover:underline sm:hidden">
+                <a href={portalUrl} className="text-sm font-semibold text-primary hover:underline sm:hidden">
                   กลับหน้าหลัก
                 </a>
                 <form action={logoutAction} method="post">
                   <button
                     type="submit"
-                    className="flex min-h-11 w-full items-center gap-2 rounded-sm px-3 font-medium text-danger hover:bg-danger-soft"
+                    className="flex min-h-11 w-full items-center gap-2 rounded-sm px-3 font-semibold text-danger hover:bg-danger-soft"
                   >
                     <LogOutIcon size={16} />
                     ออกจากระบบ

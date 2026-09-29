@@ -3,6 +3,7 @@ import {
   AttendanceRecord,
   AttendanceSession,
   AttendanceSessionStatus,
+  AttendanceStatus,
   Prisma,
 } from '../../generated/prisma/client';
 import { CoreHubIdentity } from '../auth/core-hub-identity';
@@ -12,7 +13,12 @@ import { PaginationQueryDto } from '../common/dto/pagination.dto';
 import { AppException } from '../common/errors';
 import { PrismaService } from '../prisma/prisma.service';
 import { CurrentCode, currentCode, generateCodeSecret } from './attendance-code';
-import { AttendanceSessionView, toSessionView } from './attendance-session.view';
+import {
+  AttendanceSessionView,
+  NO_COUNTS,
+  SessionCounts,
+  toSessionView,
+} from './attendance-session.view';
 import { OpenAttendanceSessionDto } from './dto/open-attendance-session.dto';
 import { QueryAttendanceSessionsDto } from './dto/query-attendance-sessions.dto';
 
@@ -88,11 +94,17 @@ export class AttendanceSessionsService {
       this.prisma.attendanceSession.count({ where }),
     ]);
 
-    return { items: items.map(toSessionView), total };
+    const counts = await this.countsFor(items.map((session) => session.id));
+    return {
+      items: items.map((session) => toSessionView(session, counts.get(session.id))),
+      total,
+    };
   }
 
   async findOne(id: string, user: CoreHubIdentity): Promise<AttendanceSessionView> {
-    return toSessionView(await this.findManaged(id, user));
+    const session = await this.findManaged(id, user);
+    const counts = await this.countsFor([session.id]);
+    return toSessionView(session, counts.get(session.id));
   }
 
   /** The code the staff member shows in class. Only an OPEN session has one. */
@@ -114,7 +126,8 @@ export class AttendanceSessionsService {
       where: { id },
       data: { status: AttendanceSessionStatus.CLOSED, closedAt: now },
     });
-    return toSessionView(closed);
+    const counts = await this.countsFor([closed.id]);
+    return toSessionView(closed, counts.get(closed.id));
   }
 
   async findRecords(
@@ -136,6 +149,30 @@ export class AttendanceSessionsService {
     ]);
 
     return { items, total };
+  }
+
+  /** Check-ins and late check-ins per session, in one grouped query. */
+  private async countsFor(sessionIds: string[]): Promise<Map<string, SessionCounts>> {
+    const counts = new Map<string, SessionCounts>();
+    if (sessionIds.length === 0) {
+      return counts;
+    }
+
+    const groups = await this.prisma.attendanceRecord.groupBy({
+      by: ['attendanceSessionId', 'status'],
+      where: { attendanceSessionId: { in: sessionIds } },
+      _count: { _all: true },
+    });
+
+    for (const group of groups) {
+      const current = counts.get(group.attendanceSessionId) ?? { ...NO_COUNTS };
+      current.recordCount += group._count._all;
+      if (group.status === AttendanceStatus.LATE) {
+        current.lateCount += group._count._all;
+      }
+      counts.set(group.attendanceSessionId, current);
+    }
+    return counts;
   }
 
   private async findManaged(id: string, user: CoreHubIdentity): Promise<AttendanceSession> {
