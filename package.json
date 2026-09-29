@@ -2,10 +2,11 @@
   "name": "csmju-attendance-checker",
   "version": "1.0.0",
   "private": true,
-  "description": "CSMJU Student Service - reference implementation ของ CSMJU2030 Subsystem Standard v1.0",
+  "description": "Attendance Checker - ระบบเช็คชื่อเข้าเรียน (CSMJU2030 subsystem)",
   "scripts": {
-    "build": "pnpm --filter backend build",
+    "build": "pnpm --filter backend build && pnpm --filter frontend build",
     "start:dev": "pnpm --filter backend start:dev",
+    "start:dev:frontend": "pnpm --filter frontend dev",
     "test": "pnpm --filter backend test",
     "test:e2e": "pnpm --filter backend test:e2e",
     "test:integration": "pnpm --filter backend test:integration",

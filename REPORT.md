@@ -5,6 +5,9 @@
 
 เป้าหมาย conformance: **L3** · standards **v1.0.0** · รันวันที่ 2026-09-29
 
+มีทั้ง backend (NestJS, :3002) และ frontend (Next.js, :3102) · conformance รันผ่าน frontend
+(`base_url: http://localhost:3102`) ซึ่งส่ง `/api/*` ต่อไป backend และรับ SSO ที่ `/auth/callback`
+
 ## ผลรัน
 
 ```
@@ -49,6 +52,9 @@ RESULT: 63 passed · 0 failed · 0 skipped
 | `pnpm --filter backend typecheck` · `lint` · `build` | ผ่าน |
 | `pnpm --filter backend test` | 11 suites · 81 tests ผ่าน |
 | `pnpm --filter backend test:e2e` | 2 suites · 60 tests ผ่าน |
+| `pnpm --filter frontend typecheck` · `lint` · `build` | ผ่าน (11 routes) |
+| smoke test ผ่าน SSO จริง (Core Hub handoff → `/auth/callback` → cookie) | ทุกหน้าของ staff/student/ผู้ที่ยังไม่ล็อกอิน แสดงถูกต้อง · เช็คชื่อผ่าน proxy สำเร็จ · ออกจากระบบล้าง cookie |
+| dependency whitelist (ARC-02/03) | เครื่องนี้ไม่มี `jq` สคริปต์จึงข้าม — ตรวจด้วย node กับ `allowed-deps.json` แทน: ผ่านทุกตัว |
 | `prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --exit-code` | No difference detected |
 | `prisma migrate status` | 3 migrations · Database schema is up to date |
 | `git -C standards status --short` | ว่าง (ไม่ได้แก้ standards/) |
@@ -68,6 +74,28 @@ RESULT: 63 passed · 0 failed · 0 skipped
 - `backend/src/app.module.ts` · `config/configuration.ts` · `prisma/prisma.service.ts` · `.env.example` — ผูกโมดูลใหม่และค่าตั้งของระบบนี้
 - `backend/test/` — e2e ของโดเมนใหม่ และปรับ in-memory Prisma ให้มีตารางใหม่
 - ลบ `backend/src/{students,courses,enrollments}/` — เป็นโดเมนตัวอย่างของ demo ที่ไม่ใช้ในระบบนี้
+- `frontend/` — Next.js 16 App Router + Tailwind 3 (ดูหัวข้อ "frontend" ด้านล่าง)
+- `pnpm-workspace.yaml` · `package.json` — เพิ่ม workspace `frontend` และ script `start:dev:frontend`
+- `subsystem.yaml` — `base_url` เปลี่ยนเป็น frontend `http://localhost:3102`
+- ทะเบียน Core Hub (เครื่อง dev) — `callback_url` เปลี่ยนเป็น `http://localhost:3102/auth/callback`
+
+## frontend
+
+| ส่วน | ไฟล์ |
+|---|---|
+| App shell · เมนูตามสิทธิ์ · 401/403 | `src/app/layout.tsx` · `src/components/shared/access-gate.tsx` · `src/lib/permissions.ts` |
+| SSO callback / ออกจากระบบ | `src/app/auth/callback/route.ts` · `src/app/auth/logout/route.ts` |
+| นักศึกษา: เช็คชื่อ · ประวัติ | `src/app/check-in/` · `src/app/attendance-records/` |
+| อาจารย์: กลุ่มเรียน · ฟอร์ม · ลบ | `src/app/class-sections/**` · `src/components/features/class-section-form.tsx` · `section-actions.tsx` |
+| อาจารย์: แสดงรหัสขึ้นจอ + รายชื่อสด | `src/app/attendance-sessions/[id]/` · `src/components/features/live-session.tsx` |
+| เรียก API · map error ตาม 9.3 | `src/lib/api-server.ts` · `api-client.ts` · `errors.ts` |
+| design system (ตัวแทนชั่วคราว) | `frontend/design-system/tokens.css` · `src/design-system/` |
+
+- `/auth/callback` ของ frontend ส่ง query ต่อให้ `/auth/callback` ของ backend ตรวจ (JWKS · role mapping · cookie)
+  สำเร็จแล้วส่ง `Set-Cookie` ของ backend กลับพร้อม redirect ไป `/` ถ้า backend ปฏิเสธ (400/401/403) จะส่งคำตอบเดิมกลับโดยไม่ตั้ง cookie
+  — ชั้น auth ของ backend จึงไม่ถูกแก้
+- ไม่มีหน้า login: ปุ่ม "เข้าสู่ระบบผ่าน Core Hub" ลิงก์ไป SSO launcher ของ portal (`:3100/api/sso/csmju-attendance-checker`)
+- token ไม่เคยถูกอ่านด้วย JavaScript — อยู่ใน cookie HttpOnly เท่านั้น ไม่ใช้ `localStorage`
 
 ## ชั้น auth ที่คัดลอกมา
 
@@ -113,11 +141,27 @@ Permission ต่อ role:
 6. กลุ่มเรียนหนึ่งเปิดได้ครั้งละ 1 รอบ (เปิดซ้ำ → 409)
 7. ลบกลุ่มเรียนที่มีรอบเช็คชื่อแล้วไม่ได้ (409) เพราะ cascade จะลบประวัติเช็คชื่อของนักศึกษาไปด้วย
 8. ตัวนับการกรอกรหัสผิดอยู่ในหน่วยความจำของ process — ถ้ารันหลาย instance ต้องย้ายไปเก็บที่ส่วนกลาง
-9. ปีการศึกษาเก็บเป็น ค.ศ. ในข้อมูล ส่วน UI แสดงเป็น พ.ศ.
+9. ปีการศึกษาเก็บเป็น ค.ศ. ในข้อมูล ส่วน UI แสดงและรับค่าเป็น พ.ศ. (แปลงก่อนส่ง API)
+10. `@csmju2030/design-system` ไม่มีใน registry ที่เครื่องนี้เข้าถึงได้ (npm ตอบ 404) จึงทำตัวแทนชั่วคราว:
+    token ทุกค่าคัดลอกจาก `ui-design-system.md` ข้อ 3 ไว้ที่ `frontend/design-system/tokens.css`
+    และ component ชื่อ/props ตามข้อ 7 ไว้ที่ `src/design-system/` โดย `tsconfig` map ชื่อ package มาที่โฟลเดอร์นี้
+    — โค้ดหน้าจอ import จาก `@csmju2030/design-system` อยู่แล้ว เมื่อได้ package จริงให้ติดตั้งแล้วลบโฟลเดอร์ตัวแทนทิ้ง
+11. ใช้ Tailwind 3 (ไม่ใช่ 4) เพราะ Tailwind 4 ต้องใช้ `@tailwindcss/postcss` ซึ่งไม่อยู่ใน whitelist
+12. ฟอนต์: `@fontsource/*` และ `next/font/local` ต้องมีไฟล์ฟอนต์ที่ไม่อยู่ใน whitelist จึงใช้ font stack ของ token ไปก่อน
+    (IBM Plex Sans Thai ถ้ามีในเครื่อง ไม่งั้นใช้ฟอนต์ไทยของระบบ) — ไม่โหลดจาก CDN
+13. ไอคอน Lucide ฝังเป็น SVG ใน `src/design-system/icons.tsx` เพราะ `lucide-react` ไม่อยู่ใน whitelist
+14. type ของ API เขียนตาม DTO ของ backend ใน `src/lib/types.ts` เพราะ backend ยังไม่มี `openapi.json` ให้ generate
+15. ข้อความ error: แสดง `error.message` ของ backend เฉพาะ `BAD_REQUEST`/`CONFLICT` ที่เป็นภาษาไทย (ข้อความของโดเมนนี้)
+    ที่เหลือใช้ข้อความมาตรฐานตามตาราง 9.3 เพราะ `VALIDATION_ERROR` ของ class-validator เป็นภาษาอังกฤษ
+16. หน้ารอบเช็คชื่อดึงรายชื่อใหม่ทุก 5 วินาที และดึงรหัสใหม่ทันทีที่หมดช่วง 2 นาที (ไม่มี websocket)
 
 ## สิ่งที่ยังทำไม่ได้ / เคสที่ยังไม่ผ่าน
 
 - `check-no-secrets.sh` (SEC-01) ไม่ผ่านเฉพาะบนเครื่องพัฒนา เพราะสแกนเจอ `backend/.env` ที่ gitignore ไว้
   ย้ายไป `.env.local` ก็ไม่ช่วย เพราะสคริปต์สแกน `*.env*` ทั้งหมด บน CI (checkout ใหม่ ไม่มี `.env`) ผ่าน
   — แจ้ง PL ว่าเช็กนี้ให้ผลต่างกันระหว่างเครื่องพัฒนากับ CI
-- frontend (`frontend/src/`) ยังไม่ได้เริ่ม
+- ยังไม่ได้ทดสอบในเบราว์เซอร์จริง: การขอตำแหน่ง GPS, ConfirmDialog, นับถอยหลัง/เต็มจอ, ขนาดจอ 360px,
+  Lighthouse/axe (G3 ของ `ui-design-system.md` ข้อ 17.1) — smoke test ตรวจเฉพาะ HTML ที่ server render และ API ผ่าน proxy
+- GPS ใช้ได้เฉพาะ secure context (`https` หรือ `localhost`) — ถ้าเปิดผ่าน IP ในวง LAN แบบ http นักศึกษาจะเช็คชื่อไม่ได้
+- frontend ยังไม่มี unit test (เครื่องมือที่อนุญาตคือ vitest + @testing-library/react)
+- ยังไม่มี `Dockerfile` ของ frontend และ `docker-compose.yml`

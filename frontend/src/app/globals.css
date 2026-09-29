@@ -1,0 +1,24 @@
+/* Design tokens + Thai typography base. Swap for
+   "@csmju2030/design-system/styles.css" once the package is installable. */
+@import "../../design-system/tokens.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    background: var(--csmju-color-canvas);
+    color: var(--csmju-color-text-body);
+  }
+
+  /* Visible focus on every interactive element (section 12.1.5). */
+  :focus-visible {
+    outline: 2px solid var(--csmju-color-focus-ring);
+    outline-offset: 2px;
+  }
+
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+}

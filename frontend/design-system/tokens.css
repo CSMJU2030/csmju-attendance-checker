@@ -1,0 +1,125 @@
+/*
+ * LOCAL STAND-IN for `@csmju2030/design-system/styles.css`.
+ *
+ * The org package is published on a private registry that this machine cannot
+ * reach (npm answers 404). These are the token values from
+ * standards/docs/ui-design-system.md section 3, copied verbatim so every screen
+ * already reads `var(--csmju-*)`. When the package is installable, delete this
+ * folder and import "@csmju2030/design-system/styles.css" instead.
+ *
+ * Application code under src/ must never contain raw colors (rule UI-01).
+ */
+
+:root {
+  /* 3.1 Brand */
+  --csmju-color-primary: #004c99;
+  --csmju-color-primary-hover: #003d7a;
+  --csmju-color-primary-active: #002e5c;
+  --csmju-color-primary-soft: #e6f2ff;
+  --csmju-color-primary-soft-hover: #d3e7fc;
+  --csmju-color-focus-ring: #93c5fd;
+
+  /* 3.1 Surface */
+  --csmju-color-canvas: #f1f5fb;
+  --csmju-color-surface: #ffffff;
+  --csmju-color-surface-muted: #f8fafc;
+  --csmju-color-surface-inverse: #0f172a;
+
+  /* 3.1 Text */
+  --csmju-color-text: #0f172a;
+  --csmju-color-text-body: #334155;
+  --csmju-color-text-muted: #64748b;
+  --csmju-color-text-inverse: #f8fafc;
+
+  /* 3.1 Border */
+  --csmju-color-border: #e2e8f0;
+  --csmju-color-border-strong: #cbd5e1;
+
+  /* 3.1 Semantic: text / soft background / line */
+  --csmju-color-success-text: #15803d;
+  --csmju-color-success-soft: #dcfce7;
+  --csmju-color-success-line: #86efac;
+  --csmju-color-warning-text: #b45309;
+  --csmju-color-warning-soft: #fef3c7;
+  --csmju-color-warning-line: #fcd34d;
+  --csmju-color-danger-text: #b91c1c;
+  --csmju-color-danger-soft: #fee2e2;
+  --csmju-color-danger-line: #fca5a5;
+  --csmju-color-info-text: #004c99;
+  --csmju-color-info-soft: #e6f2ff;
+  --csmju-color-info-line: #93c5fd;
+
+  /* 3.2 Spacing (8pt) */
+  --csmju-space-1: 4px;
+  --csmju-space-2: 8px;
+  --csmju-space-3: 12px;
+  --csmju-space-4: 16px;
+  --csmju-space-5: 20px;
+  --csmju-space-6: 24px;
+  --csmju-space-8: 32px;
+  --csmju-space-10: 40px;
+  --csmju-space-12: 48px;
+  --csmju-space-16: 64px;
+  --csmju-space-20: 80px;
+
+  /* 3.3 Radius */
+  --csmju-radius-sm: 8px;
+  --csmju-radius-md: 12px;
+  --csmju-radius-lg: 16px;
+  --csmju-radius-xl: 24px;
+  --csmju-radius-full: 9999px;
+
+  /* 3.4 Elevation */
+  --csmju-shadow-none: none;
+  --csmju-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --csmju-shadow-md: 0 4px 20px rgba(0, 76, 153, 0.08);
+  --csmju-shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.12);
+
+  /* 3.5 Z-index */
+  --csmju-z-base: 0;
+  --csmju-z-sticky: 100;
+  --csmju-z-header: 200;
+  --csmju-z-drawer: 300;
+  --csmju-z-modal: 400;
+  --csmju-z-popover: 500;
+  --csmju-z-toast: 600;
+
+  /* 3.6 Motion */
+  --csmju-duration-fast: 150ms;
+  --csmju-duration-base: 200ms;
+  --csmju-duration-slow: 300ms;
+  --csmju-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --csmju-ease-out: cubic-bezier(0, 0, 0.2, 1);
+
+  /* 4.1 Fonts. The package self-hosts these families; without it the stack
+     falls back to the system Thai font. */
+  --csmju-font-heading: "Plus Jakarta Sans", "IBM Plex Sans Thai", system-ui, sans-serif;
+  --csmju-font-body: "Inter", "IBM Plex Sans Thai", system-ui, sans-serif;
+  --csmju-font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  /* 5.1 App shell */
+  --csmju-header-height: 64px;
+  --csmju-sidebar-width: 240px;
+  --csmju-container-max: 1280px;
+}
+
+/* 4.3 Thai typography base - the package ships this; do not override. */
+html[lang="th"] body {
+  font-family: var(--csmju-font-body);
+  font-size: 16px;
+  line-height: 1.65;
+  letter-spacing: 0;
+  word-break: normal;
+  overflow-wrap: break-word;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 3.6 Reduced motion - the one place `!important` is allowed. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
