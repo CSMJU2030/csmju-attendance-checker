@@ -96,20 +96,17 @@ describe('Central SSO callback (e2e)', () => {
   beforeEach(async () => {
     db.reset();
 
-    await db.student.create({
+    await db.classSection.create({
       data: {
-        coreUserId: STUDENT_CORE_ID,
-        studentCode: 'CS67002',
-        firstName: 'Suda',
-        lastName: 'Rakdee',
-        email: 'cs67002@student.csmju.local',
-        faculty: 'Science',
-        major: 'Computer Science',
-        year: 2,
+        courseCode: 'CS201',
+        courseName: 'Data Structures',
+        sectionCode: '1',
+        academicYear: 2026,
+        term: 1,
+        latitude: 18.8925,
+        longitude: 99.0142,
+        ownerCoreUserId: STAFF_CORE_ID,
       },
-    });
-    await db.course.create({
-      data: { courseCode: 'CS101', name: 'Introduction to Programming', credits: 3 },
     });
   });
 
@@ -195,11 +192,11 @@ describe('Central SSO callback (e2e)', () => {
         .expect(200);
 
       const response = await request(app.getHttpServer())
-        .get('/api/v1/courses')
+        .get('/api/v1/attendance-records/me')
         .set('Cookie', ssoCookie(callback))
         .expect(200);
 
-      expect(response.body.data).toHaveLength(1);
+      expect(response.body.data).toEqual([]);
     });
 
     it('still enforces subsystem authorization for a cookie session', async () => {
@@ -209,9 +206,17 @@ describe('Central SSO callback (e2e)', () => {
         .expect(200);
 
       await request(app.getHttpServer())
-        .post('/api/v1/courses')
+        .post('/api/v1/class-sections')
         .set('Cookie', ssoCookie(callback))
-        .send({ courseCode: 'CS999', name: 'Nope', credits: 3 })
+        .send({
+          courseCode: 'CS999',
+          courseName: 'Nope',
+          sectionCode: '1',
+          academicYear: 2026,
+          term: 1,
+          latitude: 18.8925,
+          longitude: 99.0142,
+        })
         .expect(403);
     });
 

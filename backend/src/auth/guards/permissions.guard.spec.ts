@@ -7,7 +7,7 @@ import { PermissionsGuard } from './permissions.guard';
 
 function contextFor(user?: CoreHubIdentity): ExecutionContext {
   return {
-    switchToHttp: () => ({ getRequest: () => ({ user, path: '/api/v1/courses' }) }),
+    switchToHttp: () => ({ getRequest: () => ({ user, path: '/api/v1/class-sections' }) }),
     getHandler: () => undefined,
     getClass: () => undefined,
   } as unknown as ExecutionContext;
@@ -37,20 +37,20 @@ describe('PermissionsGuard - authorization tests (spec §15, §36)', () => {
     expect(guard.canActivate(contextFor(identity(SubsystemRole.STUDENT)))).toBe(true);
   });
 
-  it('allows STAFF to create a course', () => {
-    requirePermissions(Permission.COURSE_CREATE);
+  it('allows STAFF to create a class section', () => {
+    requirePermissions(Permission.CLASS_SECTION_CREATE);
     expect(guard.canActivate(contextFor(identity(SubsystemRole.STAFF)))).toBe(true);
   });
 
-  it('denies a STUDENT creating a course with 403', () => {
-    requirePermissions(Permission.COURSE_CREATE);
+  it('denies a STUDENT creating a class section with 403', () => {
+    requirePermissions(Permission.CLASS_SECTION_CREATE);
     expect(() => guard.canActivate(contextFor(identity(SubsystemRole.STUDENT)))).toThrow(
       expect.objectContaining({ status: 403 }),
     );
   });
 
-  it('denies STAFF deleting a course (ADMIN-only permission)', () => {
-    requirePermissions(Permission.COURSE_DELETE);
+  it('denies STAFF managing sessions of any section (ADMIN-only permission)', () => {
+    requirePermissions(Permission.ATTENDANCE_SESSION_MANAGE_ANY);
     expect(() => guard.canActivate(contextFor(identity(SubsystemRole.STAFF)))).toThrow(
       expect.objectContaining({ status: 403 }),
     );
@@ -58,12 +58,15 @@ describe('PermissionsGuard - authorization tests (spec §15, §36)', () => {
   });
 
   it('passes when the role holds any one of the required permissions', () => {
-    requirePermissions(Permission.STUDENT_READ_ANY, Permission.STUDENT_READ_OWN);
-    expect(guard.canActivate(contextFor(identity(SubsystemRole.STUDENT)))).toBe(true);
+    requirePermissions(
+      Permission.ATTENDANCE_SESSION_MANAGE_ANY,
+      Permission.ATTENDANCE_SESSION_MANAGE_OWN,
+    );
+    expect(guard.canActivate(contextFor(identity(SubsystemRole.STAFF)))).toBe(true);
   });
 
   it('returns 401 when no verified identity is present', () => {
-    requirePermissions(Permission.COURSE_READ);
+    requirePermissions(Permission.CLASS_SECTION_READ);
     expect(() => guard.canActivate(contextFor(undefined))).toThrow(
       expect.objectContaining({ status: 401 }),
     );

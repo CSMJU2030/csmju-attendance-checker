@@ -1,12 +1,12 @@
-// CSMJU Student Service (Demo Subsystem) - OWN database schema.
+// Attendance Checker - OWN database schema.
 //
 // Naming follows the CSMJU2030 Subsystem Standard: PostgreSQL tables are plural
 // snake_case and every column is snake_case through @map, while Prisma/TypeScript
-// field names stay camelCase. Application code is therefore unchanged.
+// field names stay camelCase.
 //
 // This database belongs to the subsystem only. It never contains Core Hub
-// users, passwords, sessions or key material. `Student.coreUserId` is an
-// EXTERNAL identity reference to a Core Hub user id - nothing more.
+// users, passwords, sessions or key material. Every `*CoreUserId` / `coreUserId`
+// column is an EXTERNAL identity reference to a Core Hub user id (`sub`).
 
 generator client {
   provider     = "prisma-client"
@@ -21,72 +21,91 @@ datasource db {
   provider = "postgresql"
 }
 
-enum EnrollmentStatus {
-  ENROLLED
-  DROPPED
-  COMPLETED
+enum AttendanceSessionStatus {
+  OPEN
+  CLOSED
 }
 
-model Student {
+enum AttendanceStatus {
+  PRESENT
+  LATE
+}
+
+/// A class group that takes attendance in one room.
+model ClassSection {
   id String @id @default(uuid())
 
-  /// External identity reference to a Core Hub user (`sub` claim).
-  /// Optional: a business record may exist before the person ever logs in.
-  coreUserId String? @unique @map("core_user_id")
+  courseCode  String @map("course_code")
+  courseName  String @map("course_name")
+  sectionCode String @map("section_code")
+  /// Academic year in the Gregorian calendar (data is ISO; the UI shows B.E.).
+  academicYear Int @map("academic_year")
+  term         Int
 
-  studentCode String @unique @map("student_code")
-  firstName   String @map("first_name")
-  lastName    String @map("last_name")
-  email       String @unique
-  faculty     String
-  major       String
-  year        Int
+  /// Check-in point of the room. Students must be within `radiusMeters`.
+  latitude     Float
+  longitude    Float
+  radiusMeters Int   @default(50) @map("radius_meters")
 
-  enrollments Enrollment[]
+  /// A check-in later than this many minutes after the session opened is LATE.
+  lateAfterMinutes Int @default(15) @map("late_after_minutes")
+
+  /// Core Hub user (`sub`) of the staff member who owns this section.
+  ownerCoreUserId String @map("owner_core_user_id")
+
+  sessions AttendanceSession[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  @@index([faculty, major])
-  @@map("students")
+  @@unique([courseCode, sectionCode, academicYear, term])
+  @@index([ownerCoreUserId])
+  @@map("class_sections")
 }
 
-model Course {
+/// One attendance round opened by staff. The rotating 6-digit code is derived
+/// from `codeSecret` and the current 2-minute window, so no code is stored.
+model AttendanceSession {
   id String @id @default(uuid())
 
-  courseCode  String  @unique @map("course_code")
-  name        String
-  credits     Int
-  description String?
+  classSectionId     String                  @map("class_section_id")
+  openedByCoreUserId String                  @map("opened_by_core_user_id")
+  status             AttendanceSessionStatus @default(OPEN)
+  /// Never leaves the backend.
+  codeSecret         String                  @map("code_secret")
+  openedAt           DateTime                @default(now()) @map("opened_at")
+  closedAt           DateTime?               @map("closed_at")
 
-  enrollments Enrollment[]
+  classSection ClassSection       @relation(fields: [classSectionId], references: [id], onDelete: Cascade)
+  records      AttendanceRecord[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  @@map("courses")
+  @@index([classSectionId, status])
+  @@index([status])
+  @@map("attendance_sessions")
 }
 
-model Enrollment {
+/// One student's check-in for one session. Only the distance is kept, never
+/// the student's raw coordinates.
+model AttendanceRecord {
   id String @id @default(uuid())
 
-  studentId String @map("student_id")
-  courseId  String @map("course_id")
+  attendanceSessionId String           @map("attendance_session_id")
+  coreUserId          String           @map("core_user_id")
+  email               String
+  status              AttendanceStatus
+  checkedInAt         DateTime         @default(now()) @map("checked_in_at")
+  distanceMeters      Int              @map("distance_meters")
 
-  status     EnrollmentStatus @default(ENROLLED)
-  enrolledAt DateTime         @default(now()) @map("enrolled_at")
-
-  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  course  Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  attendanceSession AttendanceSession @relation(fields: [attendanceSessionId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  /// One enrollment record per (student, course) pair. Re-enrolling after a
-  /// drop reactivates the existing record, so a duplicate ACTIVE enrollment is
-  /// impossible at the database level.
-  @@unique([studentId, courseId])
-  @@index([studentId, status])
-  @@index([courseId, status])
-  @@map("enrollments")
+  /// A student checks in at most once per session.
+  @@unique([attendanceSessionId, coreUserId])
+  @@index([coreUserId])
+  @@map("attendance_records")
 }

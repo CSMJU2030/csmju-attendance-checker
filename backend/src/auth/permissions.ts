@@ -10,55 +10,35 @@ import { SubsystemRole } from './core-hub-identity';
  * service performs the ownership check against business data.
  */
 export enum Permission {
-  STUDENT_READ_ANY = 'student:read:any',
-  STUDENT_READ_OWN = 'student:read:own',
-  STUDENT_CREATE = 'student:create',
-  STUDENT_UPDATE_ANY = 'student:update:any',
-  STUDENT_UPDATE_OWN = 'student:update:own',
+  CLASS_SECTION_READ = 'class-section:read',
+  CLASS_SECTION_CREATE = 'class-section:create',
+  CLASS_SECTION_UPDATE_ANY = 'class-section:update:any',
+  CLASS_SECTION_UPDATE_OWN = 'class-section:update:own',
+  CLASS_SECTION_DELETE_ANY = 'class-section:delete:any',
+  CLASS_SECTION_DELETE_OWN = 'class-section:delete:own',
 
-  COURSE_READ = 'course:read',
-  COURSE_CREATE = 'course:create',
-  COURSE_UPDATE = 'course:update',
-  COURSE_DELETE = 'course:delete',
+  /** Open, view, rotate-code and close attendance sessions. */
+  ATTENDANCE_SESSION_MANAGE_ANY = 'attendance-session:manage:any',
+  ATTENDANCE_SESSION_MANAGE_OWN = 'attendance-session:manage:own',
 
-  ENROLLMENT_READ_ANY = 'enrollment:read:any',
-  ENROLLMENT_READ_OWN = 'enrollment:read:own',
-  ENROLLMENT_CREATE_ANY = 'enrollment:create:any',
-  ENROLLMENT_CREATE_OWN = 'enrollment:create:own',
-  ENROLLMENT_UPDATE_ANY = 'enrollment:update:any',
-  ENROLLMENT_UPDATE_OWN = 'enrollment:update:own',
+  ATTENDANCE_CHECK_IN = 'attendance:check-in',
+  ATTENDANCE_RECORD_READ_OWN = 'attendance-record:read:own',
 }
 
 const STUDENT_PERMISSIONS: Permission[] = [
-  Permission.STUDENT_READ_OWN,
-  Permission.STUDENT_UPDATE_OWN,
-  Permission.COURSE_READ,
-  Permission.ENROLLMENT_READ_OWN,
-  Permission.ENROLLMENT_CREATE_OWN,
-  Permission.ENROLLMENT_UPDATE_OWN,
+  Permission.ATTENDANCE_CHECK_IN,
+  Permission.ATTENDANCE_RECORD_READ_OWN,
 ];
 
-const ALUMNI_PERMISSIONS: Permission[] = [
-  Permission.STUDENT_READ_OWN,
-  Permission.COURSE_READ,
-  Permission.ENROLLMENT_READ_OWN,
-];
+/** Alumni are not registered for this subsystem in the Core Hub; no access. */
+const ALUMNI_PERMISSIONS: Permission[] = [];
 
 const STAFF_PERMISSIONS: Permission[] = [
-  Permission.STUDENT_READ_ANY,
-  Permission.STUDENT_READ_OWN,
-  Permission.STUDENT_CREATE,
-  Permission.STUDENT_UPDATE_ANY,
-  Permission.STUDENT_UPDATE_OWN,
-  Permission.COURSE_READ,
-  Permission.COURSE_CREATE,
-  Permission.COURSE_UPDATE,
-  Permission.ENROLLMENT_READ_ANY,
-  Permission.ENROLLMENT_READ_OWN,
-  Permission.ENROLLMENT_CREATE_ANY,
-  Permission.ENROLLMENT_CREATE_OWN,
-  Permission.ENROLLMENT_UPDATE_ANY,
-  Permission.ENROLLMENT_UPDATE_OWN,
+  Permission.CLASS_SECTION_READ,
+  Permission.CLASS_SECTION_CREATE,
+  Permission.CLASS_SECTION_UPDATE_OWN,
+  Permission.CLASS_SECTION_DELETE_OWN,
+  Permission.ATTENDANCE_SESSION_MANAGE_OWN,
 ];
 
 const ADMIN_PERMISSIONS: Permission[] = Object.values(Permission);

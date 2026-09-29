@@ -23,7 +23,7 @@
 import { decodeJwt, decodeProtectedHeader } from 'jose';
 
 const CORE_HUB_URL = process.env.CORE_HUB_URL ?? '';
-const DEMO_URL = process.env.DEMO_SUBSYSTEM_URL ?? 'http://localhost:3001';
+const DEMO_URL = process.env.DEMO_SUBSYSTEM_URL ?? 'http://localhost:3002';
 const EMAIL = process.env.CORE_HUB_TEST_EMAIL ?? '';
 const PASSWORD = process.env.CORE_HUB_TEST_PASSWORD ?? '';
 const PRESET_TOKEN = process.env.CORE_HUB_ACCESS_TOKEN ?? '';
@@ -127,8 +127,9 @@ describeIntegration('Core Hub -> Demo Subsystem integration (spec §37, §38)', 
     expect(body.data.subsystemRole).toBe(String(payload.role).toUpperCase());
   });
 
+  // Step 7 reads class sections, so CORE_HUB_TEST_EMAIL must be a staff or admin account.
   it('Step 7: a protected business API returns 200 with the same token', async () => {
-    const response = await fetch(`${DEMO_URL}/api/v1/courses`, {
+    const response = await fetch(`${DEMO_URL}/api/v1/class-sections`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
 
@@ -140,13 +141,13 @@ describeIntegration('Core Hub -> Demo Subsystem integration (spec §37, §38)', 
   });
 
   it('rejects the same request without a token (401)', async () => {
-    const response = await fetch(`${DEMO_URL}/api/v1/courses`);
+    const response = await fetch(`${DEMO_URL}/api/v1/class-sections`);
     expect(response.status).toBe(401);
   });
 
   // ------------------------------------------------------------ central SSO --
   describe('Central SSO + callback_url', () => {
-    const SUBSYSTEM = process.env.SSO_SUBSYSTEM ?? 'student-service';
+    const SUBSYSTEM = process.env.SSO_SUBSYSTEM ?? 'csmju-attendance-checker';
 
     const authorize = (query: string, token = accessToken) =>
       fetch(`${CORE_HUB_URL}/api/v1/auth/sso/authorize?${query}`, {

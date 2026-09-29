@@ -14,4 +14,4 @@ process.env.CORE_HUB_ISSUER = 'core-hub';
 process.env.CORE_HUB_AUDIENCE = 'csmju2030';
 process.env.JWKS_CACHE_TTL_MS = '60000';
 process.env.JWKS_MIN_REFRESH_INTERVAL_MS = '1';
-process.env.SUBSYSTEM_ID = 'student-service';
+process.env.SUBSYSTEM_ID = 'csmju-attendance-checker';

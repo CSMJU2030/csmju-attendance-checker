@@ -14,20 +14,24 @@ public_endpoints:
   - GET /auth/callback
 
 probes:
-  collection: /api/v1/courses
-  not_found: /api/v1/courses/99999999-9999-4999-8999-999999999999
-  invalid_id: /api/v1/courses/not-a-uuid
+  collection: /api/v1/class-sections
+  not_found: /api/v1/class-sections/99999999-9999-4999-8999-999999999999
+  invalid_id: /api/v1/class-sections/not-a-uuid
   create:
-    path: /api/v1/courses
+    path: /api/v1/class-sections
     allowed_role: staff
     denied_role: student
     invalid_body:
-      course_code: nope
-      credits: 999
+      courseCode: nope
+      latitude: 999
     valid_body:
       courseCode: CS777
-      name: Conformance Probe
-      credits: 3
+      courseName: Conformance Probe
+      sectionCode: "1"
+      academicYear: 2026
+      term: 1
+      latitude: 18.8925
+      longitude: 99.0142
 
 owners:
   pl: "@csmju2030/pl-attendance-checker"

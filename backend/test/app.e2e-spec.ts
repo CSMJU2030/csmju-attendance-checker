@@ -1,5 +1,5 @@
 /**
- * End-to-end suite for the Demo Subsystem (spec §36, §38, §39).
+ * End-to-end suite for the Attendance Checker (spec §36, §38, §39).
  *
  * It boots the real NestJS application - global guards, validation pipe,
  * response interceptor and exception filter included - against:
@@ -26,11 +26,14 @@ import {
 } from './helpers/token-factory';
 
 const STUDENT_CORE_ID = 'user-001';
-const OTHER_STUDENT_CORE_ID = 'user-002';
+const OTHER_STAFF_CORE_ID = 'user-009';
 const STAFF_CORE_ID = 'user-003';
 const ADMIN_CORE_ID = 'user-004';
 
-describe('Demo Subsystem (e2e)', () => {
+/** Check-in point of the seeded class section. */
+const ROOM = { latitude: 18.8925, longitude: 99.0142 };
+
+describe('Attendance Checker (e2e)', () => {
   let app: INestApplication;
   let coreHub: FakeCoreHub;
   let db: InMemoryPrisma;
@@ -40,10 +43,9 @@ describe('Demo Subsystem (e2e)', () => {
   let studentToken: string;
   let staffToken: string;
   let adminToken: string;
+  let otherStaffToken: string;
 
-  let ownStudentId: string;
-  let otherStudentId: string;
-  let courseId: string;
+  let sectionId: string;
 
   const bearer = (token: string) => ({ Authorization: `Bearer ${token}` });
 
@@ -88,42 +90,29 @@ describe('Demo Subsystem (e2e)', () => {
       email: 'admin@core.local',
       role: 'admin',
     });
+    otherStaffToken = await signCoreHubToken(key, {
+      sub: OTHER_STAFF_CORE_ID,
+      email: 'staff2@core.local',
+      role: 'staff',
+    });
   });
+
 
   beforeEach(async () => {
     db.reset();
 
-    const own = await db.student.create({
+    const section = await db.classSection.create({
       data: {
-        coreUserId: STUDENT_CORE_ID,
-        studentCode: 'CS67001',
-        firstName: 'Somchai',
-        lastName: 'Jaidee',
-        email: 'cs67001@student.csmju.local',
-        faculty: 'Science',
-        major: 'Computer Science',
-        year: 3,
+        courseCode: 'CS201',
+        courseName: 'Data Structures',
+        sectionCode: '1',
+        academicYear: 2026,
+        term: 1,
+        ...ROOM,
+        ownerCoreUserId: STAFF_CORE_ID,
       },
     });
-    const other = await db.student.create({
-      data: {
-        coreUserId: OTHER_STUDENT_CORE_ID,
-        studentCode: 'CS67002',
-        firstName: 'Suda',
-        lastName: 'Rakdee',
-        email: 'cs67002@student.csmju.local',
-        faculty: 'Science',
-        major: 'Computer Science',
-        year: 2,
-      },
-    });
-    const course = await db.course.create({
-      data: { courseCode: 'CS101', name: 'Introduction to Programming', credits: 3 },
-    });
-
-    ownStudentId = own.id;
-    otherStudentId = other.id;
-    courseId = course.id;
+    sectionId = section.id;
   });
 
   afterAll(async () => {
@@ -138,7 +127,7 @@ describe('Demo Subsystem (e2e)', () => {
 
       expect(response.body).toEqual({
         success: true,
-        data: { status: 'ok', service: 'student-service' },
+        data: { status: 'ok', service: 'csmju-attendance-checker' },
       });
     });
   });
@@ -252,7 +241,6 @@ describe('Demo Subsystem (e2e)', () => {
       ['student', 'STUDENT'],
       ['staff', 'STAFF'],
       ['admin', 'ADMIN'],
-      ['alumni', 'ALUMNI'],
     ])('maps core role %s to subsystem role %s', async (coreRole, subsystemRole) => {
       const token = await signCoreHubToken(key, { role: coreRole, sub: 'user-map' });
       const response = await request(app.getHttpServer())
@@ -262,343 +250,268 @@ describe('Demo Subsystem (e2e)', () => {
 
       expect(response.body.data.subsystemRole).toBe(subsystemRole);
     });
+
+    it('refuses alumni, who are not registered for this subsystem (403)', async () => {
+      const token = await signCoreHubToken(key, { role: 'alumni', sub: 'user-alumni' });
+      const response = await request(app.getHttpServer())
+        .get('/api/v1/me')
+        .set(bearer(token))
+        .expect(403);
+
+      expect(response.body.error.code).toBe('FORBIDDEN');
+    });
   });
 
-  // -------------------------------------------------------------- students --
-  describe('Student APIs (spec §23)', () => {
-    it('lets a STUDENT read their own profile', async () => {
-      const response = await request(app.getHttpServer())
-        .get(`/api/v1/students/${ownStudentId}`)
-        .set(bearer(studentToken))
-        .expect(200);
 
-      expect(response.body.data.studentCode).toBe('CS67001');
+  // -------------------------------------------------------- class sections --
+  describe('Class sections', () => {
+    const newSection = {
+      courseCode: 'CS305',
+      courseName: 'Software Engineering',
+      sectionCode: '1',
+      academicYear: 2026,
+      term: 1,
+      ...ROOM,
+    };
+
+    it('lets STAFF create a section and makes them the owner', async () => {
+      const response = await request(app.getHttpServer())
+        .post('/api/v1/class-sections')
+        .set(bearer(staffToken))
+        .send(newSection)
+        .expect(201);
+
+      expect(response.body.data).toMatchObject({
+        courseCode: 'CS305',
+        ownerCoreUserId: STAFF_CORE_ID,
+        radiusMeters: 50,
+      });
     });
 
-    it("denies a STUDENT reading another student's profile (403)", async () => {
+    it('denies a STUDENT creating a section (403)', async () => {
       const response = await request(app.getHttpServer())
-        .get(`/api/v1/students/${otherStudentId}`)
+        .post('/api/v1/class-sections')
         .set(bearer(studentToken))
+        .send(newSection)
         .expect(403);
 
       expect(response.body.error.code).toBe('FORBIDDEN');
     });
 
-    it('scopes the student list to the caller for a STUDENT', async () => {
+    it('rejects an invalid body with VALIDATION_ERROR (400)', async () => {
       const response = await request(app.getHttpServer())
-        .get('/api/v1/students')
-        .set(bearer(studentToken))
-        .expect(200);
-
-      expect(response.body.data).toHaveLength(1);
-      expect(response.body.data[0].coreUserId).toBe(STUDENT_CORE_ID);
-      expect(response.body.meta).toMatchObject({ total: 1, page: 1 });
-    });
-
-    it('lets STAFF read every student', async () => {
-      const response = await request(app.getHttpServer())
-        .get('/api/v1/students')
+        .post('/api/v1/class-sections')
         .set(bearer(staffToken))
-        .expect(200);
-
-      expect(response.body.data).toHaveLength(2);
-    });
-
-    it('denies a STUDENT creating a student record (403)', async () => {
-      await request(app.getHttpServer())
-        .post('/api/v1/students')
-        .set(bearer(studentToken))
-        .send({
-          studentCode: 'CS67009',
-          firstName: 'Fake',
-          lastName: 'Person',
-          email: 'fake@student.csmju.local',
-          faculty: 'Science',
-          major: 'CS',
-          year: 1,
-        })
-        .expect(403);
-    });
-
-    it('lets STAFF create a student record (201)', async () => {
-      const response = await request(app.getHttpServer())
-        .post('/api/v1/students')
-        .set(bearer(staffToken))
-        .send({
-          studentCode: 'CS67004',
-          firstName: 'Nida',
-          lastName: 'Suk',
-          email: 'cs67004@student.csmju.local',
-          faculty: 'Science',
-          major: 'Computer Science',
-          year: 1,
-        })
-        .expect(201);
-
-      expect(response.body.data.studentCode).toBe('CS67004');
-    });
-
-    it('rejects a duplicate student code (409)', async () => {
-      await request(app.getHttpServer())
-        .post('/api/v1/students')
-        .set(bearer(staffToken))
-        .send({
-          studentCode: 'CS67001',
-          firstName: 'Dup',
-          lastName: 'Licate',
-          email: 'dup@student.csmju.local',
-          faculty: 'Science',
-          major: 'CS',
-          year: 1,
-        })
-        .expect(409);
-    });
-
-    it('rejects an invalid request body (400)', async () => {
-      const response = await request(app.getHttpServer())
-        .post('/api/v1/students')
-        .set(bearer(staffToken))
-        .send({ studentCode: 'nope', firstName: '', year: 99 })
+        .send({ ...newSection, latitude: 200 })
         .expect(400);
 
       expect(response.body.error.code).toBe('VALIDATION_ERROR');
     });
 
-    it('ignores identity fields smuggled in the request body', async () => {
+    it('rejects a duplicate course, section, year and term (409)', async () => {
       await request(app.getHttpServer())
-        .patch(`/api/v1/students/${otherStudentId}`)
-        .set(bearer(studentToken))
-        .send({ firstName: 'Hacked', role: 'admin', userId: STAFF_CORE_ID })
-        .expect(400); // forbidNonWhitelisted rejects the unknown identity fields
-    });
-
-    it("denies a STUDENT updating another student's profile (403)", async () => {
-      await request(app.getHttpServer())
-        .patch(`/api/v1/students/${otherStudentId}`)
-        .set(bearer(studentToken))
-        .send({ firstName: 'Hacked' })
-        .expect(403);
-    });
-
-    it('lets a STUDENT update their own contact details', async () => {
-      const response = await request(app.getHttpServer())
-        .patch(`/api/v1/students/${ownStudentId}`)
-        .set(bearer(studentToken))
-        .send({ firstName: 'Somsak' })
-        .expect(200);
-
-      expect(response.body.data.firstName).toBe('Somsak');
-    });
-
-    it('stops a STUDENT changing their own academic year (403)', async () => {
-      await request(app.getHttpServer())
-        .patch(`/api/v1/students/${ownStudentId}`)
-        .set(bearer(studentToken))
-        .send({ year: 4 })
-        .expect(403);
-    });
-
-    it('lets ADMIN update any student', async () => {
-      await request(app.getHttpServer())
-        .patch(`/api/v1/students/${otherStudentId}`)
-        .set(bearer(adminToken))
-        .send({ year: 4 })
-        .expect(200);
-    });
-  });
-
-  // --------------------------------------------------------------- courses --
-  describe('Course APIs (spec §24)', () => {
-    it('lets any authenticated role read courses', async () => {
-      const response = await request(app.getHttpServer())
-        .get('/api/v1/courses')
-        .set(bearer(studentToken))
-        .expect(200);
-
-      expect(response.body).toMatchObject({ success: true });
-      expect(response.body.data).toHaveLength(1);
-    });
-
-    it('denies a STUDENT creating a course (403)', async () => {
-      await request(app.getHttpServer())
-        .post('/api/v1/courses')
-        .set(bearer(studentToken))
-        .send({ courseCode: 'CS999', name: 'Hacking 101', credits: 3 })
-        .expect(403);
-    });
-
-    it('lets STAFF create a course (201)', async () => {
-      const response = await request(app.getHttpServer())
-        .post('/api/v1/courses')
+        .post('/api/v1/class-sections')
         .set(bearer(staffToken))
-        .send({ courseCode: 'CS201', name: 'Data Structures', credits: 3 })
-        .expect(201);
-
-      expect(response.body.data.courseCode).toBe('CS201');
-    });
-
-    it('rejects a duplicate course code (409)', async () => {
-      const response = await request(app.getHttpServer())
-        .post('/api/v1/courses')
-        .set(bearer(staffToken))
-        .send({ courseCode: 'CS101', name: 'Duplicate', credits: 3 })
+        .send({ ...newSection, courseCode: 'CS201', courseName: 'Data Structures' })
         .expect(409);
-
-      expect(response.body.error.code).toBe('CONFLICT');
     });
 
-    it('denies STAFF deleting a course but allows ADMIN', async () => {
-      await request(app.getHttpServer())
-        .delete(`/api/v1/courses/${courseId}`)
+    it('lists sections with pagination meta', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/api/v1/class-sections')
         .set(bearer(staffToken))
+        .expect(200);
+
+      expect(response.body.data).toHaveLength(1);
+      expect(response.body.meta).toEqual({ total: 1, page: 1, limit: 20, totalPages: 1 });
+    });
+
+    it('filters to sections the caller owns with ?mine=true', async () => {
+      const mine = await request(app.getHttpServer())
+        .get('/api/v1/class-sections?mine=true')
+        .set(bearer(staffToken))
+        .expect(200);
+      expect(mine.body.meta.total).toBe(1);
+
+      const others = await request(app.getHttpServer())
+        .get('/api/v1/class-sections?mine=true')
+        .set(bearer(otherStaffToken))
+        .expect(200);
+      expect(others.body.meta.total).toBe(0);
+    });
+
+    it('lets the owner delete a section with no sessions (200 + deleted:true)', async () => {
+      const created = await request(app.getHttpServer())
+        .post('/api/v1/class-sections')
+        .set(bearer(staffToken))
+        .send(newSection)
+        .expect(201);
+      const id = created.body.data.id;
+
+      await request(app.getHttpServer())
+        .delete(`/api/v1/class-sections/${id}`)
+        .set(bearer(otherStaffToken))
         .expect(403);
 
-      await request(app.getHttpServer())
-        .delete(`/api/v1/courses/${courseId}`)
-        .set(bearer(adminToken))
+      const response = await request(app.getHttpServer())
+        .delete(`/api/v1/class-sections/${id}`)
+        .set(bearer(staffToken))
         .expect(200);
-    });
+      expect(response.body.data).toEqual({ id, deleted: true });
 
-    it('returns 404 for a missing course', async () => {
       await request(app.getHttpServer())
-        .get('/api/v1/courses/99999999-9999-4999-8999-999999999999')
+        .get(`/api/v1/class-sections/${id}`)
         .set(bearer(staffToken))
         .expect(404);
     });
+
+    it('refuses to delete a section that has attendance history (409)', async () => {
+      await request(app.getHttpServer())
+        .post('/api/v1/attendance-sessions')
+        .set(bearer(staffToken))
+        .send({ classSectionId: sectionId })
+        .expect(201);
+
+      const response = await request(app.getHttpServer())
+        .delete(`/api/v1/class-sections/${sectionId}`)
+        .set(bearer(staffToken))
+        .expect(409);
+      expect(response.body.error.code).toBe('CONFLICT');
+    });
+
+    it('denies a STUDENT deleting a section (403)', async () => {
+      await request(app.getHttpServer())
+        .delete(`/api/v1/class-sections/${sectionId}`)
+        .set(bearer(studentToken))
+        .expect(403);
+    });
   });
 
-  // ----------------------------------------------------------- enrollments --
-  describe('Enrollment APIs (spec §25, §26)', () => {
-    it('lets a STUDENT enroll themselves (201)', async () => {
-      const response = await request(app.getHttpServer())
-        .post('/api/v1/enrollments')
-        .set(bearer(studentToken))
-        .send({ studentId: ownStudentId, courseId })
-        .expect(201);
+  // --------------------------------------------------- attendance sessions --
+  describe('Attendance sessions and check-in', () => {
+    const openSession = async (token = staffToken) =>
+      request(app.getHttpServer())
+        .post('/api/v1/attendance-sessions')
+        .set(bearer(token))
+        .send({ classSectionId: sectionId });
 
-      expect(response.body.data.status).toBe('ENROLLED');
+    const checkIn = (body: Record<string, unknown>, token = studentToken) =>
+      request(app.getHttpServer()).post('/api/v1/attendance-records').set(bearer(token)).send(body);
+
+    it('opens a session for the owner, hides the secret and returns a 6-digit code', async () => {
+      const response = await openSession();
+
+      expect(response.status).toBe(201);
+      expect(response.body.data.status).toBe('OPEN');
+      expect(response.body.data.code.code).toMatch(/^\d{6}$/);
+      expect(JSON.stringify(response.body)).not.toContain('codeSecret');
     });
 
-    it('denies a STUDENT enrolling another student (403)', async () => {
-      await request(app.getHttpServer())
-        .post('/api/v1/enrollments')
-        .set(bearer(studentToken))
-        .send({ studentId: otherStudentId, courseId })
-        .expect(403);
+    it('refuses a second OPEN session for the same section (409)', async () => {
+      await openSession();
+      const second = await openSession();
+      expect(second.status).toBe(409);
     });
 
-    it('rejects a duplicate active enrollment (409)', async () => {
-      await request(app.getHttpServer())
-        .post('/api/v1/enrollments')
-        .set(bearer(studentToken))
-        .send({ studentId: ownStudentId, courseId })
-        .expect(201);
-
-      await request(app.getHttpServer())
-        .post('/api/v1/enrollments')
-        .set(bearer(studentToken))
-        .send({ studentId: ownStudentId, courseId })
-        .expect(409);
+    it('refuses staff who do not own the section (403) and students (403)', async () => {
+      expect((await openSession(otherStaffToken)).status).toBe(403);
+      expect((await openSession(studentToken)).status).toBe(403);
     });
 
-    it('rejects an enrollment for a non-existent course (400)', async () => {
-      await request(app.getHttpServer())
-        .post('/api/v1/enrollments')
-        .set(bearer(staffToken))
-        .send({ studentId: ownStudentId, courseId: '99999999-9999-4999-8999-999999999999' })
-        .expect(400);
-    });
-
-    it('rejects an enrollment for a non-existent student (400)', async () => {
-      await request(app.getHttpServer())
-        .post('/api/v1/enrollments')
-        .set(bearer(staffToken))
-        .send({ studentId: '99999999-9999-4999-8999-999999999999', courseId })
-        .expect(400);
-    });
-
-    it('lets a STUDENT drop but not complete their own enrollment', async () => {
-      const created = await request(app.getHttpServer())
-        .post('/api/v1/enrollments')
-        .set(bearer(studentToken))
-        .send({ studentId: ownStudentId, courseId })
-        .expect(201);
-
-      const enrollmentId = created.body.data.id;
-
-      await request(app.getHttpServer())
-        .patch(`/api/v1/enrollments/${enrollmentId}`)
-        .set(bearer(studentToken))
-        .send({ status: 'COMPLETED' })
-        .expect(403);
-
-      const dropped = await request(app.getHttpServer())
-        .patch(`/api/v1/enrollments/${enrollmentId}`)
-        .set(bearer(studentToken))
-        .send({ status: 'DROPPED' })
-        .expect(200);
-
-      expect(dropped.body.data.status).toBe('DROPPED');
-    });
-
-    it('reactivates a dropped enrollment instead of creating a duplicate', async () => {
-      const created = await request(app.getHttpServer())
-        .post('/api/v1/enrollments')
-        .set(bearer(studentToken))
-        .send({ studentId: ownStudentId, courseId })
-        .expect(201);
-
-      await request(app.getHttpServer())
-        .patch(`/api/v1/enrollments/${created.body.data.id}`)
-        .set(bearer(studentToken))
-        .send({ status: 'DROPPED' })
-        .expect(200);
-
-      const again = await request(app.getHttpServer())
-        .post('/api/v1/enrollments')
-        .set(bearer(studentToken))
-        .send({ studentId: ownStudentId, courseId })
-        .expect(201);
-
-      expect(again.body.data.id).toBe(created.body.data.id);
-      expect(db.enrollment.rows).toHaveLength(1);
-    });
-
-    it('shows a STUDENT only their own enrollments even when filtering by another id', async () => {
-      await request(app.getHttpServer())
-        .post('/api/v1/enrollments')
-        .set(bearer(staffToken))
-        .send({ studentId: otherStudentId, courseId })
-        .expect(201);
+    it('lets ADMIN read the code of a session in any section', async () => {
+      const opened = await openSession();
 
       const response = await request(app.getHttpServer())
-        .get(`/api/v1/enrollments?studentId=${otherStudentId}`)
-        .set(bearer(studentToken))
+        .get(`/api/v1/attendance-sessions/${opened.body.data.id}/code`)
+        .set(bearer(adminToken))
         .expect(200);
 
-      expect(response.body.data).toHaveLength(0);
+      expect(response.body.data).toMatchObject({ code: expect.stringMatching(/^\d{6}$/), stepSeconds: 120 });
     });
 
-    it('denies an ALUMNI creating an enrollment (403)', async () => {
-      const alumniToken = await signCoreHubToken(key, {
-        role: 'alumni',
-        sub: OTHER_STUDENT_CORE_ID,
+    it('checks a student in with the current code inside the radius', async () => {
+      const opened = await openSession();
+      const { code } = opened.body.data.code;
+
+      const response = await checkIn({ code, ...ROOM, accuracyMeters: 10 });
+
+      expect(response.status).toBe(201);
+      expect(response.body.data).toMatchObject({
+        coreUserId: STUDENT_CORE_ID,
+        email: 'student@core.local',
+        status: 'PRESENT',
+        distanceMeters: 0,
+        classSection: { courseCode: 'CS201', sectionCode: '1' },
       });
 
-      await request(app.getHttpServer())
-        .post('/api/v1/enrollments')
-        .set(bearer(alumniToken))
-        .send({ studentId: otherStudentId, courseId })
-        .expect(403);
+      const again = await checkIn({ code, ...ROOM });
+      expect(again.status).toBe(409);
     });
 
-    it('denies a Core Hub user with no linked student record (403)', async () => {
-      const orphanToken = await signCoreHubToken(key, { role: 'student', sub: 'user-404' });
+    it('rejects a wrong code (400) and a student outside the radius (409)', async () => {
+      const opened = await openSession();
+      const { code } = opened.body.data.code;
+      const wrong = code === '000000' ? '111111' : '000000';
+
+      expect((await checkIn({ code: wrong, ...ROOM })).status).toBe(400);
+
+      const far = await checkIn({ code, latitude: ROOM.latitude + 0.01, longitude: ROOM.longitude });
+      expect(far.status).toBe(409);
+      expect(far.body.error.code).toBe('CONFLICT');
+    });
+
+    it('does not let STAFF check in as a student (403)', async () => {
+      const opened = await openSession();
+      const response = await checkIn({ code: opened.body.data.code.code, ...ROOM }, staffToken);
+      expect(response.status).toBe(403);
+    });
+
+    it('shows the owner the records and the student their own history', async () => {
+      const opened = await openSession();
+      const sessionId = opened.body.data.id;
+      await checkIn({ code: opened.body.data.code.code, ...ROOM }).expect(201);
+
+      const records = await request(app.getHttpServer())
+        .get(`/api/v1/attendance-sessions/${sessionId}/records`)
+        .set(bearer(staffToken))
+        .expect(200);
+      expect(records.body.data).toHaveLength(1);
+      expect(records.body.meta.total).toBe(1);
+
+      const mine = await request(app.getHttpServer())
+        .get('/api/v1/attendance-records/me')
+        .set(bearer(studentToken))
+        .expect(200);
+      expect(mine.body.data[0]).toMatchObject({ attendanceSessionId: sessionId, status: 'PRESENT' });
+    });
+
+    it('stops accepting codes once the session is closed', async () => {
+      const opened = await openSession();
+      const sessionId = opened.body.data.id;
 
       await request(app.getHttpServer())
-        .get('/api/v1/enrollments')
-        .set(bearer(orphanToken))
-        .expect(403);
+        .post(`/api/v1/attendance-sessions/${sessionId}/close`)
+        .set(bearer(staffToken))
+        .expect(200);
+
+      await request(app.getHttpServer())
+        .get(`/api/v1/attendance-sessions/${sessionId}/code`)
+        .set(bearer(staffToken))
+        .expect(409);
+
+      expect((await checkIn({ code: opened.body.data.code.code, ...ROOM })).status).toBe(400);
+    });
+
+    it('returns 404 for an unknown session and 400 for a malformed id', async () => {
+      await request(app.getHttpServer())
+        .get('/api/v1/attendance-sessions/99999999-9999-4999-8999-999999999999')
+        .set(bearer(staffToken))
+        .expect(404);
+
+      await request(app.getHttpServer())
+        .get('/api/v1/attendance-sessions/not-a-uuid')
+        .set(bearer(staffToken))
+        .expect(400);
     });
   });
 
@@ -622,7 +535,7 @@ describe('Demo Subsystem (e2e)', () => {
     });
   });
 
-  // -------------------------------------------------------- demo scenario --
+  // -------------------------------------------------------- ---- scenario --
   describe('End-to-end demo scenario (spec §38)', () => {
     it('token -> JWKS -> verification -> role mapping -> business API', async () => {
       // Step 1-2: a Core Hub RS256 token exists (issued by the fake Core Hub key).
@@ -647,13 +560,13 @@ describe('Demo Subsystem (e2e)', () => {
       });
 
       // Step 5: business API with the same Core Hub token.
-      const courses = await request(app.getHttpServer())
-        .get('/api/v1/courses')
+      const sections = await request(app.getHttpServer())
+        .get('/api/v1/class-sections')
         .set(bearer(token))
         .expect(200);
 
-      expect(courses.body.success).toBe(true);
-      expect(Array.isArray(courses.body.data)).toBe(true);
+      expect(sections.body.success).toBe(true);
+      expect(Array.isArray(sections.body.data)).toBe(true);
 
       // The Core Hub was contacted only for its public keys.
       expect(coreHub.requestCount).toBeGreaterThan(0);
