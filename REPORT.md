@@ -54,6 +54,7 @@ RESULT: 63 passed · 0 failed · 0 skipped
 | `pnpm --filter backend test:e2e` | 2 suites · 60 tests ผ่าน |
 | `pnpm --filter frontend typecheck` · `lint` · `build` | ผ่าน (11 routes) |
 | smoke test ผ่าน SSO จริง (Core Hub handoff → `/auth/callback` → cookie) | ทุกหน้าของ staff/student/ผู้ที่ยังไม่ล็อกอิน แสดงถูกต้อง · เช็คชื่อผ่าน proxy สำเร็จ · ออกจากระบบล้าง cookie |
+| browser E2E (Chrome headless · Playwright + axe-core, นอก repo) | **71 passed · 0 failed** — SSO จริงทั้งอาจารย์/นักศึกษา · สร้างกลุ่มเรียน + "ใช้ตำแหน่งปัจจุบัน" (จำลอง GPS) · เปิดรอบ รหัส 6 หลัก นับถอยหลัง · นักศึกษา: รหัสผิด → error ใต้ช่อง, นอกรัศมี → แจ้งระยะ, ในรัศมี → สำเร็จ, ซ้ำ → แจ้ง · รายชื่ออัปเดตเอง · ConfirmDialog (Esc, focus กลับจุดเดิม) · ลบถูกปิดพร้อมเหตุผลเมื่อมีประวัติ · ค้นหา/ว่าง · drawer มือถือ · skip link · ออกจากระบบ · axe 0 critical/serious ทุกหน้าที่ตรวจ · ไม่มี horizontal scroll ที่ 360/768/1280px ทุกหน้า |
 | dependency whitelist (ARC-02/03) | เครื่องนี้ไม่มี `jq` สคริปต์จึงข้าม — ตรวจด้วย node กับ `allowed-deps.json` แทน: ผ่านทุกตัว |
 | `prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --exit-code` | No difference detected |
 | `prisma migrate status` | 3 migrations · Database schema is up to date |
@@ -160,8 +161,8 @@ Permission ต่อ role:
 - `check-no-secrets.sh` (SEC-01) ไม่ผ่านเฉพาะบนเครื่องพัฒนา เพราะสแกนเจอ `backend/.env` ที่ gitignore ไว้
   ย้ายไป `.env.local` ก็ไม่ช่วย เพราะสคริปต์สแกน `*.env*` ทั้งหมด บน CI (checkout ใหม่ ไม่มี `.env`) ผ่าน
   — แจ้ง PL ว่าเช็กนี้ให้ผลต่างกันระหว่างเครื่องพัฒนากับ CI
-- ยังไม่ได้ทดสอบในเบราว์เซอร์จริง: การขอตำแหน่ง GPS, ConfirmDialog, นับถอยหลัง/เต็มจอ, ขนาดจอ 360px,
-  Lighthouse/axe (G3 ของ `ui-design-system.md` ข้อ 17.1) — smoke test ตรวจเฉพาะ HTML ที่ server render และ API ผ่าน proxy
+- Lighthouse (Performance ≥ 85 · Accessibility ≥ 95) ยังไม่ได้รัน — ตรวจ accessibility ด้วย axe แทน
+- ยังไม่ได้ทดสอบบนมือถือจริงและ screen reader (NVDA/VoiceOver) — ทดสอบด้วย Chrome headless ที่จำลองจอ 360px + touch
 - GPS ใช้ได้เฉพาะ secure context (`https` หรือ `localhost`) — ถ้าเปิดผ่าน IP ในวง LAN แบบ http นักศึกษาจะเช็คชื่อไม่ได้
 - frontend ยังไม่มี unit test (เครื่องมือที่อนุญาตคือ vitest + @testing-library/react)
 - ยังไม่มี `Dockerfile` ของ frontend และ `docker-compose.yml`

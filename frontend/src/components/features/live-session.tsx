@@ -140,7 +140,7 @@ export function LiveSession({ initialSession, sectionLabel }: { initialSession: 
     <div className="flex flex-col gap-8">
       <div className="flex flex-wrap items-center gap-2">
         <SessionStatusBadge status={session.status} />
-        <span className="text-sm text-muted tabular-nums">
+        <span className="text-sm text-body tabular-nums">
           เปิดเมื่อ {formatDateTime(session.openedAt)}
           {session.closedAt ? ` · ปิดเมื่อ ${formatTime(session.closedAt)}` : ""}
         </span>
@@ -192,7 +192,7 @@ export function LiveSession({ initialSession, sectionLabel }: { initialSession: 
         </Alert>
       )}
 
-      <Card className="flex flex-col gap-4 p-0 md:p-0">
+      <Card flush className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center justify-between gap-2 px-4 pt-4 md:px-6 md:pt-6">
           <CardTitle>นักศึกษาที่เช็คชื่อแล้ว</CardTitle>
           <div className="flex gap-2 text-sm tabular-nums" aria-live="polite">

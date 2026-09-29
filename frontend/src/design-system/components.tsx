@@ -101,7 +101,7 @@ export function Button({
   return (
     <span className="inline-flex flex-col gap-1">
       {button}
-      <span id={reasonId} className="text-sm text-muted">
+      <span id={reasonId} className="text-sm text-body">
         {disabledReason}
       </span>
     </span>
@@ -163,9 +163,19 @@ export function PageHeader({
 export function Card({
   className,
   as: Tag = "section",
+  flush = false,
   ...props
-}: HTMLAttributes<HTMLElement> & { as?: "section" | "div" | "article" }) {
-  return <Tag className={cx("rounded-lg border border-line bg-surface p-4 md:p-6", className)} {...props} />;
+}: HTMLAttributes<HTMLElement> & {
+  as?: "section" | "div" | "article";
+  /** No inner padding - for lists and tables that run edge to edge. */
+  flush?: boolean;
+}) {
+  return (
+    <Tag
+      className={cx("overflow-hidden rounded-lg border border-line bg-surface", !flush && "p-4 md:p-6", className)}
+      {...props}
+    />
+  );
 }
 
 export function CardTitle({ children, as: Tag = "h2" }: { children: ReactNode; as?: "h2" | "h3" }) {
@@ -269,7 +279,7 @@ export function ErrorState({
       </span>
       <p className="font-heading text-lg font-semibold text-ink">{title}</p>
       {description ? <p className="max-w-prose text-body">{description}</p> : null}
-      {reference ? <p className="font-mono text-sm text-muted">รหัสอ้างอิง: {reference}</p> : null}
+      {reference ? <p className="font-mono text-sm text-body">รหัสอ้างอิง: {reference}</p> : null}
       {action ? <div className="mt-2">{action}</div> : null}
     </div>
   );

@@ -128,9 +128,9 @@ export default async function ClassSectionsPage({
           )}
         </Card>
       ) : (
-        <Card className="flex flex-col gap-6 p-0 md:p-0">
+        <Card flush className="flex flex-col gap-6">
           <ClassSectionTable sections={result.data} />
-          {result.meta ? (
+          {result.meta && result.meta.totalPages > 1 ? (
             <div className="px-4 pb-4 md:px-6 md:pb-6">
               <Pagination
                 page={result.meta.page}

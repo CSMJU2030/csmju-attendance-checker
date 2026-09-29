@@ -90,7 +90,7 @@ export default async function ClassSectionPage({
       </Card>
 
       {canManage ? (
-        <Card className="flex flex-col gap-4 p-0 md:p-0">
+        <Card flush className="flex flex-col gap-4">
           <div className="px-4 pt-4 md:px-6 md:pt-6">
             <CardTitle>รอบเช็คชื่อ</CardTitle>
           </div>
