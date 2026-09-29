@@ -151,6 +151,8 @@ export function LiveSession({ initialSession, sectionLabel }: { initialSession: 
   const late = records.filter((record) => record.status === "LATE").length;
   const stepSeconds = code?.stepSeconds ?? 120;
   const progress = code ? Math.min(100, Math.max(0, (secondsLeft / stepSeconds) * 100)) : 0;
+  // Last 20 s of a window: warn so staff do not read out a code that is about to change.
+  const rotatingSoon = code !== null && secondsLeft <= 20;
 
   return (
     <div className="flex flex-col gap-8">
@@ -162,10 +164,11 @@ export function LiveSession({ initialSession, sectionLabel }: { initialSession: 
         </span>
       </div>
 
+      <div className={open ? "grid items-start gap-8 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]" : "flex flex-col gap-8"}>
       {open ? (
         <div
           ref={codeCard}
-          className="flex flex-col items-center gap-4 rounded-lg border border-line bg-surface p-6 text-center md:p-12"
+          className="flex flex-col items-center gap-4 rounded-lg border border-line bg-surface p-6 text-center md:p-12 xl:sticky xl:top-header"
         >
           <p className="text-body">รหัสเช็คชื่อ · {sectionLabel}</p>
           {codeError ? (
@@ -184,10 +187,14 @@ export function LiveSession({ initialSession, sectionLabel }: { initialSession: 
           <div className="flex w-full max-w-md flex-col gap-2">
             <div className="h-2 w-full overflow-hidden rounded-full bg-primary-soft" aria-hidden>
               {/* Width is a runtime value - the one allowed use of inline style. */}
-              <div className="h-full bg-primary" style={{ width: `${progress}%` }} />
+              <div className={"h-full " + (rotatingSoon ? "bg-warning" : "bg-primary")} style={{ width: `${progress}%` }} />
             </div>
             <p className="text-sm text-muted tabular-nums">
-              {code ? `รหัสจะเปลี่ยนในอีก ${formatCountdown(secondsLeft)} นาที` : "กำลังโหลดรหัส..."}
+              {!code
+                ? "กำลังโหลดรหัส..."
+                : rotatingSoon
+                  ? `รหัสกำลังจะเปลี่ยนในอีก ${formatCountdown(secondsLeft)} นาที`
+                  : `รหัสจะเปลี่ยนในอีก ${formatCountdown(secondsLeft)} นาที`}
             </p>
           </div>
           <p className="max-w-prose text-body">
@@ -270,6 +277,7 @@ export function LiveSession({ initialSession, sectionLabel }: { initialSession: 
           </ul>
         )}
       </Card>
+      </div>
 
       <ConfirmDialog
         open={confirmClose}

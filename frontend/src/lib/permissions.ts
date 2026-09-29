@@ -63,7 +63,8 @@ export function navFor(role: SubsystemRole): NavItem[] {
     nav.push({ label: "ประวัติการเช็คชื่อ", href: "/attendance-records", icon: "history" });
   }
   if (can(role, "class-section:read")) {
-    nav.push({ label: "กลุ่มเรียน", href: "/class-sections", icon: "book-open" });
+    // A session screen is reached from its section, so it lights up "กลุ่มเรียน".
+    nav.push({ label: "กลุ่มเรียน", href: "/class-sections", icon: "book-open", match: ["/attendance-sessions"] });
   }
   return nav;
 }

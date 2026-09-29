@@ -1,4 +1,13 @@
-import { Badge, formatDateTime, formatTerm } from "@csmju2030/design-system";
+import {
+  Badge,
+  CheckCircleIcon,
+  ClockIcon,
+  dayKey,
+  formatDateTime,
+  formatDayLabel,
+  formatTerm,
+  formatTime,
+} from "@csmju2030/design-system";
 import type { AttendanceRecordView, AttendanceStatus } from "@/lib/types";
 
 export const ATTENDANCE_STATUS: Record<AttendanceStatus, { label: string; tone: "success" | "warning" }> = {
@@ -6,30 +15,78 @@ export const ATTENDANCE_STATUS: Record<AttendanceStatus, { label: string; tone: 
   LATE: { label: "มาสาย", tone: "warning" },
 };
 
-/** A student's own check-ins. Cards on every width - rows are short. */
-export function AttendanceRecordList({ records }: { records: AttendanceRecordView[] }) {
+/** Inside a day group only the time is shown; elsewhere the full date too. */
+function RecordRow({ record, withDate }: { record: AttendanceRecordView; withDate: boolean }) {
+  const status = ATTENDANCE_STATUS[record.status];
+  const section = record.classSection;
+  const late = record.status === "LATE";
   return (
-    <ul className="flex flex-col divide-y divide-line">
-      {records.map((record) => {
-        const status = ATTENDANCE_STATUS[record.status];
-        const section = record.classSection;
-        return (
-          <li key={record.id} className="flex flex-col gap-2 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex flex-col gap-1">
-              <p className="font-semibold text-ink">
-                {section ? `${section.courseCode} ${section.courseName}` : "กลุ่มเรียนถูกลบไปแล้ว"}
-              </p>
-              <p className="text-sm text-muted tabular-nums">
-                {section ? `กลุ่ม ${section.sectionCode} · ${formatTerm(section.term, section.academicYear)} · ` : ""}
-                {formatDateTime(record.checkedInAt)}
-              </p>
-            </div>
-            <div>
-              <Badge tone={status.tone}>{status.label}</Badge>
-            </div>
-          </li>
-        );
-      })}
-    </ul>
+    <li className="flex items-start gap-3 py-4 first:pt-0 last:pb-0">
+      <span
+        aria-hidden
+        className={
+          "mt-1 flex size-9 shrink-0 items-center justify-center rounded-full " +
+          (late ? "bg-warning-soft text-warning" : "bg-success-soft text-success")
+        }
+      >
+        {late ? <ClockIcon size={16} /> : <CheckCircleIcon size={16} />}
+      </span>
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
+        <p className="font-semibold text-ink">
+          {section ? `${section.courseCode} ${section.courseName}` : "กลุ่มเรียนถูกลบไปแล้ว"}
+        </p>
+        <p className="text-sm text-body tabular-nums">
+          {withDate ? formatDateTime(record.checkedInAt) : formatTime(record.checkedInAt)}
+          {section ? ` · กลุ่ม ${section.sectionCode}` : ""}
+          {section ? <span className="hidden sm:inline"> · {formatTerm(section.term, section.academicYear)}</span> : null}
+        </p>
+      </div>
+      <Badge tone={status.tone}>{status.label}</Badge>
+    </li>
+  );
+}
+
+/**
+ * A student's own check-ins, newest first. With `groupByDay` the list gets a
+ * heading per Bangkok calendar day ("วันนี้", "เมื่อวาน", then the date).
+ */
+export function AttendanceRecordList({ records, groupByDay = false }: { records: AttendanceRecordView[]; groupByDay?: boolean }) {
+  if (!groupByDay) {
+    return (
+      <ul className="flex flex-col divide-y divide-line">
+        {records.map((record) => (
+          <RecordRow key={record.id} record={record} withDate />
+        ))}
+      </ul>
+    );
+  }
+
+  const days: Array<{ key: string; label: string; items: AttendanceRecordView[] }> = [];
+  for (const record of records) {
+    const key = dayKey(record.checkedInAt);
+    const day = days.at(-1);
+    if (day && day.key === key) {
+      day.items.push(record);
+    } else {
+      days.push({ key, label: formatDayLabel(record.checkedInAt), items: [record] });
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-6">
+      {days.map((day) => (
+        <section key={day.key} aria-labelledby={`day-${day.key}`} className="flex flex-col gap-3">
+          <h2 id={`day-${day.key}`} className="flex items-center gap-2 text-sm font-semibold text-body">
+            {day.label}
+            <span className="font-normal tabular-nums">· {day.items.length} รายการ</span>
+          </h2>
+          <ul className="flex flex-col divide-y divide-line">
+            {day.items.map((record) => (
+              <RecordRow key={record.id} record={record} withDate={false} />
+            ))}
+          </ul>
+        </section>
+      ))}
+    </div>
   );
 }

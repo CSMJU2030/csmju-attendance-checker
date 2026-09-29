@@ -1,5 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { formatDate, formatDateTime, formatNumber, formatTerm, formatTime, toBuddhistYear, toGregorianYear } from "./format";
+import {
+  dayKey,
+  formatDate,
+  formatDateTime,
+  formatDayLabel,
+  formatNumber,
+  formatTerm,
+  formatTime,
+  toBuddhistYear,
+  toGregorianYear,
+} from "./format";
 
 describe("display formats - ui-design-system.md 11.3", () => {
   it("formats dates in the Buddhist era", () => {
@@ -21,5 +31,18 @@ describe("display formats - ui-design-system.md 11.3", () => {
     expect(toBuddhistYear(2026)).toBe(2569);
     expect(toGregorianYear(2569)).toBe(2026);
     expect(formatTerm(2, 2026)).toBe("ภาคเรียนที่ 2/2569");
+  });
+
+  it("groups by the Bangkok calendar day, not UTC", () => {
+    // 18:30 UTC on the 29th is already the 30th in Bangkok.
+    expect(dayKey("2026-09-29T18:30:00Z")).toBe("2026-09-30");
+    expect(dayKey("2026-09-29T16:59:00Z")).toBe("2026-09-29");
+  });
+
+  it("labels today and yesterday, and spells out older days", () => {
+    const now = new Date("2026-09-30T03:00:00Z"); // 10:00 in Bangkok
+    expect(formatDayLabel("2026-09-30T01:00:00Z", now)).toBe("วันนี้");
+    expect(formatDayLabel("2026-09-29T08:00:00Z", now)).toBe("เมื่อวาน");
+    expect(formatDayLabel("2026-09-27T08:00:00Z", now)).toBe("27 กันยายน 2569");
   });
 });

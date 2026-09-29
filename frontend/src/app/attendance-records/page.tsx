@@ -41,7 +41,7 @@ export default async function AttendanceRecordsPage({
         </Card>
       ) : (
         <Card className="flex flex-col gap-6">
-          <AttendanceRecordList records={result.data} />
+          <AttendanceRecordList records={result.data} groupByDay />
           {result.meta ? (
             <Pagination
               page={result.meta.page}

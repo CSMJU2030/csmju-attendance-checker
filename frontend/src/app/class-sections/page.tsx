@@ -3,6 +3,7 @@ import Link from "next/link";
 import {
   Alert,
   BookOpenIcon,
+  ChevronRightIcon,
   Button,
   ButtonLink,
   Card,
@@ -19,7 +20,7 @@ import { ApiErrorView } from "@/components/shared/api-error-view";
 import { apiGet, getMe } from "@/lib/api-server";
 import { can } from "@/lib/permissions";
 import { firstParam, pageParam } from "@/lib/search-params";
-import type { ClassSection } from "@/lib/types";
+import type { AttendanceSession, ClassSection } from "@/lib/types";
 
 export const metadata: Metadata = { title: "กลุ่มเรียน" };
 
@@ -54,7 +55,11 @@ export default async function ClassSectionsPage({
   if (q) {
     query.set("q", q);
   }
-  const result = await apiGet<ClassSection[]>(`/api/v1/class-sections?${query}`);
+  const [result, openSessions] = await Promise.all([
+    apiGet<ClassSection[]>(`/api/v1/class-sections?${query}`),
+    apiGet<AttendanceSession[]>("/api/v1/attendance-sessions?status=OPEN&limit=100"),
+  ]);
+  const liveIds = new Set(openSessions.ok ? openSessions.data.map((session) => session.classSectionId) : []);
 
   const hrefFor = (target: number) => {
     const next = new URLSearchParams({ page: String(target), mine: mine ? "1" : "0" });
@@ -129,7 +134,7 @@ export default async function ClassSectionsPage({
         </Card>
       ) : (
         <Card flush className="flex flex-col gap-6">
-          <ClassSectionTable sections={result.data} />
+          <ClassSectionTable sections={result.data} liveIds={liveIds} />
           {result.meta && result.meta.totalPages > 1 ? (
             <div className="px-4 pb-4 md:px-6 md:pb-6">
               <Pagination
@@ -146,20 +151,38 @@ export default async function ClassSectionsPage({
   );
 }
 
-function ClassSectionTable({ sections }: { sections: ClassSection[] }) {
+/** Small "session open" marker - dot plus text, never colour alone. */
+function LiveMarker() {
+  return (
+    <span className="inline-flex items-center gap-1 text-sm font-semibold text-success">
+      <span aria-hidden className="size-2 rounded-full bg-success" />
+      เปิดรอบอยู่
+    </span>
+  );
+}
+
+function ClassSectionTable({ sections, liveIds }: { sections: ClassSection[]; liveIds: Set<string> }) {
   return (
     <>
-      {/* Mobile: one card per row (section 6.2). */}
+      {/* Mobile: one tappable row per section (section 6.2). */}
       <ul className="flex flex-col divide-y divide-line md:hidden">
         {sections.map((section) => (
           <li key={section.id}>
-            <Link href={`/class-sections/${section.id}`} className="flex flex-col gap-1 p-4 hover:bg-primary-soft">
-              <span className="font-semibold text-ink">
-                {section.courseCode} {section.courseName}
+            <Link
+              href={`/class-sections/${section.id}`}
+              className="group flex items-center gap-3 p-4 transition-colors duration-fast hover:bg-primary-soft"
+            >
+              <span className="flex min-w-0 flex-1 flex-col gap-1">
+                <span className="flex flex-wrap items-center gap-2">
+                  <span className="font-mono text-sm text-body">{section.courseCode}</span>
+                  {liveIds.has(section.id) ? <LiveMarker /> : null}
+                </span>
+                <span className="font-semibold text-ink">{section.courseName}</span>
+                <span className="text-sm text-body">
+                  กลุ่ม {section.sectionCode} · {formatTerm(section.term, section.academicYear)}
+                </span>
               </span>
-              <span className="text-sm text-muted">
-                กลุ่ม {section.sectionCode} · {formatTerm(section.term, section.academicYear)}
-              </span>
+              <ChevronRightIcon size={20} className="shrink-0 text-muted group-hover:text-primary" />
             </Link>
           </li>
         ))}
@@ -173,7 +196,7 @@ function ClassSectionTable({ sections }: { sections: ClassSection[] }) {
               <th scope="col" className="px-6 py-3">ชื่อวิชา</th>
               <th scope="col" className="px-6 py-3">กลุ่ม</th>
               <th scope="col" className="px-6 py-3">ภาคเรียน</th>
-              <th scope="col" className="px-6 py-3 text-right">รัศมี (เมตร)</th>
+              <th scope="col" className="px-6 py-3">สถานะ</th>
               <th scope="col" className="px-6 py-3 text-right">
                 <span className="sr-only">จัดการ</span>
               </th>
@@ -181,15 +204,28 @@ function ClassSectionTable({ sections }: { sections: ClassSection[] }) {
           </thead>
           <tbody className="divide-y divide-line">
             {sections.map((section) => (
-              <tr key={section.id} className="h-12 hover:bg-primary-soft">
+              <tr key={section.id} className="h-14 transition-colors duration-fast hover:bg-primary-soft">
                 <td className="px-6 font-mono text-sm text-ink">{section.courseCode}</td>
-                <td className="px-6 text-ink">{section.courseName}</td>
+                <td className="px-6 font-semibold text-ink">{section.courseName}</td>
                 <td className="px-6 tabular-nums">{section.sectionCode}</td>
                 <td className="px-6 tabular-nums">{formatTerm(section.term, section.academicYear)}</td>
-                <td className="px-6 text-right tabular-nums">{section.radiusMeters}</td>
+                <td className="px-6">
+                  {liveIds.has(section.id) ? (
+                    <LiveMarker />
+                  ) : (
+                    <span className="text-body">
+                      <span aria-hidden>–</span>
+                      <span className="sr-only">ไม่มีรอบที่เปิดอยู่</span>
+                    </span>
+                  )}
+                </td>
                 <td className="px-6 text-right">
-                  <Link href={`/class-sections/${section.id}`} className="font-semibold text-primary hover:underline">
+                  <Link
+                    href={`/class-sections/${section.id}`}
+                    className="inline-flex min-h-11 items-center gap-1 font-semibold text-primary hover:underline"
+                  >
                     ดูรายละเอียด
+                    <ChevronRightIcon size={16} />
                   </Link>
                 </td>
               </tr>

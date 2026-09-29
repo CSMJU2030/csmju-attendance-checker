@@ -6,15 +6,18 @@ import { useEffect, useState } from "react";
 import { MenuIcon, XIcon } from "./icons";
 import { NAV_ICONS, type NavItem } from "./nav";
 
-function isActive(pathname: string, href: string): boolean {
-  return href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
+function isActive(pathname: string, item: NavItem): boolean {
+  if (item.href === "/") {
+    return pathname === "/";
+  }
+  return [item.href, ...(item.match ?? [])].some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
 }
 
 function NavLinks({ nav, pathname, onNavigate }: { nav: NavItem[]; pathname: string; onNavigate?: () => void }) {
   return (
     <ul className="flex flex-col gap-1">
       {nav.map((item) => {
-        const active = isActive(pathname, item.href);
+        const active = isActive(pathname, item);
         const Icon = NAV_ICONS[item.icon];
         return (
           <li key={item.href}>
@@ -23,8 +26,10 @@ function NavLinks({ nav, pathname, onNavigate }: { nav: NavItem[]; pathname: str
               onClick={onNavigate}
               aria-current={active ? "page" : undefined}
               className={
-                "flex min-h-11 items-center gap-3 rounded-sm px-3 font-semibold transition-colors duration-fast " +
-                (active ? "bg-primary-soft text-primary" : "text-body hover:bg-primary-soft")
+                "relative flex min-h-11 items-center gap-3 rounded-sm px-3 font-semibold transition-colors duration-fast " +
+                (active
+                  ? "bg-primary-soft text-primary before:absolute before:inset-y-2 before:left-0 before:w-1 before:rounded-full before:bg-primary"
+                  : "text-body hover:bg-primary-soft hover:text-ink")
               }
             >
               <Icon />
@@ -41,14 +46,17 @@ function NavLinks({ nav, pathname, onNavigate }: { nav: NavItem[]; pathname: str
 export function SidebarNav({ nav }: { nav: NavItem[] }) {
   const pathname = usePathname();
   return (
-    <nav aria-label="เมนูระบบ" className="hidden w-sidebar shrink-0 border-r border-line bg-surface p-4 lg:block">
-      <NavLinks nav={nav} pathname={pathname} />
+    <nav aria-label="เมนูระบบ" className="hidden w-sidebar shrink-0 border-r border-line bg-surface lg:block">
+      <div className="sticky top-header flex flex-col gap-2 p-4">
+        <p className="px-3 pb-1 pt-2 text-sm font-semibold text-body">เมนู</p>
+        <NavLinks nav={nav} pathname={pathname} />
+      </div>
     </nav>
   );
 }
 
 /** Menu button + drawer on mobile and tablet (section 6.2). */
-export function MobileNav({ nav }: { nav: NavItem[] }) {
+export function MobileNav({ nav, displayName }: { nav: NavItem[]; displayName?: string }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
@@ -96,7 +104,8 @@ export function MobileNav({ nav }: { nav: NavItem[] }) {
             aria-label="เมนูระบบ"
             className="relative flex h-full w-72 max-w-[85vw] flex-col gap-4 bg-surface p-4 shadow-lg"
           >
-            <div className="flex justify-end">
+            <div className="flex items-center justify-between gap-2">
+              <p className="px-3 font-heading font-semibold text-ink">{displayName}</p>
               <button
                 type="button"
                 onClick={() => setOpen(false)}

@@ -7,9 +7,11 @@ import {
   Button,
   ButtonLink,
   Card,
+  BookOpenIcon,
   CrosshairIcon,
   DescriptionList,
   FormField,
+  MapPinIcon,
   Select,
   TextInput,
   fieldA11y,
@@ -162,7 +164,12 @@ export function ClassSectionForm({ section }: { section?: ClassSection }) {
         {formError ? <Alert tone="danger" title="บันทึกไม่สำเร็จ">{formError}</Alert> : null}
 
         <fieldset className="flex flex-col gap-4">
-          <legend className="mb-2 font-heading text-lg font-semibold text-ink">รายวิชา</legend>
+          <legend className="mb-2 flex items-center gap-2 font-heading text-lg font-semibold text-ink">
+            <span aria-hidden className="flex size-8 items-center justify-center rounded-md bg-primary-soft text-primary">
+              <BookOpenIcon size={16} />
+            </span>
+            รายวิชา
+          </legend>
           {editing ? (
             <DescriptionList
               items={[
@@ -220,8 +227,15 @@ export function ClassSectionForm({ section }: { section?: ClassSection }) {
           )}
         </fieldset>
 
+        <hr className="border-line" />
+
         <fieldset className="flex flex-col gap-4">
-          <legend className="mb-2 font-heading text-lg font-semibold text-ink">จุดเช็คชื่อ</legend>
+          <legend className="mb-2 flex items-center gap-2 font-heading text-lg font-semibold text-ink">
+            <span aria-hidden className="flex size-8 items-center justify-center rounded-md bg-primary-soft text-primary">
+              <MapPinIcon size={16} />
+            </span>
+            จุดเช็คชื่อ
+          </legend>
           <p className="text-sm text-muted">
             ยืนอยู่ในห้องเรียนแล้วกดใช้ตำแหน่งปัจจุบัน นักศึกษาต้องอยู่ภายในรัศมีจากจุดนี้จึงจะเช็คชื่อได้
           </p>
@@ -266,7 +280,7 @@ export function ClassSectionForm({ section }: { section?: ClassSection }) {
           </div>
         </fieldset>
 
-        <div className="flex flex-col gap-2 sm:flex-row">
+        <div className="flex flex-col gap-2 border-t border-line pt-6 sm:flex-row">
           <Button type="submit" loading={saving}>
             {editing ? "บันทึกการเปลี่ยนแปลง" : "บันทึกกลุ่มเรียน"}
           </Button>

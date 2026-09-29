@@ -65,3 +65,22 @@ export function toGregorianYear(buddhistYear: number): number {
 export function formatTerm(term: number, gregorianYear: number): string {
   return `ภาคเรียนที่ ${term}/${toBuddhistYear(gregorianYear)}`;
 }
+
+const dayKeyFormat = new Intl.DateTimeFormat("en-CA", { timeZone: TIME_ZONE, year: "numeric", month: "2-digit", day: "2-digit" });
+
+/** Calendar day in Asia/Bangkok as `YYYY-MM-DD` - for grouping by day. */
+export function dayKey(value: string | Date): string {
+  return dayKeyFormat.format(toDate(value));
+}
+
+/** `วันนี้` · `เมื่อวาน` · otherwise the long date, e.g. `29 กันยายน 2569`. */
+export function formatDayLabel(value: string | Date, now: Date = new Date()): string {
+  const key = dayKey(value);
+  if (key === dayKey(now)) {
+    return "วันนี้";
+  }
+  if (key === dayKey(new Date(now.getTime() - 24 * 60 * 60 * 1000))) {
+    return "เมื่อวาน";
+  }
+  return formatDate(value, "long");
+}

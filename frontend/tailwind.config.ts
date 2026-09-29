@@ -114,6 +114,9 @@ const config: Config = {
       height: {
         header: token("header-height"),
       },
+      inset: {
+        header: token("header-height"),
+      },
     },
   },
   plugins: [],

@@ -12,4 +12,6 @@ export interface NavItem {
   label: string;
   href: string;
   icon: keyof typeof NAV_ICONS;
+  /** Other path prefixes that belong to this menu item (e.g. child screens). */
+  match?: string[];
 }

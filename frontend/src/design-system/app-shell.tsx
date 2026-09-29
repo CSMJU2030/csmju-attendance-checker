@@ -43,7 +43,7 @@ export function CsmjuAppShell({
       </a>
 
       <header className="sticky top-0 z-header flex h-header items-center gap-2 border-b border-line bg-surface px-4 md:px-6">
-        {user ? <MobileNav nav={nav} /> : null}
+        {user ? <MobileNav nav={nav} displayName={displayName} /> : null}
         <Link href="/" className="flex min-w-0 items-center gap-2">
           <span className="rounded-sm bg-primary px-2 font-heading text-sm font-semibold text-inverse" lang="en">
             CSMJU
