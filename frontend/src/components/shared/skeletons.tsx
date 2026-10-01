@@ -4,8 +4,8 @@ import { Card, Skeleton } from "@/components/shared/kit";
 export function PageHeaderSkeleton() {
   return (
     <div className="flex flex-col gap-2" aria-hidden>
-      <Skeleton className="h-9 w-64 max-w-full" />
-      <Skeleton className="h-5 w-96 max-w-full" />
+      <Skeleton className="h-9 w-full max-w-64" />
+      <Skeleton className="h-5 w-full max-w-96" />
     </div>
   );
 }

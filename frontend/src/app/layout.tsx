@@ -48,6 +48,13 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   return (
     <html lang="th" className={`${jakarta.variable} ${notoSansThai.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col bg-background text-on-surface">
+        {/* Section 12.1: the central shell has no skip link yet; its <main> is #main. */}
+        <a
+          href="#main"
+          className="sr-only z-50 rounded-lg bg-primary-container px-4 py-2 text-label-md text-white focus:not-sr-only focus:fixed focus:left-4 focus:top-4"
+        >
+          ข้ามไปยังเนื้อหาหลัก
+        </a>
         {me.ok ? (
           <CsmjuAppShell
             displayName={SHELL_NAME}
