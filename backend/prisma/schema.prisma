@@ -1,0 +1,115 @@
+// Attendance Checker - OWN database schema.
+//
+// Naming follows the CSMJU2030 Subsystem Standard: PostgreSQL tables are plural
+// snake_case and every column is snake_case through @map, while Prisma/TypeScript
+// field names stay camelCase.
+//
+// This database belongs to the subsystem only. It never contains Core Hub
+// users, passwords, sessions or key material, and no names or e-mail
+// addresses (reference-data.md 8). Every `*CoreUserId` / `coreUserId`
+// column is an EXTERNAL identity reference to a Core Hub user id (`sub`).
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../generated/prisma"
+  moduleFormat = "cjs"
+}
+
+// The connection string is supplied by prisma.config.ts (CLI) and by the
+// PrismaPg adapter in PrismaService (runtime) - always this subsystem's own
+// DATABASE_URL, never the Core Hub database.
+datasource db {
+  provider = "postgresql"
+}
+
+enum AttendanceSessionStatus {
+  OPEN
+  CLOSED
+}
+
+enum AttendanceStatus {
+  PRESENT
+  LATE
+}
+
+/// A class group that takes attendance in one room.
+model ClassSection {
+  id String @id @default(uuid())
+
+  courseCode  String @map("course_code")
+  courseName  String @map("course_name")
+  sectionCode String @map("section_code")
+  /// Academic year in the Gregorian calendar (data is ISO; the UI shows B.E.).
+  academicYear Int @map("academic_year")
+  term         Int
+
+  /// Check-in point of the room. Students must be within `radiusMeters`.
+  latitude     Float
+  longitude    Float
+  radiusMeters Int   @default(50) @map("radius_meters")
+
+  /// A check-in later than this many minutes after the session opened is LATE.
+  lateAfterMinutes Int @default(15) @map("late_after_minutes")
+
+  /// Core Hub user (`sub`) of the staff member who owns this section.
+  ownerCoreUserId String @map("owner_core_user_id")
+
+  sessions AttendanceSession[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([courseCode, sectionCode, academicYear, term])
+  @@index([ownerCoreUserId])
+  @@map("class_sections")
+}
+
+/// One attendance round opened by staff. The rotating 6-digit code is derived
+/// from `codeSecret` and the current 2-minute window, so no code is stored.
+model AttendanceSession {
+  id String @id @default(uuid())
+
+  classSectionId     String                  @map("class_section_id")
+  openedByCoreUserId String                  @map("opened_by_core_user_id")
+  status             AttendanceSessionStatus @default(OPEN)
+  /// Never leaves the backend.
+  codeSecret         String                  @map("code_secret")
+  openedAt           DateTime                @default(now()) @map("opened_at")
+  closedAt           DateTime?               @map("closed_at")
+
+  classSection ClassSection       @relation(fields: [classSectionId], references: [id], onDelete: Cascade)
+  records      AttendanceRecord[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([classSectionId, status])
+  @@index([status])
+  @@map("attendance_sessions")
+}
+
+/// One student's check-in for one session. Only the distance is kept, never
+/// the student's raw coordinates. The student is identified by ids only
+/// (reference-data.md 8): `coreUserId` is the token's `sub`, and `personCode`
+/// (student id) comes from Core Hub's GET /people/me - no names, no emails.
+model AttendanceRecord {
+  id String @id @default(uuid())
+
+  attendanceSessionId String           @map("attendance_session_id")
+  coreUserId          String           @map("core_user_id")
+  /// Null when the Core Hub account is not linked to a person (e.g. test accounts).
+  personCode          String?          @map("person_code")
+  status              AttendanceStatus
+  checkedInAt         DateTime         @default(now()) @map("checked_in_at")
+  distanceMeters      Int              @map("distance_meters")
+
+  attendanceSession AttendanceSession @relation(fields: [attendanceSessionId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  /// A student checks in at most once per session.
+  @@unique([attendanceSessionId, coreUserId])
+  @@index([coreUserId])
+  @@map("attendance_records")
+}

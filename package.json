@@ -1,5 +1,22 @@
 {
   "name": "csmju-attendance-checker",
+  "version": "1.0.0",
   "private": true,
-  "packageManager": "pnpm@9.15.9"
+  "description": "Attendance Checker - ระบบเช็คชื่อเข้าเรียน (CSMJU2030 subsystem)",
+  "scripts": {
+    "build": "pnpm --filter backend build && pnpm --filter frontend build",
+    "start:dev": "pnpm --filter backend start:dev",
+    "start:dev:frontend": "pnpm --filter frontend dev",
+    "test": "pnpm --filter backend test && pnpm --filter frontend test",
+    "test:e2e": "pnpm --filter backend test:e2e",
+    "test:integration": "pnpm --filter backend test:integration",
+    "prisma:migrate": "pnpm --filter backend prisma:migrate",
+    "prisma:seed": "pnpm --filter backend prisma:seed",
+    "conformance": "node standards/conformance/run.js",
+    "checks": "./standards/scripts/run-all-checks.sh ."
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "pnpm@12.3.4"
 }
