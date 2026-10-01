@@ -5,7 +5,7 @@
 export function validateEnv(config: Record<string, unknown>): Record<string, unknown> {
   const isProduction = config.NODE_ENV === 'production';
   const required = isProduction
-    ? ['DATABASE_URL', 'CORE_HUB_URL', 'CORE_HUB_ISSUER', 'CORE_HUB_AUDIENCE']
+    ? ['DATABASE_URL', 'CORE_HUB_URL', 'CORE_HUB_WEB_URL', 'CORE_HUB_ISSUER', 'CORE_HUB_AUDIENCE', 'SUBSYSTEM_ID']
     : ['DATABASE_URL'];
 
   const missing = required.filter((key) => {

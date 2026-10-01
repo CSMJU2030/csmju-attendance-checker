@@ -5,8 +5,9 @@
 #   docker compose up --build
 #   → http://localhost:3102
 #
-# Core Hub is expected on the host (:3000 API, :3100 portal), with this
-# subsystem's callback_url registered as http://localhost:3102/auth/callback.
+# Core Hub defaults to the real server (CORE_HUB_URL / CORE_HUB_WEB_URL to
+# override, e.g. a Core Hub on the host). The callback registered in Core Hub
+# is the frontend's: http://localhost:<frontend port>/auth/callback.
 services:
   attendance-checker-db:
     image: postgres:16-alpine
@@ -40,9 +41,11 @@ services:
       NODE_ENV: ${NODE_ENV:-development}
       PORT: 3002
       DATABASE_URL: postgresql://postgres:postgres@attendance-checker-db:5432/attendance_checker_db
-      # The Core Hub usually runs on the host machine during development.
-      CORE_HUB_URL: ${CORE_HUB_URL:-http://host.docker.internal:3000}
-      CORE_HUB_JWKS_URL: ${CORE_HUB_JWKS_URL:-http://host.docker.internal:3000/api/v1/.well-known/jwks.json}
+      # The real Core Hub by default; set CORE_HUB_URL to use one on the host.
+      CORE_HUB_URL: ${CORE_HUB_URL:-https://csmju2030.jowave.com}
+      CORE_HUB_JWKS_URL: ${CORE_HUB_JWKS_URL:-https://csmju2030.jowave.com/api/v1/.well-known/jwks.json}
+      # Where /auth/login and /auth/logout send the user's browser.
+      CORE_HUB_WEB_URL: ${CORE_HUB_WEB_URL:-https://csmju2030.jowave.com}
       CORE_HUB_ISSUER: ${CORE_HUB_ISSUER:-core-hub}
       CORE_HUB_AUDIENCE: ${CORE_HUB_AUDIENCE:-csmju2030}
       SUBSYSTEM_ID: csmju-attendance-checker
@@ -72,7 +75,7 @@ services:
       args:
         BACKEND_URL: http://attendance-checker-api:3002
         # Opened by the user's browser, so it is a host URL, not a container name.
-        NEXT_PUBLIC_CORE_HUB_PORTAL_URL: ${CORE_HUB_PORTAL_URL:-http://localhost:3100}
+        NEXT_PUBLIC_CORE_HUB_WEB_URL: ${CORE_HUB_WEB_URL:-https://csmju2030.jowave.com}
         NEXT_PUBLIC_SUBSYSTEM_NAME: csmju-attendance-checker
     container_name: attendance-checker-web
     restart: unless-stopped

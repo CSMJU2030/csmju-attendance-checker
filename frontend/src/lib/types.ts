@@ -14,6 +14,8 @@ export interface Me {
   email: string;
   coreRole: string;
   subsystemRole: SubsystemRole;
+  /** `expiresAt` is the token's exp: past it, the next call returns 401 and /auth/login runs again. */
+  session: { expiresAt: string | null };
 }
 
 export interface ClassSection {
@@ -72,7 +74,8 @@ export interface AttendanceRecord {
   id: string;
   attendanceSessionId: string;
   coreUserId: string;
-  email: string;
+  /** Student id from Core Hub's /people/me; null for an account not linked to a person. No e-mail is kept. */
+  personCode: string | null;
   status: AttendanceStatus;
   checkedInAt: string;
   distanceMeters: number;

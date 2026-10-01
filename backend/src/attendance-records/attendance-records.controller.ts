@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Post, Query } from '@nestjs/common';
 import { CoreHubIdentity } from '../auth/core-hub-identity';
+import { CoreHubAccessToken } from '../auth/decorators/core-hub-access-token.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { RequirePermissions } from '../auth/decorators/require-permissions.decorator';
 import { Permission } from '../auth/permissions';
@@ -14,8 +15,12 @@ export class AttendanceRecordsController {
 
   @Post()
   @RequirePermissions(Permission.ATTENDANCE_CHECK_IN)
-  checkIn(@Body() dto: CheckInDto, @CurrentUser() user: CoreHubIdentity) {
-    return this.records.checkIn(dto, user);
+  checkIn(
+    @Body() dto: CheckInDto,
+    @CurrentUser() user: CoreHubIdentity,
+    @CoreHubAccessToken() token: string,
+  ) {
+    return this.records.checkIn(dto, user, token);
   }
 
   @Get('me/summary')

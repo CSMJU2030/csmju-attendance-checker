@@ -13,14 +13,14 @@ RUN pnpm install --frozen-lockfile --filter frontend...
 COPY frontend/ frontend/
 
 # ค่าเหล่านี้ถูก "ฝัง" ตอน build:
-# - BACKEND_URL ใช้ใน rewrites ของ next.config.ts (Next คำนวณ rewrites ตอน build)
+# - BACKEND_URL ใช้ใน rewrites /api/* และ /auth/* ของ next.config.ts (Next คำนวณ rewrites ตอน build)
 # - NEXT_PUBLIC_* ถูกแทนค่าลงใน bundle ของเบราว์เซอร์
 # เปลี่ยนค่าต้อง build image ใหม่ (docker compose build)
 ARG BACKEND_URL=http://attendance-checker-api:3002
-ARG NEXT_PUBLIC_CORE_HUB_PORTAL_URL=http://localhost:3100
+ARG NEXT_PUBLIC_CORE_HUB_WEB_URL=https://csmju2030.jowave.com
 ARG NEXT_PUBLIC_SUBSYSTEM_NAME=csmju-attendance-checker
 ENV BACKEND_URL=$BACKEND_URL \
-    NEXT_PUBLIC_CORE_HUB_PORTAL_URL=$NEXT_PUBLIC_CORE_HUB_PORTAL_URL \
+    NEXT_PUBLIC_CORE_HUB_WEB_URL=$NEXT_PUBLIC_CORE_HUB_WEB_URL \
     NEXT_PUBLIC_SUBSYSTEM_NAME=$NEXT_PUBLIC_SUBSYSTEM_NAME \
     NEXT_OUTPUT=standalone \
     NEXT_TELEMETRY_DISABLED=1

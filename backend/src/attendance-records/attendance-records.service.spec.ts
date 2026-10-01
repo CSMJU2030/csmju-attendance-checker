@@ -1,6 +1,7 @@
 import { AttendanceSessionStatus, AttendanceStatus } from '../../generated/prisma/client';
 import { currentCode } from '../attendance-sessions/attendance-code';
 import { CoreHubIdentity, SubsystemRole } from '../auth/core-hub-identity';
+import { PeopleService } from '../core-hub/people.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AttendanceRecordsService } from './attendance-records.service';
 import { MAX_FAILED_ATTEMPTS } from './check-in-attempts';
@@ -42,6 +43,9 @@ const STUDENT: CoreHubIdentity = {
   subsystemRole: SubsystemRole.STUDENT,
 };
 
+/** The student's own Core Hub token - passed on to GET /people/me only. */
+const TOKEN = 'student-token';
+
 const minutesAfterOpen = (minutes: number) => new Date(OPENED_AT.getTime() + minutes * 60_000);
 const codeAt = (now: Date) => currentCode(SESSION.codeSecret, now).code;
 
@@ -51,9 +55,11 @@ describe('AttendanceRecordsService.checkIn - business rules', () => {
     classSection: { findUnique: jest.Mock };
     attendanceRecord: { groupBy: jest.Mock; findUnique: jest.Mock; create: jest.Mock };
   };
+  let people: { myPersonCode: jest.Mock };
   let service: AttendanceRecordsService;
 
   beforeEach(() => {
+    people = { myPersonCode: jest.fn().mockResolvedValue('6504101234') };
     prisma = {
       attendanceSession: { findMany: jest.fn().mockResolvedValue([SESSION]) },
       classSection: { findUnique: jest.fn().mockResolvedValue(SECTION) },
@@ -63,18 +69,21 @@ describe('AttendanceRecordsService.checkIn - business rules', () => {
         create: jest.fn().mockImplementation(({ data }) => Promise.resolve({ id: 'rec-1', ...data })),
       },
     };
-    service = new AttendanceRecordsService(prisma as unknown as PrismaService);
+    service = new AttendanceRecordsService(
+      prisma as unknown as PrismaService,
+      people as unknown as PeopleService,
+    );
   });
 
   it('records PRESENT inside the radius and before the late threshold', async () => {
     const now = minutesAfterOpen(5);
 
-    const record = await service.checkIn({ code: codeAt(now), ...ROOM }, STUDENT, now);
+    const record = await service.checkIn({ code: codeAt(now), ...ROOM }, STUDENT, TOKEN, now);
 
     expect(record).toMatchObject({
       attendanceSessionId: SESSION.id,
       coreUserId: STUDENT.id,
-      email: STUDENT.email,
+      personCode: '6504101234',
       status: AttendanceStatus.PRESENT,
       distanceMeters: 0,
       classSection: { courseCode: 'CS201', sectionCode: '1' },
@@ -86,14 +95,14 @@ describe('AttendanceRecordsService.checkIn - business rules', () => {
 
   it('records LATE after the late threshold', async () => {
     const now = minutesAfterOpen(16);
-    const record = await service.checkIn({ code: codeAt(now), ...ROOM }, STUDENT, now);
+    const record = await service.checkIn({ code: codeAt(now), ...ROOM }, STUDENT, TOKEN, now);
     expect(record.status).toBe(AttendanceStatus.LATE);
   });
 
   it('rejects a wrong code with 400', async () => {
     const now = minutesAfterOpen(1);
     await expect(
-      service.checkIn({ code: '000000' === codeAt(now) ? '111111' : '000000', ...ROOM }, STUDENT, now),
+      service.checkIn({ code: '000000' === codeAt(now) ? '111111' : '000000', ...ROOM }, STUDENT, TOKEN, now),
     ).rejects.toMatchObject({ status: 400 });
     expect(prisma.attendanceRecord.create).not.toHaveBeenCalled();
   });
@@ -103,13 +112,13 @@ describe('AttendanceRecordsService.checkIn - business rules', () => {
     const wrong = codeAt(now) === '000000' ? '111111' : '000000';
 
     for (let i = 0; i < MAX_FAILED_ATTEMPTS; i += 1) {
-      await expect(service.checkIn({ code: wrong, ...ROOM }, STUDENT, now)).rejects.toMatchObject({
+      await expect(service.checkIn({ code: wrong, ...ROOM }, STUDENT, TOKEN, now)).rejects.toMatchObject({
         status: 400,
       });
     }
 
     await expect(
-      service.checkIn({ code: codeAt(now), ...ROOM }, STUDENT, now),
+      service.checkIn({ code: codeAt(now), ...ROOM }, STUDENT, TOKEN, now),
     ).rejects.toMatchObject({ status: 409 });
   });
 
@@ -118,7 +127,7 @@ describe('AttendanceRecordsService.checkIn - business rules', () => {
     const farAway = { latitude: ROOM.latitude + 0.001, longitude: ROOM.longitude };
 
     await expect(
-      service.checkIn({ code: codeAt(now), ...farAway }, STUDENT, now),
+      service.checkIn({ code: codeAt(now), ...farAway }, STUDENT, TOKEN, now),
     ).rejects.toMatchObject({
       status: 409,
       details: { distanceMeters: 111, radiusMeters: 50 },
@@ -128,7 +137,7 @@ describe('AttendanceRecordsService.checkIn - business rules', () => {
   it('rejects an imprecise location fix with 400', async () => {
     const now = minutesAfterOpen(1);
     await expect(
-      service.checkIn({ code: codeAt(now), ...ROOM, accuracyMeters: 500 }, STUDENT, now),
+      service.checkIn({ code: codeAt(now), ...ROOM, accuracyMeters: 500 }, STUDENT, TOKEN, now),
     ).rejects.toMatchObject({ status: 400 });
   });
 
@@ -137,7 +146,7 @@ describe('AttendanceRecordsService.checkIn - business rules', () => {
     prisma.attendanceRecord.findUnique.mockResolvedValue({ id: 'rec-0' });
 
     await expect(
-      service.checkIn({ code: codeAt(now), ...ROOM }, STUDENT, now),
+      service.checkIn({ code: codeAt(now), ...ROOM }, STUDENT, TOKEN, now),
     ).rejects.toMatchObject({ status: 409 });
     expect(prisma.attendanceRecord.create).not.toHaveBeenCalled();
   });
@@ -147,7 +156,7 @@ describe('AttendanceRecordsService.checkIn - business rules', () => {
     prisma.attendanceSession.findMany.mockResolvedValue([]);
 
     await expect(
-      service.checkIn({ code: codeAt(now), ...ROOM }, STUDENT, now),
+      service.checkIn({ code: codeAt(now), ...ROOM }, STUDENT, TOKEN, now),
     ).rejects.toMatchObject({ status: 400 });
   });
 
@@ -165,5 +174,34 @@ describe('AttendanceRecordsService.checkIn - business rules', () => {
 
   it('summarises a student with no check-ins as zeros', async () => {
     await expect(service.summaryMine(STUDENT)).resolves.toEqual({ total: 0, present: 0, late: 0 });
+  });
+
+  it('keeps the student id from Core Hub, never the e-mail address', async () => {
+    const now = minutesAfterOpen(1);
+    await service.checkIn({ code: codeAt(now), ...ROOM }, STUDENT, TOKEN, now);
+
+    expect(people.myPersonCode).toHaveBeenCalledWith(TOKEN);
+    const saved = prisma.attendanceRecord.create.mock.calls[0][0].data;
+    expect(saved.personCode).toBe('6504101234');
+    expect(saved).not.toHaveProperty('email');
+  });
+
+  it('records an account that is not linked to a person with no student id', async () => {
+    people.myPersonCode.mockResolvedValue(null);
+    const now = minutesAfterOpen(1);
+
+    await expect(service.checkIn({ code: codeAt(now), ...ROOM }, STUDENT, TOKEN, now)).resolves.toMatchObject({
+      personCode: null,
+    });
+  });
+
+  it('does not call Core Hub when a rule already rejects the check-in', async () => {
+    const now = minutesAfterOpen(1);
+    prisma.attendanceRecord.findUnique.mockResolvedValue({ id: 'rec-0' });
+
+    await expect(service.checkIn({ code: codeAt(now), ...ROOM }, STUDENT, TOKEN, now)).rejects.toMatchObject({
+      status: 409,
+    });
+    expect(people.myPersonCode).not.toHaveBeenCalled();
   });
 });

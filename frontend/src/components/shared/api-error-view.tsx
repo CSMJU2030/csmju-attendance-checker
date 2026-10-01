@@ -1,5 +1,5 @@
 import { ButtonLink, EmptyState, ErrorState, SearchIcon, ShieldOffIcon, WifiOffIcon } from "@csmju2030/design-system";
-import { PORTAL_URL } from "@/lib/config";
+import { CORE_HUB_WEB_URL } from "@/lib/config";
 import { STANDARD_MESSAGE } from "@/lib/errors";
 import type { ApiError } from "@/lib/types";
 
@@ -16,7 +16,7 @@ export function ApiErrorView({ error, retryHref, backHref = "/" }: { error: ApiE
           title="ไม่มีสิทธิ์เข้าถึง"
           description={STANDARD_MESSAGE.FORBIDDEN}
           action={
-            <ButtonLink href={PORTAL_URL} variant="secondary">
+            <ButtonLink href={CORE_HUB_WEB_URL} variant="secondary">
               กลับหน้าหลัก
             </ButtonLink>
           }

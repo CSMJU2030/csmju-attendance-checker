@@ -7,6 +7,7 @@ import {
 } from '../../generated/prisma/client';
 import { isValidCode } from '../attendance-sessions/attendance-code';
 import { CoreHubIdentity } from '../auth/core-hub-identity';
+import { PeopleService } from '../core-hub/people.service';
 import { PaginationQueryDto } from '../common/dto/pagination.dto';
 import { AppException } from '../common/errors';
 import { distanceInMeters } from '../common/geo';
@@ -44,15 +45,23 @@ function summarize(section: ClassSection): SectionSummary {
 export class AttendanceRecordsService {
   private readonly attempts = new CheckInAttempts();
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly people: PeopleService,
+  ) {}
 
   /**
    * The code decides which open session the student joins, so the student
    * types only the 6 digits shown in class.
+   *
+   * `token` is the student's own Core Hub token. It is used once, after every
+   * rule has passed, to read the student id from GET /people/me - the record
+   * keeps that id, never a name or an e-mail address (reference-data.md 8).
    */
   async checkIn(
     dto: CheckInDto,
     user: CoreHubIdentity,
+    token: string,
     now = new Date(),
   ): Promise<AttendanceRecordView> {
     const lockedMs = this.attempts.lockedOutFor(user.id, now);
@@ -114,11 +123,13 @@ export class AttendanceRecordsService {
         ? AttendanceStatus.LATE
         : AttendanceStatus.PRESENT;
 
+    const personCode = await this.people.myPersonCode(token);
+
     const record = await this.prisma.attendanceRecord.create({
       data: {
         attendanceSessionId: session.id,
         coreUserId: user.id,
-        email: user.email,
+        personCode,
         status,
         checkedInAt: now,
         distanceMeters: distance,

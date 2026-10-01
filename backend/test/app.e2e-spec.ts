@@ -58,6 +58,8 @@ describe('Attendance Checker (e2e)', () => {
 
     // The fake Core Hub gets a random port, so these are set here - the
     // configuration factory reads them when the testing module is compiled.
+    // GET /people/me: the student is linked to a person, staff accounts are not.
+    coreHub.setPeople({ [STUDENT_CORE_ID]: { personCode: '6504101234', personType: 'STUDENT' } });
     process.env.CORE_HUB_URL = coreHub.url;
     process.env.CORE_HUB_JWKS_URL = coreHub.jwksUrl;
 
@@ -233,6 +235,7 @@ describe('Attendance Checker (e2e)', () => {
           email: 'staff@core.local',
           coreRole: 'staff',
           subsystemRole: 'STAFF',
+          session: { expiresAt: expect.any(String) },
         },
       });
     });
@@ -264,6 +267,39 @@ describe('Attendance Checker (e2e)', () => {
 
 
   // -------------------------------------------------------- class sections --
+  describe('Core Hub roles since standards 1.6.0', () => {
+    it('lets a lecturer run class sections like staff', async () => {
+      const lecturerToken = await signCoreHubToken(key, {
+        sub: 'user-lecturer',
+        email: 'lecturer@core.local',
+        role: 'lecturer',
+      });
+
+      const me = await request(app.getHttpServer()).get('/api/v1/me').set(bearer(lecturerToken)).expect(200);
+      expect(me.body.data).toMatchObject({ coreRole: 'lecturer', subsystemRole: 'STAFF' });
+
+      await request(app.getHttpServer())
+        .post('/api/v1/class-sections')
+        .set(bearer(lecturerToken))
+        .send({
+          courseCode: 'CS310',
+          courseName: 'Lecturer section',
+          sectionCode: '1',
+          academicYear: 2026,
+          term: 1,
+          ...ROOM,
+        })
+        .expect(201);
+    });
+
+    it('refuses a guest with 403 FORBIDDEN', async () => {
+      const guestToken = await signCoreHubToken(key, { sub: 'user-guest', email: 'guest@core.local', role: 'guest' });
+
+      const response = await request(app.getHttpServer()).get('/api/v1/me').set(bearer(guestToken)).expect(403);
+      expect(response.body.error.code).toBe('FORBIDDEN');
+    });
+  });
+
   describe('Class sections', () => {
     const newSection = {
       courseCode: 'CS305',
@@ -438,11 +474,14 @@ describe('Attendance Checker (e2e)', () => {
       expect(response.status).toBe(201);
       expect(response.body.data).toMatchObject({
         coreUserId: STUDENT_CORE_ID,
-        email: 'student@core.local',
+        personCode: '6504101234',
         status: 'PRESENT',
         distanceMeters: 0,
         classSection: { courseCode: 'CS201', sectionCode: '1' },
       });
+
+      expect(response.body.data).not.toHaveProperty('email');
+      expect(coreHub.lastPeopleAuthorization).toBe(`Bearer ${studentToken}`);
 
       const again = await checkIn({ code, ...ROOM });
       expect(again.status).toBe(409);
@@ -587,6 +626,7 @@ describe('Attendance Checker (e2e)', () => {
         email: 'staff@core.local',
         coreRole: 'staff',
         subsystemRole: 'STAFF',
+        session: { expiresAt: expect.any(String) },
       });
 
       // Step 5: business API with the same Core Hub token.

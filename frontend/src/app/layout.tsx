@@ -4,7 +4,7 @@ import { preload } from "react-dom";
 import { CsmjuAppShell } from "@csmju2030/design-system";
 import { AccessGate } from "@/components/shared/access-gate";
 import { getMe } from "@/lib/api-server";
-import { DISPLAY_NAME, PORTAL_URL, SUBSYSTEM_NAME } from "@/lib/config";
+import { CORE_HUB_WEB_URL, DISPLAY_NAME, SUBSYSTEM_NAME } from "@/lib/config";
 import { navFor } from "@/lib/permissions";
 import "./globals.css";
 
@@ -38,7 +38,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
           displayName={DISPLAY_NAME}
           nav={me.ok ? navFor(me.data.subsystemRole) : []}
           user={user}
-          portalUrl={PORTAL_URL}
+          portalUrl={CORE_HUB_WEB_URL}
           logoutAction="/auth/logout"
         >
           {me.ok ? children : <AccessGate status={me.status} error={me.error} />}

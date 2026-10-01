@@ -245,3 +245,10 @@ export const PresentationIcon = (p: IconProps) => (
     <path d="m7 21 5-5 5 5" />
   </Icon>
 );
+
+export const UserIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+    <circle cx="12" cy="7" r="4" />
+  </Icon>
+);

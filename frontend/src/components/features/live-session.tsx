@@ -10,6 +10,7 @@ import {
   CardTitle,
   ConfirmDialog,
   EmptyState,
+  UserIcon,
   UsersIcon,
   formatDateTime,
   formatTime,
@@ -257,14 +258,17 @@ export function LiveSession({ initialSession, sectionLabel }: { initialSession: 
                 >
                   <span
                     aria-hidden
-                    className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary-soft text-sm font-semibold uppercase text-primary"
+                    className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary-soft text-primary"
                   >
-                    {record.email.charAt(0)}
+                    <UserIcon size={16} />
                   </span>
                   <span className="flex min-w-0 flex-1 flex-col">
-                    <span className="truncate text-ink" title={record.email}>
-                      {record.email}
-                    </span>
+                    {record.personCode ? (
+                      <span className="truncate font-mono font-semibold text-ink tabular-nums">{record.personCode}</span>
+                    ) : (
+                      // Core Hub has no person for this account (e.g. a test account).
+                      <span className="truncate text-body">บัญชีที่ไม่มีรหัสนักศึกษา</span>
+                    )}
                     <span className="text-sm text-body tabular-nums">
                       {formatTime(record.checkedInAt)} · ห่าง {record.distanceMeters} เมตร
                     </span>

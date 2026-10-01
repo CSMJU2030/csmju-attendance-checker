@@ -9,7 +9,7 @@ import {
   PresentationIcon,
   ShieldOffIcon,
 } from "@csmju2030/design-system";
-import { PORTAL_URL, SIGN_IN_URL } from "@/lib/config";
+import { CORE_HUB_WEB_URL, signInHref } from "@/lib/config";
 import { STANDARD_MESSAGE } from "@/lib/errors";
 import type { ApiError } from "@/lib/types";
 
@@ -36,7 +36,7 @@ export function AccessGate({ status, error }: { status: number; error: ApiError 
             เช็คชื่อด้วยรหัสที่อาจารย์แสดงในห้องเรียน ระบบยืนยันว่าคุณอยู่ในห้องจากตำแหน่งของอุปกรณ์
             เข้าสู่ระบบด้วยบัญชีของมหาวิทยาลัยผ่าน Core Hub
           </p>
-          <ButtonLink href={SIGN_IN_URL} size="lg" className="mt-2 w-full sm:w-auto">
+          <ButtonLink href={signInHref()} size="lg" className="mt-2 w-full sm:w-auto">
             เข้าสู่ระบบผ่าน Core Hub
           </ButtonLink>
         </Card>
@@ -72,7 +72,7 @@ export function AccessGate({ status, error }: { status: number; error: ApiError 
         title="ไม่มีสิทธิ์เข้าใช้งาน"
         description={STANDARD_MESSAGE.FORBIDDEN}
         action={
-          <ButtonLink href={PORTAL_URL} variant="secondary">
+          <ButtonLink href={CORE_HUB_WEB_URL} variant="secondary">
             กลับหน้าหลัก
           </ButtonLink>
         }

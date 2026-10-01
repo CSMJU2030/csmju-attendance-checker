@@ -1,13 +1,13 @@
 "use client";
 
-import { SIGN_IN_URL } from "./config";
+import { signInHref } from "./config";
 import { NETWORK_ERROR, readEnvelope } from "./envelope";
 import type { ApiResult } from "./types";
 
 /**
  * Browser-side call to this origin's `/api/*` (rewritten to the backend). The
  * HttpOnly SSO cookie travels automatically; no token is ever read by JS.
- * A 401 means the Core Hub session ended - restart SSO (auth-contract.md 7).
+ * A 401 means the Core Hub session ended - start /auth/login again (auth-contract 7).
  */
 export async function apiRequest<T>(
   method: "GET" | "POST" | "PATCH" | "DELETE",
@@ -28,7 +28,8 @@ export async function apiRequest<T>(
   }
 
   if (response.status === 401) {
-    window.location.assign(SIGN_IN_URL);
+    // Come back to this very page once Core Hub has signed the user in again.
+    window.location.assign(signInHref(`${window.location.pathname}${window.location.search}`));
   }
   return readEnvelope<T>(response);
 }

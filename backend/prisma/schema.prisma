@@ -5,7 +5,8 @@
 // field names stay camelCase.
 //
 // This database belongs to the subsystem only. It never contains Core Hub
-// users, passwords, sessions or key material. Every `*CoreUserId` / `coreUserId`
+// users, passwords, sessions or key material, and no names or e-mail
+// addresses (reference-data.md 8). Every `*CoreUserId` / `coreUserId`
 // column is an EXTERNAL identity reference to a Core Hub user id (`sub`).
 
 generator client {
@@ -88,13 +89,16 @@ model AttendanceSession {
 }
 
 /// One student's check-in for one session. Only the distance is kept, never
-/// the student's raw coordinates.
+/// the student's raw coordinates. The student is identified by ids only
+/// (reference-data.md 8): `coreUserId` is the token's `sub`, and `personCode`
+/// (student id) comes from Core Hub's GET /people/me - no names, no emails.
 model AttendanceRecord {
   id String @id @default(uuid())
 
   attendanceSessionId String           @map("attendance_session_id")
   coreUserId          String           @map("core_user_id")
-  email               String
+  /// Null when the Core Hub account is not linked to a person (e.g. test accounts).
+  personCode          String?          @map("person_code")
   status              AttendanceStatus
   checkedInAt         DateTime         @default(now()) @map("checked_in_at")
   distanceMeters      Int              @map("distance_meters")
