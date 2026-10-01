@@ -1,4 +1,5 @@
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Reflector } from '@nestjs/core';
 import { Request } from 'express';
 import { AppException } from '../../common/errors';
@@ -8,7 +9,7 @@ import { CoreHubIdentity } from '../core-hub-identity';
 import { CoreHubTokenVerifier } from '../core-hub-token.verifier';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 import { mapCoreRoleToSubsystemRole } from '../role-mapping';
-import { SSO_COOKIE_NAME, readCookie } from '../sso-session';
+import { readCookie, ssoCookieNames } from '../sso-session';
 
 /**
  * Authentication guard (spec §12).
@@ -18,16 +19,25 @@ import { SSO_COOKIE_NAME, readCookie } from '../sso-session';
  * custom headers is ever trusted as identity (spec §8, §41.7-41.8).
  *
  * A browser that arrived through central SSO carries the same Core Hub token in
- * an HttpOnly cookie instead of an Authorization header; the cookie is accepted
- * as a fallback and goes through exactly the same verification.
+ * the HttpOnly `<name>_access_token` cookie instead of an Authorization
+ * header; the cookie is accepted as a fallback and goes through exactly the
+ * same verification (auth-contract 6). No other cookie is ever read - on
+ * localhost the browser also sends Core Hub's own `csmju_*` cookies here.
  */
 @Injectable()
 export class CoreHubJwtGuard implements CanActivate {
+  private readonly sessionCookie: string;
+
   constructor(
     private readonly reflector: Reflector,
     private readonly verifier: CoreHubTokenVerifier,
     private readonly authEvents: AuthEventsLogger,
-  ) {}
+    config: ConfigService,
+  ) {
+    this.sessionCookie = ssoCookieNames(
+      config.get<string>('subsystemId', 'csmju-demo-subsystem'),
+    ).session;
+  }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
@@ -42,7 +52,7 @@ export class CoreHubJwtGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<Request & { user?: CoreHubIdentity }>();
     const token =
       this.extractBearerToken(request.header('authorization')) ??
-      readCookie(request.header('cookie'), SSO_COOKIE_NAME);
+      readCookie(request.header('cookie'), this.sessionCookie);
 
     if (!token) {
       this.authEvents.jwtRejected({
@@ -80,9 +90,12 @@ export class CoreHubJwtGuard implements CanActivate {
       coreRole: payload.role as string,
       sessionId: payload.sid,
       subsystemRole,
+      exp: payload.exp,
     };
 
     request.user = identity;
+    // token ที่ตรวจผ่านแล้ว สำหรับส่งต่อไป Core Hub (reference data) — ห้าม log
+    request.coreHubAccessToken = token;
 
     this.authEvents.jwtVerified({
       sub: identity.id,

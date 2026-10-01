@@ -31,6 +31,9 @@ function matches(row: Row, where: Row | undefined): boolean {
     if (field === 'AND') {
       return (condition as Row[]).every((clause) => matches(row, clause));
     }
+    if (condition && typeof condition === 'object' && 'in' in condition) {
+      return ((condition as Row).in as unknown[]).includes(row[field]);
+    }
     if (condition && typeof condition === 'object' && 'contains' in condition) {
       const haystack = String(row[field] ?? '');
       const needle = String((condition as Row).contains);
@@ -66,7 +69,7 @@ class Table {
   ) {}
 
   private findByWhere(where: Row): Row | undefined {
-    // Composite unique key, e.g. { studentId_courseId: { studentId, courseId } }
+    // Composite unique key, e.g. { attendanceSessionId_coreUserId: { ... } }
     for (const fields of this.compositeUnique) {
       const key = fields.join('_');
       if (where[key]) {
@@ -98,6 +101,21 @@ class Table {
     const sorted = sortRows(filtered, args.orderBy);
     const start = args.skip ?? 0;
     return sorted.slice(start, args.take === undefined ? undefined : start + args.take);
+  }
+
+  /** `groupBy({ by, where, _count: { _all: true } })` - the only shape this codebase uses. */
+  async groupBy({ by, where }: { by: string[]; where?: Row; _count?: Row }): Promise<Row[]> {
+    const groups = new Map<string, Row>();
+    for (const row of this.rows.filter((candidate) => matches(candidate, where))) {
+      const key = JSON.stringify(by.map((field) => row[field]));
+      const group = groups.get(key) ?? {
+        ...Object.fromEntries(by.map((field) => [field, row[field]])),
+        _count: { _all: 0 },
+      };
+      group._count._all += 1;
+      groups.set(key, group);
+    }
+    return [...groups.values()];
   }
 
   async count({ where }: { where?: Row } = {}): Promise<number> {
@@ -150,11 +168,18 @@ class Table {
 }
 
 export class InMemoryPrisma {
-  student = new Table(['studentCode', 'email', 'coreUserId']);
-  course = new Table(['courseCode']);
-  enrollment = new Table([], [['studentId', 'courseId']], () => ({
-    status: 'ENROLLED',
-    enrolledAt: new Date(),
+  classSection = new Table(
+    [],
+    [['courseCode', 'sectionCode', 'academicYear', 'term']],
+    () => ({ radiusMeters: 50, lateAfterMinutes: 15 }),
+  );
+  attendanceSession = new Table([], [], () => ({
+    status: 'OPEN',
+    openedAt: new Date(),
+    closedAt: null,
+  }));
+  attendanceRecord = new Table([], [['attendanceSessionId', 'coreUserId']], () => ({
+    checkedInAt: new Date(),
   }));
 
   async $connect(): Promise<void> {}
@@ -163,8 +188,8 @@ export class InMemoryPrisma {
   async onModuleDestroy(): Promise<void> {}
 
   reset(): void {
-    this.student.rows = [];
-    this.course.rows = [];
-    this.enrollment.rows = [];
+    this.classSection.rows = [];
+    this.attendanceSession.rows = [];
+    this.attendanceRecord.rows = [];
   }
 }

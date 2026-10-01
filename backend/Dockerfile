@@ -12,6 +12,9 @@ ENV DATABASE_URL=postgresql://build:build@localhost:5432/build_only
 
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY backend/package.json backend/
+# postinstall runs `prisma generate`, which needs the schema and config
+COPY backend/prisma backend/prisma
+COPY backend/prisma.config.ts backend/
 RUN pnpm install --frozen-lockfile --filter backend...
 
 COPY backend/ backend/
@@ -40,7 +43,7 @@ RUN chmod +x ./backend/docker/entrypoint.sh && chown -R node:node /app
 USER node
 WORKDIR /app/backend
 
-EXPOSE 3001
+EXPOSE 3002
 
 ENTRYPOINT ["./docker/entrypoint.sh"]
 CMD ["node", "dist/src/main.js"]

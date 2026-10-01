@@ -40,6 +40,12 @@ export interface TokenOptions {
   issuedAtOffsetSec?: number;
   kid?: string;
   omitSub?: boolean;
+  /** A token without `iat`, whose lifetime cannot be checked. */
+  omitIat?: boolean;
+  /** Authorized party - the subsystem the token was issued for. */
+  azp?: string;
+  /** Claims beyond the contract, which a subsystem must ignore. */
+  extraClaims?: Record<string, unknown>;
 }
 
 /** Signs a Core Hub-shaped RS256 access token. */
@@ -49,6 +55,7 @@ export async function signCoreHubToken(
 ): Promise<string> {
   const now = Math.floor(Date.now() / 1000);
   const payload: Record<string, unknown> = {
+    ...options.extraClaims,
     email: options.email ?? 'staff@core.local',
     role: options.role ?? 'staff',
     sid: options.sid ?? 'session-id',
@@ -57,13 +64,19 @@ export async function signCoreHubToken(
   if (!options.omitSub) {
     payload.sub = options.sub ?? 'user-003';
   }
+  if (options.azp !== undefined) {
+    payload.azp = options.azp;
+  }
 
   const jwt = new SignJWT(payload)
     .setProtectedHeader({ alg: 'RS256', typ: 'JWT', kid: options.kid ?? key.kid })
     .setIssuer(options.issuer ?? CORE_HUB_ISSUER)
     .setAudience(options.audience ?? CORE_HUB_AUDIENCE)
-    .setIssuedAt(now + (options.issuedAtOffsetSec ?? 0))
     .setExpirationTime(now + (options.expiresInSec ?? 900));
+
+  if (!options.omitIat) {
+    jwt.setIssuedAt(now + (options.issuedAtOffsetSec ?? 0));
+  }
 
   return jwt.sign(key.privateKey);
 }

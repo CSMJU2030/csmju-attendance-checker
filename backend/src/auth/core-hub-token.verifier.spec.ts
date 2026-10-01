@@ -1,4 +1,5 @@
 import { ConfigService } from '@nestjs/config';
+import { SignJWT } from 'jose';
 import {
   CORE_HUB_AUDIENCE,
   CORE_HUB_ISSUER,
@@ -23,6 +24,7 @@ const CONFIG: Record<string, unknown> = {
   'coreHub.jwksMinRefreshIntervalMs': 0,
   'coreHub.jwksRequestTimeoutMs': 1_000,
   'coreHub.clockToleranceSec': 0,
+  subsystemId: 'csmju-demo-subsystem',
 };
 
 const config = {
@@ -156,6 +158,104 @@ describe('CoreHubTokenVerifier - authentication tests (spec §13, §36)', () => 
     await expect(verifier.verify(token)).rejects.toMatchObject({
       reason: TokenRejectionReason.INVALID_CLAIMS,
     });
+  });
+
+  it('rejects a token without an expiry claim', async () => {
+    const token = await new SignJWT({ sub: 'user-003', role: 'staff' })
+      .setProtectedHeader({ alg: 'RS256', typ: 'JWT', kid: key.kid })
+      .setIssuer(CORE_HUB_ISSUER)
+      .setAudience(CORE_HUB_AUDIENCE)
+      .setIssuedAt()
+      .sign(key.privateKey);
+
+    await expect(verifier.verify(token)).rejects.toMatchObject({
+      reason: TokenRejectionReason.INVALID_CLAIMS,
+    });
+  });
+
+  // ---- step 9 (auth-contract 1.2): the lifetime of an access token --------
+  describe('step 9 - token lifetime', () => {
+    it('rejects a token without iat, whose lifetime cannot be checked', async () => {
+      const token = await signCoreHubToken(key, { omitIat: true });
+
+      await expect(verifier.verify(token)).rejects.toMatchObject({
+        reason: TokenRejectionReason.TOKEN_LIFETIME_EXCEEDED,
+      });
+    });
+
+    it('rejects a token whose iat is not a number', async () => {
+      const token = await signCoreHubToken(key, {
+        omitIat: true,
+        extraClaims: { iat: 'yesterday' },
+      });
+
+      await expect(verifier.verify(token)).rejects.toMatchObject({
+        reason: TokenRejectionReason.TOKEN_LIFETIME_EXCEEDED,
+      });
+    });
+
+    it('rejects a refresh-token-like lifetime of 7 days', async () => {
+      const token = await signCoreHubToken(key, { expiresInSec: 7 * 24 * 60 * 60 });
+
+      await expect(verifier.verify(token)).rejects.toMatchObject({
+        reason: TokenRejectionReason.TOKEN_LIFETIME_EXCEEDED,
+      });
+    });
+
+    it('rejects exp - iat of 961 s, one second past 900 + 60', async () => {
+      const token = await signCoreHubToken(key, { issuedAtOffsetSec: -61, expiresInSec: 900 });
+
+      await expect(verifier.verify(token)).rejects.toMatchObject({
+        reason: TokenRejectionReason.TOKEN_LIFETIME_EXCEEDED,
+      });
+    });
+
+    it('accepts exp - iat of exactly 900 + 60 s', async () => {
+      const token = await signCoreHubToken(key, { issuedAtOffsetSec: -60, expiresInSec: 900 });
+
+      await expect(verifier.verify(token)).resolves.toMatchObject({ sub: 'user-003' });
+    });
+  });
+
+  // ---- step 10 (auth-contract 1.2): the authorized party --------------------
+  describe('step 10 - azp', () => {
+    it('rejects a token issued for another subsystem', async () => {
+      const token = await signCoreHubToken(key, { azp: 'csmju-equipment' });
+
+      await expect(verifier.verify(token)).rejects.toMatchObject({
+        reason: TokenRejectionReason.INVALID_AZP,
+      });
+    });
+
+    it('rejects an azp that is not a string', async () => {
+      const token = await signCoreHubToken(key, { extraClaims: { azp: ['csmju-demo-subsystem'] } });
+
+      await expect(verifier.verify(token)).rejects.toMatchObject({
+        reason: TokenRejectionReason.INVALID_AZP,
+      });
+    });
+
+    it('accepts a token issued for this subsystem', async () => {
+      const token = await signCoreHubToken(key, { azp: 'csmju-demo-subsystem' });
+
+      await expect(verifier.verify(token)).resolves.toMatchObject({
+        azp: 'csmju-demo-subsystem',
+      });
+    });
+
+    it('accepts a token without azp - Core Hub does not set it everywhere yet', async () => {
+      const token = await signCoreHubToken(key);
+
+      await expect(verifier.verify(token)).resolves.toMatchObject({ sub: 'user-003' });
+    });
+  });
+
+  it('accepts claims beyond the contract - Core Hub may add them', async () => {
+    const token = await signCoreHubToken(key, {
+      extraClaims: { faculty: 'SCI', scope: 'reference:read', amr: ['pwd'] },
+    });
+
+    await expect(verifier.verify(token)).resolves.toMatchObject({ sub: 'user-003' });
   });
 
   it('accepts a token signed with a rotated key after JWKS refresh (spec §40)', async () => {

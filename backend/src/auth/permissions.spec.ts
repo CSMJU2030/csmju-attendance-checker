@@ -5,43 +5,44 @@ describe('Subsystem permission model (spec §15, §16)', () => {
   describe('STUDENT', () => {
     const role = SubsystemRole.STUDENT;
 
-    it('can read its own profile, view courses and enroll itself', () => {
-      expect(can(role, Permission.STUDENT_READ_OWN)).toBe(true);
-      expect(can(role, Permission.COURSE_READ)).toBe(true);
-      expect(can(role, Permission.ENROLLMENT_CREATE_OWN)).toBe(true);
+    it('can check in and read its own attendance', () => {
+      expect(can(role, Permission.ATTENDANCE_CHECK_IN)).toBe(true);
+      expect(can(role, Permission.ATTENDANCE_RECORD_READ_OWN)).toBe(true);
     });
 
-    it('cannot read other students, create courses or manage other enrollments', () => {
-      expect(can(role, Permission.STUDENT_READ_ANY)).toBe(false);
-      expect(can(role, Permission.STUDENT_UPDATE_ANY)).toBe(false);
-      expect(can(role, Permission.STUDENT_CREATE)).toBe(false);
-      expect(can(role, Permission.COURSE_CREATE)).toBe(false);
-      expect(can(role, Permission.ENROLLMENT_CREATE_ANY)).toBe(false);
+    it('cannot manage class sections or attendance sessions', () => {
+      expect(can(role, Permission.CLASS_SECTION_READ)).toBe(false);
+      expect(can(role, Permission.CLASS_SECTION_CREATE)).toBe(false);
+      expect(can(role, Permission.ATTENDANCE_SESSION_MANAGE_OWN)).toBe(false);
+      expect(can(role, Permission.ATTENDANCE_SESSION_MANAGE_ANY)).toBe(false);
     });
   });
 
   describe('ALUMNI', () => {
-    it('is read-only', () => {
-      const role = SubsystemRole.ALUMNI;
-      expect(can(role, Permission.STUDENT_READ_OWN)).toBe(true);
-      expect(can(role, Permission.COURSE_READ)).toBe(true);
-      expect(can(role, Permission.ENROLLMENT_CREATE_OWN)).toBe(false);
-      expect(can(role, Permission.STUDENT_UPDATE_OWN)).toBe(false);
+    it('holds no permission in this subsystem', () => {
+      expect(ROLE_PERMISSIONS[SubsystemRole.ALUMNI]).toHaveLength(0);
     });
   });
 
   describe('STAFF', () => {
     const role = SubsystemRole.STAFF;
 
-    it('manages students, courses and enrollments', () => {
-      expect(can(role, Permission.STUDENT_READ_ANY)).toBe(true);
-      expect(can(role, Permission.STUDENT_CREATE)).toBe(true);
-      expect(can(role, Permission.COURSE_CREATE)).toBe(true);
-      expect(can(role, Permission.ENROLLMENT_UPDATE_ANY)).toBe(true);
+    it('manages its own class sections and attendance sessions', () => {
+      expect(can(role, Permission.CLASS_SECTION_READ)).toBe(true);
+      expect(can(role, Permission.CLASS_SECTION_CREATE)).toBe(true);
+      expect(can(role, Permission.CLASS_SECTION_UPDATE_OWN)).toBe(true);
+      expect(can(role, Permission.CLASS_SECTION_DELETE_OWN)).toBe(true);
+      expect(can(role, Permission.ATTENDANCE_SESSION_MANAGE_OWN)).toBe(true);
     });
 
-    it('cannot delete courses - that stays with ADMIN', () => {
-      expect(can(role, Permission.COURSE_DELETE)).toBe(false);
+    it('cannot manage sections of other staff - that stays with ADMIN', () => {
+      expect(can(role, Permission.CLASS_SECTION_UPDATE_ANY)).toBe(false);
+      expect(can(role, Permission.CLASS_SECTION_DELETE_ANY)).toBe(false);
+      expect(can(role, Permission.ATTENDANCE_SESSION_MANAGE_ANY)).toBe(false);
+    });
+
+    it('does not check in as a student', () => {
+      expect(can(role, Permission.ATTENDANCE_CHECK_IN)).toBe(false);
     });
   });
 
@@ -55,10 +56,16 @@ describe('Subsystem permission model (spec §15, §16)', () => {
 
   it('canAny passes when at least one permission matches', () => {
     expect(
-      canAny(SubsystemRole.STUDENT, [Permission.STUDENT_READ_ANY, Permission.STUDENT_READ_OWN]),
+      canAny(SubsystemRole.STAFF, [
+        Permission.ATTENDANCE_SESSION_MANAGE_ANY,
+        Permission.ATTENDANCE_SESSION_MANAGE_OWN,
+      ]),
     ).toBe(true);
     expect(
-      canAny(SubsystemRole.ALUMNI, [Permission.COURSE_CREATE, Permission.COURSE_DELETE]),
+      canAny(SubsystemRole.STUDENT, [
+        Permission.CLASS_SECTION_CREATE,
+        Permission.ATTENDANCE_SESSION_MANAGE_OWN,
+      ]),
     ).toBe(false);
   });
 

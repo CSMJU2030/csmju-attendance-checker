@@ -12,18 +12,20 @@
  * Run it with both services up:
  *
  *   CORE_HUB_URL=http://localhost:3000 \
- *   DEMO_SUBSYSTEM_URL=http://localhost:3001 \
+ *   DEMO_SUBSYSTEM_URL=http://localhost:3002 \
  *   CORE_HUB_TEST_EMAIL=staff@core.local \
  *   CORE_HUB_TEST_PASSWORD=<password> \
- *   npm run test:integration
+ *   pnpm --filter backend test:integration
  *
- * Without those variables the suite skips instead of failing, so `npm test`
+ * Without those variables the suite skips instead of failing, so `pnpm test`
  * stays green on a machine that has no Core Hub running.
  */
 import { decodeJwt, decodeProtectedHeader } from 'jose';
+import { mapCoreRoleToSubsystemRole } from '../src/auth/role-mapping';
+import { ssoCookieNames } from '../src/auth/sso-session';
 
 const CORE_HUB_URL = process.env.CORE_HUB_URL ?? '';
-const DEMO_URL = process.env.DEMO_SUBSYSTEM_URL ?? 'http://localhost:3001';
+const DEMO_URL = process.env.DEMO_SUBSYSTEM_URL ?? 'http://localhost:3002';
 const EMAIL = process.env.CORE_HUB_TEST_EMAIL ?? '';
 const PASSWORD = process.env.CORE_HUB_TEST_PASSWORD ?? '';
 const PRESET_TOKEN = process.env.CORE_HUB_ACCESS_TOKEN ?? '';
@@ -124,11 +126,11 @@ describeIntegration('Core Hub -> Demo Subsystem integration (spec §37, §38)', 
     expect(body.success).toBe(true);
     expect(body.data.id).toBe(payload.sub);
     expect(body.data.coreRole).toBe(payload.role);
-    expect(body.data.subsystemRole).toBe(String(payload.role).toUpperCase());
+    expect(body.data.subsystemRole).toBe(mapCoreRoleToSubsystemRole(String(payload.role)));
   });
 
   it('Step 7: a protected business API returns 200 with the same token', async () => {
-    const response = await fetch(`${DEMO_URL}/api/v1/courses`, {
+    const response = await fetch(`${DEMO_URL}/api/v1/class-sections`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
 
@@ -140,13 +142,17 @@ describeIntegration('Core Hub -> Demo Subsystem integration (spec §37, §38)', 
   });
 
   it('rejects the same request without a token (401)', async () => {
-    const response = await fetch(`${DEMO_URL}/api/v1/courses`);
+    const response = await fetch(`${DEMO_URL}/api/v1/class-sections`);
     expect(response.status).toBe(401);
   });
 
   // ------------------------------------------------------------ central SSO --
-  describe('Central SSO + callback_url', () => {
-    const SUBSYSTEM = process.env.SSO_SUBSYSTEM ?? 'student-service';
+  // SSO 1.1: every sign-in starts at the subsystem's /auth/login. This suite
+  // plays Core Hub's web app, which calls the API authorize with the user's
+  // Bearer token and the state /auth/login minted.
+  describe('Central SSO 1.1', () => {
+    const SUBSYSTEM = process.env.SSO_SUBSYSTEM ?? 'csmju-attendance-checker';
+    const names = ssoCookieNames(SUBSYSTEM);
 
     const authorize = (query: string, token = accessToken) =>
       fetch(`${CORE_HUB_URL}/api/v1/auth/sso/authorize?${query}`, {
@@ -154,53 +160,68 @@ describeIntegration('Core Hub -> Demo Subsystem integration (spec §37, §38)', 
         redirect: 'manual',
       });
 
-    it('redirects to the callback URL registered in the Subsystem Registry', async () => {
-      const response = await authorize(`subsystem=${SUBSYSTEM}`);
+    const cookieFrom = (response: Response, name: string): string | undefined =>
+      response.headers
+        .getSetCookie()
+        .find((entry) => entry.startsWith(`${name}=`))
+        ?.split(';')[0];
+
+    /** GET /auth/login of the running subsystem: the state and its cookie. */
+    async function beginLogin(): Promise<{ state: string; cookie: string }> {
+      const response = await fetch(`${DEMO_URL}/auth/login`, { redirect: 'manual' });
+      const location = new URL(response.headers.get('location') ?? 'about:blank');
+
+      return {
+        state: location.searchParams.get('state') ?? '',
+        cookie: cookieFrom(response, names.state) ?? '',
+      };
+    }
+
+    it('redirects to the registered callback and returns the state unchanged', async () => {
+      const { state } = await beginLogin();
+      const response = await authorize(`subsystem=${SUBSYSTEM}&state=${encodeURIComponent(state)}`);
 
       expect(response.status).toBe(302);
 
-      const location = response.headers.get('location') ?? '';
-      const redirect = new URL(location);
+      const redirect = new URL(response.headers.get('location') ?? '');
 
-      expect(`${redirect.origin}${redirect.pathname}`).toBe(`${DEMO_URL}/auth/callback`);
+      expect(redirect.pathname).toBe('/auth/callback');
       expect(redirect.searchParams.get('access_token')).toBeTruthy();
-      expect(redirect.searchParams.get('token_type')).toBe('Bearer');
+      expect(redirect.searchParams.get('state')).toBe(state);
     });
 
-    it('hands the user to the subsystem, which verifies the token via JWKS', async () => {
-      const handoff = await authorize(`subsystem=${SUBSYSTEM}&state=integration-1`);
-      const location = handoff.headers.get('location') as string;
+    it('signs in and reaches the subsystem with the session cookie alone', async () => {
+      const login = await beginLogin();
+      const handoff = await authorize(`subsystem=${SUBSYSTEM}&state=${encodeURIComponent(login.state)}`);
 
-      const response = await fetch(location, { redirect: 'manual' });
-
-      expect(response.status).toBe(200);
-
-      const body = (await response.json()) as Record<string, any>;
-      const payload = decodeJwt(accessToken);
-
-      expect(body.success).toBe(true);
-      expect(body.data.id).toBe(payload.sub);
-      expect(body.data.subsystemRole).toBe(String(payload.role).toUpperCase());
-      expect(body.data.state).toBe('integration-1');
-      expect(response.headers.get('set-cookie') ?? '').toContain('core_hub_access_token=');
-    });
-
-    it('reaches the subsystem without a second login (SSO cookie only)', async () => {
-      const handoff = await authorize(`subsystem=${SUBSYSTEM}`);
       const callback = await fetch(handoff.headers.get('location') as string, {
+        headers: { cookie: login.cookie },
         redirect: 'manual',
       });
 
-      const setCookie = callback.headers.get('set-cookie') ?? '';
-      const cookie = setCookie.split(';')[0];
+      expect(callback.status).toBe(302);
 
-      const me = await fetch(`${DEMO_URL}/api/v1/me`, { headers: { cookie } });
+      const session = cookieFrom(callback, names.session);
+      expect(session).toBeTruthy();
+
+      const me = await fetch(`${DEMO_URL}/api/v1/me`, { headers: { cookie: session as string } });
 
       expect(me.status).toBe(200);
 
       const body = (await me.json()) as Record<string, any>;
 
       expect(body.data.id).toBe(decodeJwt(accessToken).sub);
+    });
+
+    it('restarts at /auth/login when Core Hub started the sign-in without a state', async () => {
+      const handoff = await authorize(`subsystem=${SUBSYSTEM}`);
+      const callback = await fetch(handoff.headers.get('location') as string, {
+        redirect: 'manual',
+      });
+
+      expect(callback.status).toBe(302);
+      expect(callback.headers.get('location')).toBe('/auth/login');
+      expect(cookieFrom(callback, names.session)).toBeUndefined();
     });
 
     it('rejects an unauthenticated SSO request (401)', async () => {

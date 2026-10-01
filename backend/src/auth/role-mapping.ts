@@ -6,9 +6,10 @@ import { SubsystemRole } from './core-hub-identity';
  *   Core Hub Role      Subsystem Role
  *   ---------------------------------
  *   student            STUDENT
- *   alumni             ALUMNI
+ *   lecturer           STAFF
  *   staff              STAFF
  *   admin              ADMIN
+ *   alumni · guest     (none - 403)
  *
  * The mapping is explicit and lives only in this subsystem. The Core Hub role
  * vocabulary can change without changing subsystem authorization logic - only
@@ -16,8 +17,11 @@ import { SubsystemRole } from './core-hub-identity';
  */
 export const CORE_ROLE_TO_SUBSYSTEM_ROLE: Readonly<Record<string, SubsystemRole>> = Object.freeze({
   student: SubsystemRole.STUDENT,
+  // Since standards 1.6.0 lecturers carry `lecturer`, not `staff`; both run class sections.
+  lecturer: SubsystemRole.STAFF,
   staff: SubsystemRole.STAFF,
   admin: SubsystemRole.ADMIN,
+  // alumni and guest are not registered for this subsystem: they get 403.
 });
 
 /**

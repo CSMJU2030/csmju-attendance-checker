@@ -9,11 +9,25 @@ import { TokenRejectionReason, TokenVerificationError } from './auth.errors';
 const REQUIRED_ALGORITHM = 'RS256';
 
 /**
- * Verifies a Core Hub access token (spec §9, §13).
+ * Longest life an access token may have, from contracts/jwt-contract.json:
+ * `maxTokenLifetimeSeconds` (15 minutes) plus `clockToleranceSeconds`.
+ * A refresh token lives 7 days, so this is what keeps one from being used in
+ * place of an access token.
+ */
+const MAX_TOKEN_LIFETIME_SEC = 900;
+const TOKEN_LIFETIME_TOLERANCE_SEC = 60;
+
+/**
+ * Verifies a Core Hub access token - the ten steps of auth-contract 4:
  *
- * 1. require alg = RS256   2. read kid           3. get public key from JWKS
- * 4. verify signature      5. verify iss          6. verify aud
- * 7. verify exp            8. reject anything else
+ *  1. a token was supplied           6. iss and aud
+ *  2. read alg and kid (untrusted)   7. exp (clock tolerance <= 60 s)
+ *  3. require alg = RS256            8. a non-empty sub
+ *  4. public key from JWKS by kid    9. iat present, exp - iat <= 900 + 60 s
+ *  5. signature, RS256 again        10. azp, when present, names this subsystem
+ *
+ * Claims outside the contract are ignored, never a reason to reject: Core Hub
+ * may add claims without breaking it.
  */
 @Injectable()
 export class CoreHubTokenVerifier {
@@ -23,11 +37,12 @@ export class CoreHubTokenVerifier {
   ) {}
 
   async verify(token: string): Promise<CoreHubTokenPayload> {
+    // Step 1: there is a token at all.
     if (typeof token !== 'string' || token.trim().length === 0) {
       throw new TokenVerificationError(TokenRejectionReason.MISSING_TOKEN, 'No token supplied');
     }
 
-    // Step 1-2: inspect the (unverified) header only to learn alg and kid.
+    // Step 2: inspect the (unverified) header only to learn alg and kid.
     let header: ReturnType<typeof decodeProtectedHeader>;
     try {
       header = decodeProtectedHeader(token);
@@ -38,7 +53,7 @@ export class CoreHubTokenVerifier {
       );
     }
 
-    // `alg: none`, HS256 and every other algorithm are rejected outright.
+    // Step 3: `alg: none`, HS256 and every other algorithm are rejected outright.
     if (header.alg !== REQUIRED_ALGORITHM) {
       throw new TokenVerificationError(
         TokenRejectionReason.UNSUPPORTED_ALGORITHM,
@@ -54,10 +69,11 @@ export class CoreHubTokenVerifier {
       );
     }
 
-    // Step 3: resolve the public key for this kid (refreshing JWKS if needed).
+    // Step 4: resolve the public key for this kid (refreshing JWKS if needed).
     const key = await this.jwks.getKey(header.kid);
 
-    // Step 4-7: signature + registered claim validation, enforcing RS256 again.
+    // Step 5-7: signature + registered claim validation, enforcing RS256 again.
+    // exp is required: a token without one would never expire.
     let payload: CoreHubTokenPayload;
     try {
       const result = await jwtVerify(token, key, {
@@ -65,6 +81,7 @@ export class CoreHubTokenVerifier {
         issuer: this.config.get<string>('coreHub.issuer', 'core-hub'),
         audience: this.config.get<string>('coreHub.audience', 'csmju2030'),
         clockTolerance: this.config.get<number>('coreHub.clockToleranceSec', 5),
+        requiredClaims: ['exp'],
       });
       payload = result.payload as unknown as CoreHubTokenPayload;
     } catch (error) {
@@ -80,7 +97,38 @@ export class CoreHubTokenVerifier {
       );
     }
 
+    // Step 9: an access token lives 15 minutes. Without iat its lifetime is
+    // unknown, so that fails this step too.
+    if (typeof payload.iat !== 'number') {
+      throw new TokenVerificationError(
+        TokenRejectionReason.TOKEN_LIFETIME_EXCEEDED,
+        'Token has no issued-at claim, so its lifetime cannot be checked',
+        header.kid,
+      );
+    }
+    if ((payload.exp as number) - payload.iat > MAX_TOKEN_LIFETIME_SEC + TOKEN_LIFETIME_TOLERANCE_SEC) {
+      throw new TokenVerificationError(
+        TokenRejectionReason.TOKEN_LIFETIME_EXCEEDED,
+        'Token lives longer than a Core Hub access token',
+        header.kid,
+      );
+    }
+
+    // Step 10: a token Core Hub issued for another subsystem is not for us.
+    // Checked only when azp is present - a later standard makes it required.
+    if (payload.azp !== undefined && payload.azp !== this.subsystemId) {
+      throw new TokenVerificationError(
+        TokenRejectionReason.INVALID_AZP,
+        'Token was issued for another subsystem',
+        header.kid,
+      );
+    }
+
     return payload;
+  }
+
+  private get subsystemId(): string {
+    return this.config.get<string>('subsystemId', 'csmju-demo-subsystem');
   }
 
   private translate(error: unknown, kid: string): TokenVerificationError {
@@ -93,6 +141,14 @@ export class CoreHubTokenVerifier {
     }
 
     if (error instanceof joseErrors.JWTClaimValidationFailed) {
+      if (error.claim === 'iat') {
+        // jose saw an iat that is not a number - step 9 cannot pass.
+        return new TokenVerificationError(
+          TokenRejectionReason.TOKEN_LIFETIME_EXCEEDED,
+          'Token issued-at claim is invalid',
+          kid,
+        );
+      }
       if (error.claim === 'iss') {
         return new TokenVerificationError(
           TokenRejectionReason.INVALID_ISSUER,

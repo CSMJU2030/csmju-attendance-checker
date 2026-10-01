@@ -1,0 +1,103 @@
+# csmju-attendance-checker: its own PostgreSQL, the NestJS API and the Next.js
+# frontend. It never connects to the Core Hub database - only to the Core Hub
+# JWKS URL (from the API) and to the Core Hub portal (from the user's browser).
+#
+#   docker compose up --build
+#   → http://localhost:3102
+#
+# Core Hub defaults to the real server (CORE_HUB_URL / CORE_HUB_WEB_URL to
+# override, e.g. a Core Hub on the host). The callback registered in Core Hub
+# is the frontend's: http://localhost:<frontend port>/auth/callback.
+services:
+  attendance-checker-db:
+    image: postgres:16-alpine
+    container_name: attendance-checker-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: attendance_checker_db
+    ports:
+      # 5434 on the host so it cannot collide with a local PostgreSQL on 5432
+      - '5434:5432'
+    volumes:
+      - attendance-checker-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d attendance_checker_db']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  attendance-checker-api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: attendance-checker-api
+    restart: unless-stopped
+    depends_on:
+      attendance-checker-db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      PORT: 3002
+      DATABASE_URL: postgresql://postgres:postgres@attendance-checker-db:5432/attendance_checker_db
+      # The real Core Hub by default; set CORE_HUB_URL to use one on the host.
+      CORE_HUB_URL: ${CORE_HUB_URL:-https://csmju2030.jowave.com}
+      CORE_HUB_JWKS_URL: ${CORE_HUB_JWKS_URL:-https://csmju2030.jowave.com/api/v1/.well-known/jwks.json}
+      # Where /auth/login and /auth/logout send the user's browser.
+      CORE_HUB_WEB_URL: ${CORE_HUB_WEB_URL:-https://csmju2030.jowave.com}
+      CORE_HUB_ISSUER: ${CORE_HUB_ISSUER:-core-hub}
+      CORE_HUB_AUDIENCE: ${CORE_HUB_AUDIENCE:-csmju2030}
+      SUBSYSTEM_ID: csmju-attendance-checker
+      SUBSYSTEM_NAME: Attendance Checker
+    ports:
+      - '3002:3002'
+    extra_hosts:
+      # Lets the container reach a Core Hub running on the host (Linux support)
+      - 'host.docker.internal:host-gateway'
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:3002/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  attendance-checker-web:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        BACKEND_URL: http://attendance-checker-api:3002
+        # Opened by the user's browser, so it is a host URL, not a container name.
+        NEXT_PUBLIC_CORE_HUB_WEB_URL: ${CORE_HUB_WEB_URL:-https://csmju2030.jowave.com}
+        NEXT_PUBLIC_SUBSYSTEM_NAME: csmju-attendance-checker
+    container_name: attendance-checker-web
+    restart: unless-stopped
+    depends_on:
+      attendance-checker-api:
+        condition: service_healthy
+    environment:
+      BACKEND_URL: http://attendance-checker-api:3002
+    ports:
+      - '3102:3102'
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:3102/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+volumes:
+  attendance-checker-db-data:

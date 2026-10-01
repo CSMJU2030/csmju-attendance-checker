@@ -1,13 +1,13 @@
 /**
- * Development seed data for the Demo Subsystem.
+ * Development seed data for the Attendance Checker.
  *
  * IMPORTANT: no Core Hub users, passwords or sessions are seeded here.
- * `coreUserId` values below are EXTERNAL REFERENCES to Core Hub identities
+ * `ownerCoreUserId` values are EXTERNAL REFERENCES to Core Hub identities
  * (the `sub` claim of a Core Hub access token) and carry no credentials.
  */
 import 'dotenv/config';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { PrismaClient, EnrollmentStatus } from '../generated/prisma/client';
+import { PrismaClient } from '../generated/prisma/client';
 
 // Prisma 7 driver adapter, bound to the subsystem's own DATABASE_URL.
 const adapter = new PrismaPg({
@@ -16,108 +16,38 @@ const adapter = new PrismaPg({
 
 const prisma = new PrismaClient({ adapter });
 
+/** `staff@core.local` in the Core Hub development seed. */
+const STAFF_CORE_USER_ID = 'user-003';
+
+/** Faculty of Science, Maejo University (approximate check-in point). */
+const CHECK_IN_POINT = { latitude: 18.8925, longitude: 99.0142 };
+
 async function main(): Promise<void> {
-  console.log('[seed] seeding demo_student_db ...');
+  console.log('[seed] seeding attendance_checker_db ...');
 
-  const students = [
-    {
-      studentCode: 'CS67001',
-      coreUserId: 'user-001', // external reference to a Core Hub identity
-      firstName: 'Somchai',
-      lastName: 'Jaidee',
-      email: 'cs67001@student.csmju.local',
-      faculty: 'Science',
-      major: 'Computer Science',
-      year: 3,
-    },
-    {
-      studentCode: 'CS67002',
-      coreUserId: 'user-002',
-      firstName: 'Suda',
-      lastName: 'Rakdee',
-      email: 'cs67002@student.csmju.local',
-      faculty: 'Science',
-      major: 'Computer Science',
-      year: 2,
-    },
-    {
-      studentCode: 'CS67003',
-      coreUserId: null,
-      firstName: 'Anan',
-      lastName: 'Wongsakul',
-      email: 'cs67003@student.csmju.local',
-      faculty: 'Science',
-      major: 'Software Engineering',
-      year: 1,
-    },
+  const sections = [
+    { courseCode: 'CS201', courseName: 'Data Structures', sectionCode: '1' },
+    { courseCode: 'CS201', courseName: 'Data Structures', sectionCode: '2' },
+    { courseCode: 'CS305', courseName: 'Software Engineering', sectionCode: '1' },
   ];
 
-  for (const student of students) {
-    await prisma.student.upsert({
-      where: { studentCode: student.studentCode },
-      update: student,
-      create: student,
+  for (const section of sections) {
+    const key = { ...section, academicYear: 2026, term: 1 };
+    await prisma.classSection.upsert({
+      where: {
+        courseCode_sectionCode_academicYear_term: {
+          courseCode: key.courseCode,
+          sectionCode: key.sectionCode,
+          academicYear: key.academicYear,
+          term: key.term,
+        },
+      },
+      update: { courseName: key.courseName, ...CHECK_IN_POINT },
+      create: { ...key, ...CHECK_IN_POINT, ownerCoreUserId: STAFF_CORE_USER_ID },
     });
   }
 
-  const courses = [
-    {
-      courseCode: 'CS101',
-      name: 'Introduction to Programming',
-      credits: 3,
-      description: 'Fundamentals of programming with TypeScript.',
-    },
-    {
-      courseCode: 'CS201',
-      name: 'Data Structures and Algorithms',
-      credits: 3,
-      description: 'Core data structures, complexity analysis and algorithms.',
-    },
-    {
-      courseCode: 'CS301',
-      name: 'Distributed Systems and Identity',
-      credits: 3,
-      description: 'SSO, OAuth2/OIDC concepts, JWT, JWKS and key rotation.',
-    },
-  ];
-
-  for (const course of courses) {
-    await prisma.course.upsert({
-      where: { courseCode: course.courseCode },
-      update: course,
-      create: course,
-    });
-  }
-
-  const pairs: Array<[string, string, EnrollmentStatus]> = [
-    ['CS67001', 'CS101', EnrollmentStatus.COMPLETED],
-    ['CS67001', 'CS201', EnrollmentStatus.ENROLLED],
-    ['CS67001', 'CS301', EnrollmentStatus.ENROLLED],
-    ['CS67002', 'CS101', EnrollmentStatus.ENROLLED],
-    ['CS67002', 'CS201', EnrollmentStatus.DROPPED],
-    ['CS67003', 'CS101', EnrollmentStatus.ENROLLED],
-  ];
-
-  for (const [studentCode, courseCode, status] of pairs) {
-    const student = await prisma.student.findUniqueOrThrow({ where: { studentCode } });
-    const course = await prisma.course.findUniqueOrThrow({ where: { courseCode } });
-
-    await prisma.enrollment.upsert({
-      where: { studentId_courseId: { studentId: student.id, courseId: course.id } },
-      update: { status },
-      create: { studentId: student.id, courseId: course.id, status },
-    });
-  }
-
-  const [studentCount, courseCount, enrollmentCount] = await Promise.all([
-    prisma.student.count(),
-    prisma.course.count(),
-    prisma.enrollment.count(),
-  ]);
-
-  console.log(
-    `[seed] done: ${studentCount} students, ${courseCount} courses, ${enrollmentCount} enrollments`,
-  );
+  console.log(`[seed] done: ${await prisma.classSection.count()} class sections`);
 }
 
 main()
