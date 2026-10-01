@@ -17,7 +17,7 @@ import {
   fieldA11y,
   formatTerm,
   toBuddhistYear,
-} from "@csmju2030/design-system";
+} from "@/components/shared/kit";
 import { apiRequest } from "@/lib/api-client";
 import {
   IDENTITY_FIELDS,
@@ -157,15 +157,15 @@ export function ClassSectionForm({ section }: { section?: ClassSection }) {
   return (
     <Card>
       <form onSubmit={onSubmit} noValidate className="flex flex-col gap-6">
-        <p className="text-sm text-muted">ช่องที่มี * จำเป็นต้องกรอก</p>
+        <p className="text-sm/relaxed text-on-surface-variant">ช่องที่มี * จำเป็นต้องกรอก</p>
         <div aria-live="assertive" className="sr-only">
           {announce}
         </div>
         {formError ? <Alert tone="danger" title="บันทึกไม่สำเร็จ">{formError}</Alert> : null}
 
         <fieldset className="flex flex-col gap-4">
-          <legend className="mb-2 flex items-center gap-2 font-heading text-lg font-semibold text-ink">
-            <span aria-hidden className="flex size-8 items-center justify-center rounded-md bg-primary-soft text-primary">
+          <legend className="mb-2 flex items-center gap-2 font-display text-body-lg font-semibold text-on-surface">
+            <span aria-hidden className="flex size-8 items-center justify-center rounded-xl bg-primary-container/10 text-primary-container">
               <BookOpenIcon size={16} />
             </span>
             รายวิชา
@@ -227,16 +227,16 @@ export function ClassSectionForm({ section }: { section?: ClassSection }) {
           )}
         </fieldset>
 
-        <hr className="border-line" />
+        <hr className="border-outline-variant/40" />
 
         <fieldset className="flex flex-col gap-4">
-          <legend className="mb-2 flex items-center gap-2 font-heading text-lg font-semibold text-ink">
-            <span aria-hidden className="flex size-8 items-center justify-center rounded-md bg-primary-soft text-primary">
+          <legend className="mb-2 flex items-center gap-2 font-display text-body-lg font-semibold text-on-surface">
+            <span aria-hidden className="flex size-8 items-center justify-center rounded-xl bg-primary-container/10 text-primary-container">
               <MapPinIcon size={16} />
             </span>
             จุดเช็คชื่อ
           </legend>
-          <p className="text-sm text-muted">
+          <p className="text-sm/relaxed text-on-surface-variant">
             ยืนอยู่ในห้องเรียนแล้วกดใช้ตำแหน่งปัจจุบัน นักศึกษาต้องอยู่ภายในรัศมีจากจุดนี้จึงจะเช็คชื่อได้
           </p>
           <div>
@@ -246,7 +246,7 @@ export function ClassSectionForm({ section }: { section?: ClassSection }) {
             </Button>
           </div>
           {locationNote ? (
-            <p aria-live="polite" className="text-sm text-body">
+            <p aria-live="polite" className="text-sm/relaxed text-on-surface-variant">
               {locationNote}
             </p>
           ) : null}
@@ -280,7 +280,7 @@ export function ClassSectionForm({ section }: { section?: ClassSection }) {
           </div>
         </fieldset>
 
-        <div className="flex flex-col gap-2 border-t border-line pt-6 sm:flex-row">
+        <div className="flex flex-col gap-2 border-t border-outline-variant/40 pt-6 sm:flex-row">
           <Button type="submit" loading={saving}>
             {editing ? "บันทึกการเปลี่ยนแปลง" : "บันทึกกลุ่มเรียน"}
           </Button>

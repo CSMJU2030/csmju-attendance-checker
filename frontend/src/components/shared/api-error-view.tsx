@@ -1,4 +1,4 @@
-import { ButtonLink, EmptyState, ErrorState, SearchIcon, ShieldOffIcon, WifiOffIcon } from "@csmju2030/design-system";
+import { ButtonLink, EmptyState, ErrorState, SearchIcon, ShieldOffIcon, WifiOffIcon } from "@/components/shared/kit";
 import { CORE_HUB_WEB_URL } from "@/lib/config";
 import { STANDARD_MESSAGE } from "@/lib/errors";
 import type { ApiError } from "@/lib/types";

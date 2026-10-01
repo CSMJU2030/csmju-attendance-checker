@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { PageHeader } from "@csmju2030/design-system";
+import { PageHeaderBar } from "@/components/shared/kit";
 import { CheckInForm } from "@/components/features/check-in-form";
 import { ApiErrorView } from "@/components/shared/api-error-view";
 import { getMe } from "@/lib/api-server";
@@ -18,7 +18,7 @@ export default async function CheckInPage() {
 
   return (
     <>
-      <PageHeader
+      <PageHeaderBar
         title="เช็คชื่อเข้าเรียน"
         description="กรอกรหัสที่อาจารย์แสดงในห้องเรียน แล้วอนุญาตให้ระบบใช้ตำแหน่งของอุปกรณ์"
       />

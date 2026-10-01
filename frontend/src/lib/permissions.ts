@@ -1,4 +1,4 @@
-import type { NavItem } from "@csmju2030/design-system";
+import type { NavItem } from "@/csmju";
 import type { SubsystemRole } from "./types";
 
 /**
@@ -55,16 +55,16 @@ export function canManageSection(
 }
 
 export function navFor(role: SubsystemRole): NavItem[] {
-  const nav: NavItem[] = [{ label: "ภาพรวม", href: "/", icon: "layout-dashboard" }];
+  // Icon names come from the central CsmjuAppShell (NavIconName).
+  const nav: NavItem[] = [{ label: "ภาพรวม", labelEn: "Overview", href: "/", icon: "dashboard" }];
   if (can(role, "attendance:check-in")) {
-    nav.push({ label: "เช็คชื่อ", href: "/check-in", icon: "map-pin" });
+    nav.push({ label: "เช็คชื่อ", labelEn: "Check in", href: "/check-in", icon: "event" });
   }
   if (can(role, "attendance-record:read:own")) {
-    nav.push({ label: "ประวัติการเช็คชื่อ", href: "/attendance-records", icon: "history" });
+    nav.push({ label: "ประวัติการเช็คชื่อ", labelEn: "History", href: "/attendance-records", icon: "description" });
   }
   if (can(role, "class-section:read")) {
-    // A session screen is reached from its section, so it lights up "กลุ่มเรียน".
-    nav.push({ label: "กลุ่มเรียน", href: "/class-sections", icon: "book-open", match: ["/attendance-sessions"] });
+    nav.push({ label: "กลุ่มเรียน", labelEn: "Sections", href: "/class-sections", icon: "school" });
   }
   return nav;
 }

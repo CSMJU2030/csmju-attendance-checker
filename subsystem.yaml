@@ -41,6 +41,25 @@ probes:
       latitude: 18.8925
       longitude: 99.0142
 
+# component ในข้อ 7.1 ที่ template กลาง (csmju/) ยังไม่มี — ประกอบเองจาก class ใน csmju/ui.ts + token
+# (ui-design-system.md 17.0) · อยู่ที่ frontend/src/components/shared/kit/
+local_components:
+  - Button
+  - Card
+  - StatCard
+  - Alert
+  - EmptyState
+  - ErrorState
+  - Skeleton
+  - FormField
+  - TextInput
+  - Select
+  - Checkbox
+  - DescriptionList
+  - Pagination
+  - RoleBadge
+  - formatDate
+
 owners:
   pl: "@csmju2030/pl-attendance-checker"
   aie: "@csmju2030/aie-attendance-checker"

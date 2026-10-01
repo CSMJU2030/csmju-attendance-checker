@@ -9,15 +9,15 @@ import {
   EmptyState,
   HistoryIcon,
   MapPinIcon,
-  PageHeader,
+  PageHeaderBar,
   PresentationIcon,
-  RoleBadge,
+  CORE_ROLE_LABEL,
   StatCard,
   UsersIcon,
   formatNumber,
   formatTerm,
   formatTime,
-} from "@csmju2030/design-system";
+} from "@/components/shared/kit";
 import { AttendanceRecordList } from "@/components/features/attendance-record-list";
 import { ApiErrorView } from "@/components/shared/api-error-view";
 import { RowsSkeleton, StatsSkeleton, SummarySkeleton } from "@/components/shared/skeletons";
@@ -35,14 +35,9 @@ export default async function OverviewPage() {
 
   return (
     <>
-      <PageHeader
+      <PageHeaderBar
         title="ภาพรวม"
-        description={
-          <span className="inline-flex flex-wrap items-center gap-2">
-            <RoleBadge coreRole={me.data.coreRole} />
-            <span className="break-all">{me.data.email}</span>
-          </span>
-        }
+        description={`${CORE_ROLE_LABEL[me.data.coreRole] ?? me.data.coreRole} · ${me.data.email}`}
       />
       {staffView ? <StaffOverview me={me.data} /> : can(role, "attendance:check-in") ? <StudentOverview /> : null}
     </>
@@ -63,17 +58,17 @@ function StudentOverview() {
     <>
       <section
         aria-labelledby="check-in-cta"
-        className="flex flex-col gap-4 rounded-lg border border-info-line bg-primary-soft p-6 md:flex-row md:items-center md:justify-between md:p-8"
+        className="flex flex-col gap-4 rounded-2xl border border-primary-container/20 bg-primary-container/10 p-6 md:flex-row md:items-center md:justify-between md:p-8"
       >
         <div className="flex items-start gap-4">
-          <span aria-hidden className="flex size-12 shrink-0 items-center justify-center rounded-md bg-primary text-inverse">
+          <span aria-hidden className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-primary-container text-white">
             <MapPinIcon size={24} />
           </span>
           <div className="flex flex-col gap-1">
-            <h2 id="check-in-cta" className="font-heading text-xl font-semibold text-ink">
+            <h2 id="check-in-cta" className="font-display text-[20px]/[1.5] font-semibold text-on-surface">
               เช็คชื่อเข้าเรียน
             </h2>
-            <p className="max-w-prose text-body">
+            <p className="max-w-prose text-on-surface-variant">
               กรอกรหัส 6 หลักที่อาจารย์แสดงในห้องเรียน แล้วระบบจะยืนยันตำแหน่งของคุณให้อัตโนมัติ
             </p>
           </div>
@@ -90,7 +85,7 @@ function StudentOverview() {
       <Card className="flex flex-col gap-4">
         <div className="flex items-center justify-between gap-2">
           <CardTitle>เช็คชื่อล่าสุด</CardTitle>
-          <Link href="/attendance-records" className="inline-flex min-h-11 items-center text-sm font-semibold text-primary hover:underline">
+          <Link href="/attendance-records" className="inline-flex min-h-11 items-center text-sm/relaxed font-semibold text-primary-container hover:underline">
             ดูทั้งหมด
           </Link>
         </div>
@@ -108,18 +103,18 @@ async function StudentSummary() {
     return null;
   }
   return (
-        <Card as="section" flush aria-label="สรุปการเช็คชื่อของฉัน" className="grid grid-cols-3 divide-x divide-line">
+        <Card as="section" flush aria-label="สรุปการเช็คชื่อของฉัน" className="grid grid-cols-3 divide-x divide-outline-variant/40">
           {[
-            { label: "เช็คชื่อทั้งหมด", value: summary.data.total, tone: "text-ink", hint: "ครั้ง" },
-            { label: "มาตรงเวลา", value: summary.data.present, tone: "text-success", hint: onTimeRate(summary.data) },
-            { label: "มาสาย", value: summary.data.late, tone: "text-warning", hint: "ครั้ง" },
+            { label: "เช็คชื่อทั้งหมด", value: summary.data.total, tone: "text-on-surface", hint: "ครั้ง" },
+            { label: "มาตรงเวลา", value: summary.data.present, tone: "text-emerald-700", hint: onTimeRate(summary.data) },
+            { label: "มาสาย", value: summary.data.late, tone: "text-amber-800", hint: "ครั้ง" },
           ].map((stat) => (
             <div key={stat.label} className="flex flex-col items-center gap-1 px-2 py-4 text-center md:py-6">
-              <span className={`font-heading text-2xl font-semibold tabular-nums md:text-3xl ${stat.tone}`}>
+              <span className={`font-display text-headline-md font-semibold tabular-nums md:text-[30px]/[1.4] ${stat.tone}`}>
                 {formatNumber(stat.value)}
               </span>
-              <span className="text-sm font-semibold text-ink">{stat.label}</span>
-              <span className="text-sm text-body">{stat.hint}</span>
+              <span className="text-sm/relaxed font-semibold text-on-surface">{stat.label}</span>
+              <span className="text-sm/relaxed text-on-surface-variant">{stat.hint}</span>
             </div>
           ))}
         </Card>
@@ -195,21 +190,21 @@ async function StaffDashboard({ me }: { me: Me }) {
         {!openSessions.ok ? (
           <ApiErrorView error={openSessions.error} retryHref="/" />
         ) : open.length === 0 ? (
-          <p className="px-4 pb-6 pt-2 text-body md:px-6">
+          <p className="px-4 pb-6 pt-2 text-on-surface-variant md:px-6">
             ยังไม่มีรอบที่เปิดอยู่ เปิดรอบใหม่ได้จากหน้ารายละเอียดของกลุ่มเรียน
           </p>
         ) : (
-          <ul className="mt-2 flex flex-col divide-y divide-line border-t border-line">
+          <ul className="mt-2 flex flex-col divide-y divide-outline-variant/40 border-t border-outline-variant/40">
             {open.map((session) => {
               const section = sectionById.get(session.classSectionId);
               return (
                 <li key={session.id} className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between md:px-6">
                   <div className="flex min-w-0 flex-col gap-1">
-                    <p className="font-semibold text-ink">
+                    <p className="font-semibold text-on-surface">
                       {section ? `${section.courseCode} ${section.courseName}` : "กลุ่มเรียน"}
-                      {section ? <span className="font-normal text-body"> · กลุ่ม {section.sectionCode}</span> : null}
+                      {section ? <span className="font-normal text-on-surface-variant"> · กลุ่ม {section.sectionCode}</span> : null}
                     </p>
-                    <p className="text-sm text-body tabular-nums">
+                    <p className="text-sm/relaxed text-on-surface-variant tabular-nums">
                       เปิดเมื่อ {formatTime(session.openedAt)} · เช็คชื่อแล้ว {formatNumber(session.recordCount)} คน
                       {session.lateCount > 0 ? ` · สาย ${formatNumber(session.lateCount)} คน` : ""}
                     </p>
@@ -228,7 +223,7 @@ async function StaffDashboard({ me }: { me: Me }) {
       <Card className="flex flex-col gap-4">
         <div className="flex items-center justify-between gap-2">
           <CardTitle>กลุ่มเรียนของฉัน</CardTitle>
-          <Link href="/class-sections" className="inline-flex min-h-11 items-center text-sm font-semibold text-primary hover:underline">
+          <Link href="/class-sections" className="inline-flex min-h-11 items-center text-sm/relaxed font-semibold text-primary-container hover:underline">
             ดูทั้งหมด
           </Link>
         </div>
@@ -253,24 +248,24 @@ async function StaffDashboard({ me }: { me: Me }) {
                 <li key={section.id}>
                   <Link
                     href={`/class-sections/${section.id}`}
-                    className="group flex h-full items-start justify-between gap-3 rounded-md border border-line p-4 transition-colors duration-fast hover:border-line-strong hover:bg-primary-soft"
+                    className="group flex h-full items-start justify-between gap-3 rounded-xl border border-outline-variant/40 p-4 transition-colors duration-150 hover:border-outline-variant hover:bg-primary-container/10"
                   >
                     <span className="flex min-w-0 flex-col gap-1">
                       <span className="flex items-center gap-2">
-                        <span className="font-mono text-sm text-body">{section.courseCode}</span>
+                        <span className="font-mono text-sm/relaxed text-on-surface-variant">{section.courseCode}</span>
                         {live ? (
-                          <span className="inline-flex items-center gap-1 text-sm font-semibold text-success">
+                          <span className="inline-flex items-center gap-1 text-sm/relaxed font-semibold text-emerald-700">
                             <span aria-hidden className="size-2 rounded-full bg-success" />
                             เปิดรอบอยู่
                           </span>
                         ) : null}
                       </span>
-                      <span className="font-semibold text-ink">{section.courseName}</span>
-                      <span className="text-sm text-body">
+                      <span className="font-semibold text-on-surface">{section.courseName}</span>
+                      <span className="text-sm/relaxed text-on-surface-variant">
                         กลุ่ม {section.sectionCode} · {formatTerm(section.term, section.academicYear)}
                       </span>
                     </span>
-                    <ChevronRightIcon size={20} className="mt-1 shrink-0 text-muted group-hover:text-primary" />
+                    <ChevronRightIcon size={20} className="mt-1 shrink-0 text-on-surface-variant group-hover:text-primary-container" />
                   </Link>
                 </li>
               );

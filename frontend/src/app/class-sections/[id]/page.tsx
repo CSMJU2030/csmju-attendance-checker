@@ -10,7 +10,7 @@ import {
   EmptyState,
   ExternalLinkIcon,
   MapPinIcon,
-  PageHeader,
+  PageHeaderBar,
   PencilIcon,
   PresentationIcon,
   StatCard,
@@ -19,7 +19,7 @@ import {
   formatNumber,
   formatTerm,
   formatTime,
-} from "@csmju2030/design-system";
+} from "@/components/shared/kit";
 import { DeleteSectionCard, OpenSessionAction } from "@/components/features/section-actions";
 import { SessionStatusBadge } from "@/components/features/session-status";
 import { ApiErrorView } from "@/components/shared/api-error-view";
@@ -65,7 +65,7 @@ export default async function ClassSectionPage({
 
   return (
     <>
-      <PageHeader
+      <PageHeaderBar
         title={`${section.courseCode} ${section.courseName}`}
         description={`กลุ่ม ${section.sectionCode} · ${formatTerm(section.term, section.academicYear)}`}
         back={{ href: "/class-sections", label: "กลุ่มเรียน" }}
@@ -112,7 +112,7 @@ export default async function ClassSectionPage({
             href={mapUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex min-h-11 items-center gap-1 text-sm font-semibold text-primary hover:underline"
+            className="inline-flex min-h-11 items-center gap-1 text-sm/relaxed font-semibold text-primary-container hover:underline"
           >
             ดูบนแผนที่
             <ExternalLinkIcon size={16} />
@@ -120,16 +120,16 @@ export default async function ClassSectionPage({
           </a>
         </div>
         <div className="flex items-start gap-3">
-          <span aria-hidden className="flex size-11 shrink-0 items-center justify-center rounded-md bg-primary-soft text-primary">
+          <span aria-hidden className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary-container/10 text-primary-container">
             <MapPinIcon />
           </span>
-          <p className="text-body">
-            นักศึกษาต้องอยู่ภายใน <span className="font-semibold text-ink tabular-nums">{section.radiusMeters} เมตร</span> จากจุด{" "}
-            <span className="font-mono text-sm text-ink tabular-nums">
+          <p className="text-on-surface-variant">
+            นักศึกษาต้องอยู่ภายใน <span className="font-semibold text-on-surface tabular-nums">{section.radiusMeters} เมตร</span> จากจุด{" "}
+            <span className="font-mono text-sm/relaxed text-on-surface tabular-nums">
               {section.latitude.toFixed(6)}, {section.longitude.toFixed(6)}
             </span>{" "}
             และเช็คชื่อหลังเปิดรอบเกิน{" "}
-            <span className="font-semibold text-ink tabular-nums">{section.lateAfterMinutes} นาที</span> จะนับว่ามาสาย
+            <span className="font-semibold text-on-surface tabular-nums">{section.lateAfterMinutes} นาที</span> จะนับว่ามาสาย
           </p>
         </div>
       </Card>
@@ -148,25 +148,25 @@ export default async function ClassSectionPage({
               description="กดเปิดรอบเช็คชื่อเมื่อเริ่มคาบเรียน ระบบจะแสดงรหัสให้นักศึกษากรอก"
             />
           ) : (
-            <ul className="mt-2 flex flex-col divide-y divide-line border-t border-line">
+            <ul className="mt-2 flex flex-col divide-y divide-outline-variant/40 border-t border-outline-variant/40">
               {sessionList.map((session) => (
                 <li key={session.id}>
                   <Link
                     href={`/attendance-sessions/${session.id}`}
-                    className="group flex items-center gap-4 px-4 py-4 transition-colors duration-fast hover:bg-primary-soft md:px-6"
+                    className="group flex items-center gap-4 px-4 py-4 transition-colors duration-150 hover:bg-primary-container/10 md:px-6"
                   >
                     <span className="flex min-w-0 flex-1 flex-col gap-1 sm:flex-row sm:items-center sm:gap-4">
-                      <span className="font-semibold text-ink tabular-nums sm:w-48">
+                      <span className="font-semibold text-on-surface tabular-nums sm:w-48">
                         {formatDate(session.openedAt)}{" "}
-                        <span className="font-normal text-body">{formatTime(session.openedAt)}</span>
+                        <span className="font-normal text-on-surface-variant">{formatTime(session.openedAt)}</span>
                       </span>
-                      <span className="text-sm text-body tabular-nums">
+                      <span className="text-sm/relaxed text-on-surface-variant tabular-nums">
                         เช็คชื่อ {formatNumber(session.recordCount)} คน
                         {session.lateCount > 0 ? ` · สาย ${formatNumber(session.lateCount)} คน` : ""}
                       </span>
                     </span>
                     <SessionStatusBadge status={session.status} />
-                    <ChevronRightIcon size={20} className="shrink-0 text-muted group-hover:text-primary" />
+                    <ChevronRightIcon size={20} className="shrink-0 text-on-surface-variant group-hover:text-primary-container" />
                   </Link>
                 </li>
               ))}

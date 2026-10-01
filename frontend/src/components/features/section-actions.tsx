@@ -2,7 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Alert, Button, ButtonLink, Card, CardTitle, ConfirmDialog, PresentationIcon, TrashIcon } from "@csmju2030/design-system";
+import { ConfirmDeleteModal } from "@/csmju";
+import { Alert, Button, ButtonLink, Card, CardTitle, PresentationIcon, TrashIcon } from "@/components/shared/kit";
 import { apiRequest } from "@/lib/api-client";
 import { errorMessage } from "@/lib/errors";
 import type { AttendanceSession } from "@/lib/types";
@@ -73,6 +74,9 @@ export function DeleteSectionCard({
   const blocked = sessionCount > 0;
 
   async function remove() {
+    if (deleting) {
+      return;
+    }
     setError(null);
     setDeleting(true);
     const result = await apiRequest<{ id: string; deleted: true }>("DELETE", `/api/v1/class-sections/${sectionId}`);
@@ -92,7 +96,7 @@ export function DeleteSectionCard({
     <Card className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
       <div className="flex flex-col gap-1">
         <CardTitle>ลบกลุ่มเรียน</CardTitle>
-        <p id="delete-section-reason" className="text-body">
+        <p id="delete-section-reason" className="text-on-surface-variant">
           {blocked
             ? `ลบไม่ได้ เพราะกลุ่มเรียนนี้มีประวัติการเช็คชื่อแล้ว ${sessionCount} รอบ`
             : "ลบกลุ่มเรียนนี้ถาวร ใช้เมื่อสร้างผิดหรือไม่ได้ใช้แล้วเท่านั้น"}
@@ -110,20 +114,19 @@ export function DeleteSectionCard({
         ลบกลุ่มเรียน
       </Button>
 
-      <ConfirmDialog
-        open={confirm}
-        title={`ลบกลุ่มเรียน "${sectionLabel}"?`}
-        confirmLabel="ลบกลุ่มเรียน"
-        loading={deleting}
-        error={error}
-        onConfirm={remove}
-        onCancel={() => {
-          setConfirm(false);
-          setError(null);
-        }}
-      >
-        กลุ่มเรียนนี้จะถูกลบถาวร และเปิดรอบเช็คชื่อไม่ได้อีก
-      </ConfirmDialog>
+      {confirm ? (
+        <ConfirmDeleteModal
+          title={`ลบกลุ่มเรียน "${sectionLabel}"?`}
+          message="กลุ่มเรียนนี้จะถูกลบถาวร และเปิดรอบเช็คชื่อไม่ได้อีก"
+          // A refused delete (e.g. a session was opened meanwhile) shows why and disables the button.
+          blockedReason={error ?? undefined}
+          onConfirm={remove}
+          onClose={() => {
+            setConfirm(false);
+            setError(null);
+          }}
+        />
+      ) : null}
     </Card>
   );
 }

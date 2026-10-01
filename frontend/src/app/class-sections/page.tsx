@@ -9,13 +9,13 @@ import {
   Card,
   Checkbox,
   EmptyState,
-  PageHeader,
+  PageHeaderBar,
   Pagination,
   PlusIcon,
   SearchIcon,
   TextInput,
   formatTerm,
-} from "@csmju2030/design-system";
+} from "@/components/shared/kit";
 import { ApiErrorView } from "@/components/shared/api-error-view";
 import { apiGet, getMe } from "@/lib/api-server";
 import { can } from "@/lib/permissions";
@@ -72,7 +72,7 @@ export default async function ClassSectionsPage({
 
   return (
     <>
-      <PageHeader
+      <PageHeaderBar
         title="กลุ่มเรียน"
         description="กลุ่มเรียนที่ใช้เช็คชื่อ เปิดรอบเช็คชื่อได้จากหน้ารายละเอียดของกลุ่มเรียน"
         actions={
@@ -90,7 +90,7 @@ export default async function ClassSectionsPage({
       <Card>
         <form method="get" className="flex flex-col gap-4 md:flex-row md:items-end" role="search">
           <div className="flex flex-1 flex-col gap-2">
-            <label htmlFor="q" className="font-semibold text-ink">
+            <label htmlFor="q" className="font-semibold text-on-surface">
               ค้นหา
             </label>
             <TextInput id="q" name="q" type="search" defaultValue={q} placeholder="รหัสวิชาหรือชื่อวิชา" />
@@ -154,7 +154,7 @@ export default async function ClassSectionsPage({
 /** Small "session open" marker - dot plus text, never colour alone. */
 function LiveMarker() {
   return (
-    <span className="inline-flex items-center gap-1 text-sm font-semibold text-success">
+    <span className="inline-flex items-center gap-1 text-sm/relaxed font-semibold text-emerald-700">
       <span aria-hidden className="size-2 rounded-full bg-success" />
       เปิดรอบอยู่
     </span>
@@ -165,24 +165,24 @@ function ClassSectionTable({ sections, liveIds }: { sections: ClassSection[]; li
   return (
     <>
       {/* Mobile: one tappable row per section (section 6.2). */}
-      <ul className="flex flex-col divide-y divide-line md:hidden">
+      <ul className="flex flex-col divide-y divide-outline-variant/40 md:hidden">
         {sections.map((section) => (
           <li key={section.id}>
             <Link
               href={`/class-sections/${section.id}`}
-              className="group flex items-center gap-3 p-4 transition-colors duration-fast hover:bg-primary-soft"
+              className="group flex items-center gap-3 p-4 transition-colors duration-150 hover:bg-primary-container/10"
             >
               <span className="flex min-w-0 flex-1 flex-col gap-1">
                 <span className="flex flex-wrap items-center gap-2">
-                  <span className="font-mono text-sm text-body">{section.courseCode}</span>
+                  <span className="font-mono text-sm/relaxed text-on-surface-variant">{section.courseCode}</span>
                   {liveIds.has(section.id) ? <LiveMarker /> : null}
                 </span>
-                <span className="font-semibold text-ink">{section.courseName}</span>
-                <span className="text-sm text-body">
+                <span className="font-semibold text-on-surface">{section.courseName}</span>
+                <span className="text-sm/relaxed text-on-surface-variant">
                   กลุ่ม {section.sectionCode} · {formatTerm(section.term, section.academicYear)}
                 </span>
               </span>
-              <ChevronRightIcon size={20} className="shrink-0 text-muted group-hover:text-primary" />
+              <ChevronRightIcon size={20} className="shrink-0 text-on-surface-variant group-hover:text-primary-container" />
             </Link>
           </li>
         ))}
@@ -190,7 +190,7 @@ function ClassSectionTable({ sections, liveIds }: { sections: ClassSection[]; li
 
       <div className="hidden overflow-x-auto md:block">
         <table className="w-full text-left">
-          <thead className="bg-surface-muted text-sm font-semibold text-ink">
+          <thead className="bg-surface-container-low text-sm/relaxed font-semibold text-on-surface">
             <tr>
               <th scope="col" className="px-6 py-3">รหัสวิชา</th>
               <th scope="col" className="px-6 py-3">ชื่อวิชา</th>
@@ -202,18 +202,18 @@ function ClassSectionTable({ sections, liveIds }: { sections: ClassSection[]; li
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-line">
+          <tbody className="divide-y divide-outline-variant/40">
             {sections.map((section) => (
-              <tr key={section.id} className="h-14 transition-colors duration-fast hover:bg-primary-soft">
-                <td className="px-6 font-mono text-sm text-ink">{section.courseCode}</td>
-                <td className="px-6 font-semibold text-ink">{section.courseName}</td>
+              <tr key={section.id} className="h-14 transition-colors duration-150 hover:bg-primary-container/10">
+                <td className="px-6 font-mono text-sm/relaxed text-on-surface">{section.courseCode}</td>
+                <td className="px-6 font-semibold text-on-surface">{section.courseName}</td>
                 <td className="px-6 tabular-nums">{section.sectionCode}</td>
                 <td className="px-6 tabular-nums">{formatTerm(section.term, section.academicYear)}</td>
                 <td className="px-6">
                   {liveIds.has(section.id) ? (
                     <LiveMarker />
                   ) : (
-                    <span className="text-body">
+                    <span className="text-on-surface-variant">
                       <span aria-hidden>–</span>
                       <span className="sr-only">ไม่มีรอบที่เปิดอยู่</span>
                     </span>
@@ -222,7 +222,7 @@ function ClassSectionTable({ sections, liveIds }: { sections: ClassSection[]; li
                 <td className="px-6 text-right">
                   <Link
                     href={`/class-sections/${section.id}`}
-                    className="inline-flex min-h-11 items-center gap-1 font-semibold text-primary hover:underline"
+                    className="inline-flex min-h-11 items-center gap-1 font-semibold text-primary-container hover:underline"
                   >
                     ดูรายละเอียด
                     <ChevronRightIcon size={16} />

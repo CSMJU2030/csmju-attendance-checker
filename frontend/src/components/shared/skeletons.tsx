@@ -1,4 +1,4 @@
-import { Card, Skeleton } from "@csmju2030/design-system";
+import { Card, Skeleton } from "@/components/shared/kit";
 
 /** Skeletons shaped like the real screens, so nothing jumps when data lands. */
 export function PageHeaderSkeleton() {
@@ -40,7 +40,7 @@ export function PageSkeleton() {
 /** Same footprint as the student summary card (three numbers). */
 export function SummarySkeleton() {
   return (
-    <div aria-hidden className="grid grid-cols-3 divide-x divide-line rounded-lg border border-line bg-surface">
+    <div aria-hidden className="grid grid-cols-3 divide-x divide-outline-variant/40 rounded-2xl border border-outline-variant/40 bg-surface-container-lowest">
       {[0, 1, 2].map((index) => (
         <div key={index} className="flex flex-col items-center gap-2 px-2 py-4 md:py-6">
           <Skeleton className="h-8 w-10" />
@@ -57,7 +57,7 @@ export function StatsSkeleton() {
   return (
     <div aria-hidden className="grid gap-4 sm:grid-cols-3">
       {[0, 1, 2].map((index) => (
-        <div key={index} className="flex gap-4 rounded-lg border border-line bg-surface p-4 md:p-6">
+        <div key={index} className="flex gap-4 rounded-2xl border border-outline-variant/40 bg-surface-container-lowest p-4 md:p-6">
           <Skeleton className="size-11" />
           <div className="flex flex-1 flex-col gap-2">
             <Skeleton className="h-4 w-24" />

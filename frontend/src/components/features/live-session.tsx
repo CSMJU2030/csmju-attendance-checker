@@ -8,13 +8,13 @@ import {
   Button,
   Card,
   CardTitle,
-  ConfirmDialog,
   EmptyState,
   UserIcon,
   UsersIcon,
   formatDateTime,
   formatTime,
-} from "@csmju2030/design-system";
+} from "@/components/shared/kit";
+import { Modal } from "@/csmju";
 import { apiRequest } from "@/lib/api-client";
 import { errorMessage } from "@/lib/errors";
 import type { AttendanceRecord, AttendanceSession, CurrentCode } from "@/lib/types";
@@ -159,7 +159,7 @@ export function LiveSession({ initialSession, sectionLabel }: { initialSession: 
     <div className="flex flex-col gap-8">
       <div className="flex flex-wrap items-center gap-2">
         <SessionStatusBadge status={session.status} />
-        <span className="text-sm text-body tabular-nums">
+        <span className="text-sm/relaxed text-on-surface-variant tabular-nums">
           เปิดเมื่อ {formatDateTime(session.openedAt)}
           {session.closedAt ? ` · ปิดเมื่อ ${formatTime(session.closedAt)}` : ""}
         </span>
@@ -169,9 +169,9 @@ export function LiveSession({ initialSession, sectionLabel }: { initialSession: 
       {open ? (
         <div
           ref={codeCard}
-          className="flex flex-col items-center gap-4 rounded-lg border border-line bg-surface p-6 text-center md:p-12 xl:sticky xl:top-header"
+          className="flex flex-col items-center gap-4 rounded-2xl border border-outline-variant/40 bg-surface-container-lowest p-6 text-center md:p-12 xl:sticky xl:top-16"
         >
-          <p className="text-body">รหัสเช็คชื่อ · {sectionLabel}</p>
+          <p className="text-on-surface-variant">รหัสเช็คชื่อ · {sectionLabel}</p>
           {codeError ? (
             <Alert tone="danger" title="โหลดรหัสไม่สำเร็จ" action={<Button variant="secondary" onClick={() => void loadCode()}>ลองอีกครั้ง</Button>}>
               {codeError}
@@ -180,17 +180,17 @@ export function LiveSession({ initialSession, sectionLabel }: { initialSession: 
             <p
               aria-live="polite"
               aria-label={code ? `รหัส ${code.code.split("").join(" ")}` : "กำลังโหลดรหัส"}
-              className="font-mono text-code font-semibold text-ink tabular-nums md:text-code-lg"
+              className="font-mono text-[56px]/[1.2] font-semibold text-on-surface tabular-nums md:text-[96px]/[1.1]"
             >
               {code ? `${code.code.slice(0, 3)} ${code.code.slice(3)}` : "--- ---"}
             </p>
           )}
           <div className="flex w-full max-w-md flex-col gap-2">
-            <div className="h-2 w-full overflow-hidden rounded-full bg-primary-soft" aria-hidden>
+            <div className="h-2 w-full overflow-hidden rounded-full bg-primary-container/10" aria-hidden>
               {/* Width is a runtime value - the one allowed use of inline style. */}
-              <div className={"h-full " + (rotatingSoon ? "bg-warning" : "bg-primary")} style={{ width: `${progress}%` }} />
+              <div className={"h-full " + (rotatingSoon ? "bg-amber-500" : "bg-primary-container")} style={{ width: `${progress}%` }} />
             </div>
-            <p className="text-sm text-muted tabular-nums">
+            <p className="text-sm/relaxed text-on-surface-variant tabular-nums">
               {!code
                 ? "กำลังโหลดรหัส..."
                 : rotatingSoon
@@ -198,7 +198,7 @@ export function LiveSession({ initialSession, sectionLabel }: { initialSession: 
                   : `รหัสจะเปลี่ยนในอีก ${formatCountdown(secondsLeft)} นาที`}
             </p>
           </div>
-          <p className="max-w-prose text-body">
+          <p className="max-w-prose text-on-surface-variant">
             ให้นักศึกษาเปิดเมนู &quot;เช็คชื่อ&quot; ในระบบเช็คชื่อเข้าเรียน แล้วกรอกรหัสนี้ขณะอยู่ในห้องเรียน
           </p>
           <div className="flex flex-wrap justify-center gap-2">
@@ -219,12 +219,12 @@ export function LiveSession({ initialSession, sectionLabel }: { initialSession: 
       <Card flush className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center justify-between gap-2 px-4 pt-4 md:px-6 md:pt-6">
           <CardTitle>นักศึกษาที่เช็คชื่อแล้ว</CardTitle>
-          <p className="flex gap-4 text-body tabular-nums" aria-live="polite">
+          <p className="flex gap-4 text-on-surface-variant tabular-nums" aria-live="polite">
             <span>
-              ทั้งหมด <span className="font-heading text-xl font-semibold text-ink">{total}</span> คน
+              ทั้งหมด <span className="font-display text-[20px]/[1.5] font-semibold text-on-surface">{total}</span> คน
             </span>
             <span>
-              มาสาย <span className="font-heading text-xl font-semibold text-warning">{late}</span> คน
+              มาสาย <span className="font-display text-[20px]/[1.5] font-semibold text-amber-800">{late}</span> คน
             </span>
           </p>
         </div>
@@ -236,7 +236,7 @@ export function LiveSession({ initialSession, sectionLabel }: { initialSession: 
             </Alert>
           </div>
         ) : !loadedRecords ? (
-          <p className="px-4 pb-4 text-muted md:px-6 md:pb-6">กำลังโหลดรายชื่อ...</p>
+          <p className="px-4 pb-4 text-on-surface-variant md:px-6 md:pb-6">กำลังโหลดรายชื่อ...</p>
         ) : records.length === 0 ? (
           <EmptyState
             icon={UsersIcon}
@@ -244,7 +244,7 @@ export function LiveSession({ initialSession, sectionLabel }: { initialSession: 
             description={open ? "รายชื่อจะขึ้นที่นี่อัตโนมัติเมื่อนักศึกษาเช็คชื่อ" : "ไม่มีนักศึกษาเช็คชื่อในรอบนี้"}
           />
         ) : (
-          <ul className="flex flex-col divide-y divide-line border-t border-line">
+          <ul className="flex flex-col divide-y divide-outline-variant/40 border-t border-outline-variant/40">
             {records.map((record) => {
               const status = ATTENDANCE_STATUS[record.status];
               const isNew = fresh.has(record.id);
@@ -252,24 +252,24 @@ export function LiveSession({ initialSession, sectionLabel }: { initialSession: 
                 <li
                   key={record.id}
                   className={
-                    "flex items-center gap-3 px-4 py-3 transition-colors duration-slow md:px-6 " +
-                    (isNew ? "bg-success-soft" : "")
+                    "flex items-center gap-3 px-4 py-3 transition-colors duration-300 md:px-6 " +
+                    (isNew ? "bg-success/10" : "")
                   }
                 >
                   <span
                     aria-hidden
-                    className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary-soft text-primary"
+                    className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary-container/10 text-primary-container"
                   >
                     <UserIcon size={16} />
                   </span>
                   <span className="flex min-w-0 flex-1 flex-col">
                     {record.personCode ? (
-                      <span className="truncate font-mono font-semibold text-ink tabular-nums">{record.personCode}</span>
+                      <span className="truncate font-mono font-semibold text-on-surface tabular-nums">{record.personCode}</span>
                     ) : (
                       // Core Hub has no person for this account (e.g. a test account).
-                      <span className="truncate text-body">บัญชีที่ไม่มีรหัสนักศึกษา</span>
+                      <span className="truncate text-on-surface-variant">บัญชีที่ไม่มีรหัสนักศึกษา</span>
                     )}
-                    <span className="text-sm text-body tabular-nums">
+                    <span className="text-sm/relaxed text-on-surface-variant tabular-nums">
                       {formatTime(record.checkedInAt)} · ห่าง {record.distanceMeters} เมตร
                     </span>
                   </span>
@@ -283,20 +283,41 @@ export function LiveSession({ initialSession, sectionLabel }: { initialSession: 
       </Card>
       </div>
 
-      <ConfirmDialog
-        open={confirmClose}
-        title={`ปิดรอบเช็คชื่อ ${sectionLabel}?`}
-        confirmLabel="ปิดรอบเช็คชื่อ"
-        loading={closing}
-        error={closeError}
-        onConfirm={close}
-        onCancel={() => {
-          setConfirmClose(false);
-          setCloseError(null);
-        }}
-      >
-        นักศึกษาที่ยังไม่ได้เช็คชื่อจะเช็คชื่อรอบนี้ไม่ได้อีก มีผู้เช็คชื่อแล้ว {total} คน
-      </ConfirmDialog>
+      {confirmClose ? (
+        <Modal
+          title={`ปิดรอบเช็คชื่อ ${sectionLabel}?`}
+          onClose={() => {
+            if (!closing) {
+              setConfirmClose(false);
+              setCloseError(null);
+            }
+          }}
+        >
+          <p className="text-body-md text-on-surface-variant">
+            นักศึกษาที่ยังไม่ได้เช็คชื่อจะเช็คชื่อรอบนี้ไม่ได้อีก มีผู้เช็คชื่อแล้ว {total} คน
+          </p>
+          {closeError ? (
+            <p role="alert" className="mt-4 rounded-2xl bg-error-container px-4 py-3 text-label-md text-on-error-container">
+              {closeError}
+            </p>
+          ) : null}
+          <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+            <Button
+              variant="secondary"
+              disabled={closing}
+              onClick={() => {
+                setConfirmClose(false);
+                setCloseError(null);
+              }}
+            >
+              ยกเลิก
+            </Button>
+            <Button variant="danger" onClick={close} loading={closing}>
+              ปิดรอบเช็คชื่อ
+            </Button>
+          </div>
+        </Modal>
+      ) : null}
     </div>
   );
 }

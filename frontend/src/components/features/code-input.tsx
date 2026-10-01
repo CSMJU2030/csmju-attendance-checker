@@ -33,17 +33,17 @@ export function CodeInput({
             <span
               key={index}
               className={
-                "flex h-14 items-center justify-center rounded-sm border bg-surface font-mono text-2xl font-semibold text-ink tabular-nums transition-colors duration-fast sm:h-16 " +
+                "flex h-14 items-center justify-center rounded-lg border bg-surface-container-lowest font-mono text-headline-md font-semibold text-on-surface tabular-nums transition-colors duration-150 sm:h-16 " +
                 (invalid
-                  ? "border-danger"
+                  ? "border-error"
                   : current
-                    ? "border-primary ring-2 ring-focus-ring"
+                    ? "border-primary-container ring-2 ring-accent/40"
                     : digit
-                      ? "border-line-strong"
-                      : "border-line")
+                      ? "border-outline-variant"
+                      : "border-outline-variant/40")
               }
             >
-              {digit || (current ? <span className="h-7 w-px bg-primary" /> : "")}
+              {digit || (current ? <span className="h-7 w-px bg-primary-container" /> : "")}
             </span>
           );
         })}
@@ -65,7 +65,7 @@ export function CodeInput({
           props.onBlur?.(event);
         }}
         // Invisible but real: it receives focus, typing, paste and autofill.
-        className="absolute inset-0 h-full w-full cursor-text bg-transparent text-base text-transparent caret-transparent opacity-0"
+        className="absolute inset-0 h-full w-full cursor-text bg-transparent text-body-md text-transparent caret-transparent opacity-0"
       />
     </div>
   );

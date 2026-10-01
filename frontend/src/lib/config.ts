@@ -10,6 +10,9 @@ export const CORE_HUB_WEB_URL = (process.env.NEXT_PUBLIC_CORE_HUB_WEB_URL ?? "ht
 
 export const DISPLAY_NAME = "ระบบเช็คชื่อเข้าเรียน";
 
+/** Short form for the central shell's mobile top bar, which has room for about 12 Thai characters. */
+export const SHELL_NAME = "ระบบเช็คชื่อ";
+
 /**
  * Where every sign-in starts: this subsystem's own GET /auth/login
  * (auth-contract 5), passed on to the backend by next.config.ts. It mints the

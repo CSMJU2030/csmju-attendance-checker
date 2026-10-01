@@ -7,7 +7,7 @@ import {
   formatDayLabel,
   formatTerm,
   formatTime,
-} from "@csmju2030/design-system";
+} from "@/components/shared/kit";
 import type { AttendanceRecordView, AttendanceStatus } from "@/lib/types";
 
 export const ATTENDANCE_STATUS: Record<AttendanceStatus, { label: string; tone: "success" | "warning" }> = {
@@ -26,16 +26,16 @@ function RecordRow({ record, withDate }: { record: AttendanceRecordView; withDat
         aria-hidden
         className={
           "mt-1 flex size-9 shrink-0 items-center justify-center rounded-full " +
-          (late ? "bg-warning-soft text-warning" : "bg-success-soft text-success")
+          (late ? "bg-amber-50 text-amber-800" : "bg-success/10 text-emerald-700")
         }
       >
         {late ? <ClockIcon size={16} /> : <CheckCircleIcon size={16} />}
       </span>
       <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <p className="font-semibold text-ink">
+        <p className="font-semibold text-on-surface">
           {section ? `${section.courseCode} ${section.courseName}` : "กลุ่มเรียนถูกลบไปแล้ว"}
         </p>
-        <p className="text-sm text-body tabular-nums">
+        <p className="text-sm/relaxed text-on-surface-variant tabular-nums">
           {withDate ? formatDateTime(record.checkedInAt) : formatTime(record.checkedInAt)}
           {section ? ` · กลุ่ม ${section.sectionCode}` : ""}
           {section ? <span className="hidden sm:inline"> · {formatTerm(section.term, section.academicYear)}</span> : null}
@@ -53,7 +53,7 @@ function RecordRow({ record, withDate }: { record: AttendanceRecordView; withDat
 export function AttendanceRecordList({ records, groupByDay = false }: { records: AttendanceRecordView[]; groupByDay?: boolean }) {
   if (!groupByDay) {
     return (
-      <ul className="flex flex-col divide-y divide-line">
+      <ul className="flex flex-col divide-y divide-outline-variant/40">
         {records.map((record) => (
           <RecordRow key={record.id} record={record} withDate />
         ))}
@@ -76,11 +76,11 @@ export function AttendanceRecordList({ records, groupByDay = false }: { records:
     <div className="flex flex-col gap-6">
       {days.map((day) => (
         <section key={day.key} aria-labelledby={`day-${day.key}`} className="flex flex-col gap-3">
-          <h2 id={`day-${day.key}`} className="flex items-center gap-2 text-sm font-semibold text-body">
+          <h2 id={`day-${day.key}`} className="flex items-center gap-2 text-sm/relaxed font-semibold text-on-surface-variant">
             {day.label}
             <span className="font-normal tabular-nums">· {day.items.length} รายการ</span>
           </h2>
-          <ul className="flex flex-col divide-y divide-line">
+          <ul className="flex flex-col divide-y divide-outline-variant/40">
             {day.items.map((record) => (
               <RecordRow key={record.id} record={record} withDate={false} />
             ))}

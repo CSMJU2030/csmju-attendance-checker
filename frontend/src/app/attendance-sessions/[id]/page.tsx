@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { PageHeader, formatTerm } from "@csmju2030/design-system";
+import { PageHeaderBar, formatTerm } from "@/components/shared/kit";
 import { LiveSession } from "@/components/features/live-session";
 import { ApiErrorView } from "@/components/shared/api-error-view";
 import { apiGet, getMe } from "@/lib/api-server";
@@ -24,7 +24,7 @@ export default async function AttendanceSessionPage({ params }: { params: Promis
 
   return (
     <>
-      <PageHeader
+      <PageHeaderBar
         title={section.ok ? `${section.data.courseCode} ${section.data.courseName}` : "รอบเช็คชื่อ"}
         description={
           section.ok

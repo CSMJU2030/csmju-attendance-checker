@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { PageHeader } from "@csmju2030/design-system";
+import { PageHeaderBar } from "@/components/shared/kit";
 import { ClassSectionForm } from "@/components/features/class-section-form";
 import { ApiErrorView } from "@/components/shared/api-error-view";
 import { apiGet, getMe } from "@/lib/api-server";
@@ -26,7 +26,7 @@ export default async function EditClassSectionPage({ params }: { params: Promise
 
   return (
     <>
-      <PageHeader
+      <PageHeaderBar
         title="แก้ไขกลุ่มเรียน"
         description={`${section.courseCode} ${section.courseName} กลุ่ม ${section.sectionCode}`}
         back={{ href: `/class-sections/${section.id}`, label: "รายละเอียดกลุ่มเรียน" }}

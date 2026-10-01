@@ -1,4 +1,4 @@
-import { toGregorianYear } from "@csmju2030/design-system";
+import { toGregorianYear } from "@/components/shared/kit";
 import type { ClassSectionInput } from "./types";
 
 /*

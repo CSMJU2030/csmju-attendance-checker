@@ -1,12 +1,27 @@
 import type { Metadata, Viewport } from "next";
+import { Noto_Sans_Thai, Plus_Jakarta_Sans } from "next/font/google";
 import type { ReactNode } from "react";
-import { preload } from "react-dom";
-import { CsmjuAppShell } from "@csmju2030/design-system";
+import { CsmjuAppShell } from "@/csmju";
 import { AccessGate } from "@/components/shared/access-gate";
+import { CORE_ROLE_LABEL } from "@/components/shared/kit";
 import { getMe } from "@/lib/api-server";
-import { CORE_HUB_WEB_URL, DISPLAY_NAME, SUBSYSTEM_NAME } from "@/lib/config";
+import { DISPLAY_NAME, SHELL_NAME } from "@/lib/config";
 import { navFor } from "@/lib/permissions";
 import "./globals.css";
+
+// ui-design-system.md 4.1: next/font self-hosts the files at build time and
+// serves them from this origin - the browser never calls Google.
+const jakarta = Plus_Jakarta_Sans({
+  variable: "--font-jakarta",
+  subsets: ["latin"],
+  weight: ["400", "600", "700", "800"],
+});
+
+const notoSansThai = Noto_Sans_Thai({
+  variable: "--font-noto-thai",
+  subsets: ["latin", "thai"],
+  weight: ["400", "500", "600", "700"],
+});
 
 export const metadata: Metadata = {
   title: { default: `${DISPLAY_NAME} · CSMJU`, template: `%s · ${DISPLAY_NAME} · CSMJU` },
@@ -22,27 +37,37 @@ export const viewport: Viewport = {
 // Every screen depends on who is signed in - never cache.
 export const dynamic = "force-dynamic";
 
-export default async function RootLayout({ children }: { children: ReactNode }) {
-  // Section 4.1: preload only the Thai 400/600 files; Latin loads on demand.
-  preload("/fonts/ibm-plex-sans-thai-thai-400.woff2", { as: "font", type: "font/woff2", crossOrigin: "anonymous" });
-  preload("/fonts/ibm-plex-sans-thai-thai-600.woff2", { as: "font", type: "font/woff2", crossOrigin: "anonymous" });
+/** Two letters for the avatar, from the part of the e-mail before "@". */
+function initialsOf(email: string): string {
+  return (email.split("@")[0] || "?").slice(0, 2).toUpperCase();
+}
 
+export default async function RootLayout({ children }: { children: ReactNode }) {
   const me = await getMe();
-  const user = me.ok ? { email: me.data.email, coreRole: me.data.coreRole } : null;
 
   return (
-    <html lang="th">
-      <body>
-        <CsmjuAppShell
-          subsystemName={SUBSYSTEM_NAME}
-          displayName={DISPLAY_NAME}
-          nav={me.ok ? navFor(me.data.subsystemRole) : []}
-          user={user}
-          portalUrl={CORE_HUB_WEB_URL}
-          logoutAction="/auth/logout"
-        >
-          {me.ok ? children : <AccessGate status={me.status} error={me.error} />}
-        </CsmjuAppShell>
+    <html lang="th" className={`${jakarta.variable} ${notoSansThai.variable} h-full antialiased`}>
+      <body className="flex min-h-full flex-col bg-background text-on-surface">
+        {me.ok ? (
+          <CsmjuAppShell
+            displayName={SHELL_NAME}
+            nav={navFor(me.data.subsystemRole)}
+            user={{
+              initials: initialsOf(me.data.email),
+              roleLabel: CORE_ROLE_LABEL[me.data.coreRole] ?? me.data.coreRole,
+            }}
+            // The shell renders a plain link; sign-out itself is POST /auth/logout,
+            // so the link opens a confirmation page that posts the form.
+            logoutHref="/signout"
+          >
+            {children}
+          </CsmjuAppShell>
+        ) : (
+          // Not signed in: there is no user for the shell yet, only the way in.
+          <main id="main" className="flex min-h-dvh flex-col px-4 py-8 md:py-16">
+            <AccessGate status={me.status} error={me.error} />
+          </main>
+        )}
       </body>
     </html>
   );

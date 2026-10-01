@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { ButtonLink, Card, EmptyState, HistoryIcon, PageHeader, Pagination } from "@csmju2030/design-system";
+import { ButtonLink, Card, EmptyState, HistoryIcon, PageHeaderBar, Pagination } from "@/components/shared/kit";
 import { AttendanceRecordList } from "@/components/features/attendance-record-list";
 import { ApiErrorView } from "@/components/shared/api-error-view";
 import { apiGet, getMe } from "@/lib/api-server";
@@ -27,7 +27,7 @@ export default async function AttendanceRecordsPage({
 
   return (
     <>
-      <PageHeader title="ประวัติการเช็คชื่อ" description="การเช็คชื่อทั้งหมดของคุณ เรียงจากล่าสุด" />
+      <PageHeaderBar title="ประวัติการเช็คชื่อ" description="การเช็คชื่อทั้งหมดของคุณ เรียงจากล่าสุด" />
       {!result.ok ? (
         <ApiErrorView error={result.error} retryHref={`/attendance-records?page=${page}`} />
       ) : result.data.length === 0 ? (

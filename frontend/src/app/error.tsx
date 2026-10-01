@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, ErrorState } from "@csmju2030/design-system";
+import { Button, ErrorState } from "@/components/shared/kit";
 import { STANDARD_MESSAGE } from "@/lib/errors";
 
 /** Unexpected render error. The raw message is never shown (section 16.1.1). */

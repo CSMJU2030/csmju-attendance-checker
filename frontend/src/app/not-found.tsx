@@ -1,4 +1,4 @@
-import { ButtonLink, EmptyState, SearchIcon } from "@csmju2030/design-system";
+import { ButtonLink, EmptyState, SearchIcon } from "@/components/shared/kit";
 import { STANDARD_MESSAGE } from "@/lib/errors";
 
 export default function NotFound() {

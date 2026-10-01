@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { PageHeader } from "@csmju2030/design-system";
+import { PageHeaderBar } from "@/components/shared/kit";
 import { ClassSectionForm } from "@/components/features/class-section-form";
 import { ApiErrorView } from "@/components/shared/api-error-view";
 import { getMe } from "@/lib/api-server";
@@ -18,7 +18,7 @@ export default async function NewClassSectionPage() {
 
   return (
     <>
-      <PageHeader
+      <PageHeaderBar
         title="เพิ่มกลุ่มเรียน"
         description="คุณจะเป็นผู้สอนของกลุ่มเรียนนี้ และเปิดรอบเช็คชื่อได้ทันทีหลังบันทึก"
         back={{ href: "/class-sections", label: "กลุ่มเรียน" }}

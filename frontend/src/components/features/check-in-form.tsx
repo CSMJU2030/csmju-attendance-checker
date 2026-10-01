@@ -16,7 +16,7 @@ import {
   formatDateTime,
   formatTerm,
   type Tone,
-} from "@csmju2030/design-system";
+} from "@/components/shared/kit";
 import { apiRequest } from "@/lib/api-client";
 import { classifyCheckInFailure } from "@/lib/check-in";
 import type { AttendanceRecordView } from "@/lib/types";
@@ -139,38 +139,38 @@ export function CheckInForm() {
     const section = result.classSection;
     return (
       <Card flush className="flex flex-col" aria-live="polite">
-        <div className={"flex flex-col items-center gap-3 px-6 py-8 text-center " + (late ? "bg-warning-soft" : "bg-success-soft")}>
+        <div className={"flex flex-col items-center gap-3 px-6 py-8 text-center " + (late ? "bg-amber-50" : "bg-success/10")}>
           <span
             aria-hidden
-            className={"flex size-16 items-center justify-center rounded-full bg-surface " + (late ? "text-warning" : "text-success")}
+            className={"flex size-16 items-center justify-center rounded-full bg-surface-container-lowest " + (late ? "text-amber-800" : "text-emerald-700")}
           >
             {late ? <ClockIcon size={48} /> : <CheckCircleIcon size={48} />}
           </span>
-          <h2 className="font-heading text-2xl font-semibold text-ink">เช็คชื่อสำเร็จ</h2>
+          <h2 className="font-display text-headline-md font-semibold text-on-surface">เช็คชื่อสำเร็จ</h2>
           <Badge tone={late ? "warning" : "success"}>{late ? "มาสาย" : "มาตรงเวลา"}</Badge>
         </div>
-        <dl className="flex flex-col divide-y divide-line px-6 text-body">
+        <dl className="flex flex-col divide-y divide-outline-variant/40 px-6 text-on-surface-variant">
           {section ? (
             <div className="flex flex-col gap-1 py-4">
-              <dt className="text-sm text-body">รายวิชา</dt>
-              <dd className="font-semibold text-ink">
+              <dt className="text-sm/relaxed text-on-surface-variant">รายวิชา</dt>
+              <dd className="font-semibold text-on-surface">
                 {section.courseCode} {section.courseName}
               </dd>
-              <dd className="text-sm">
+              <dd className="text-sm/relaxed">
                 กลุ่ม {section.sectionCode} · {formatTerm(section.term, section.academicYear)}
               </dd>
             </div>
           ) : null}
           <div className="flex items-center justify-between gap-4 py-4">
-            <dt className="text-sm text-body">เวลาเช็คชื่อ</dt>
-            <dd className="text-right font-semibold text-ink tabular-nums">{formatDateTime(result.checkedInAt)}</dd>
+            <dt className="text-sm/relaxed text-on-surface-variant">เวลาเช็คชื่อ</dt>
+            <dd className="text-right font-semibold text-on-surface tabular-nums">{formatDateTime(result.checkedInAt)}</dd>
           </div>
           <div className="flex items-center justify-between gap-4 py-4">
-            <dt className="text-sm text-body">ระยะห่างจากจุดเช็คชื่อ</dt>
-            <dd className="font-semibold text-ink tabular-nums">{result.distanceMeters} เมตร</dd>
+            <dt className="text-sm/relaxed text-on-surface-variant">ระยะห่างจากจุดเช็คชื่อ</dt>
+            <dd className="font-semibold text-on-surface tabular-nums">{result.distanceMeters} เมตร</dd>
           </div>
         </dl>
-        <div className="flex flex-col gap-2 border-t border-line p-6 sm:flex-row">
+        <div className="flex flex-col gap-2 border-t border-outline-variant/40 p-6 sm:flex-row">
           <ButtonLink href="/attendance-records" variant="secondary">
             ดูประวัติการเช็คชื่อ
           </ButtonLink>
@@ -187,7 +187,7 @@ export function CheckInForm() {
   return (
     <Card>
       <form onSubmit={onSubmit} noValidate className="flex flex-col gap-6">
-        <p className="text-sm text-muted">ช่องที่มี * จำเป็นต้องกรอก</p>
+        <p className="text-sm/relaxed text-on-surface-variant">ช่องที่มี * จำเป็นต้องกรอก</p>
 
         {notice ? (
           <Alert tone={notice.tone} title={notice.title}>
@@ -222,14 +222,14 @@ export function CheckInForm() {
         </Button>
       </form>
 
-      <ol className="mt-6 grid gap-4 border-t border-line pt-6 text-sm text-body sm:grid-cols-3">
+      <ol className="mt-6 grid gap-4 border-t border-outline-variant/40 pt-6 text-sm/relaxed text-on-surface-variant sm:grid-cols-3">
         {STEPS.map((step, index) => (
           <li key={step.title} className="flex gap-3">
-            <span aria-hidden className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary-soft text-primary">
+            <span aria-hidden className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary-container/10 text-primary-container">
               {step.icon}
             </span>
             <span className="flex flex-col">
-              <span className="font-semibold text-ink">
+              <span className="font-semibold text-on-surface">
                 {index + 1}. {step.title}
               </span>
               {step.detail}

@@ -1,4 +1,4 @@
-import { Badge } from "@csmju2030/design-system";
+import { Badge } from "@/components/shared/kit";
 import type { AttendanceSessionStatus } from "@/lib/types";
 
 export function SessionStatusBadge({ status }: { status: AttendanceSessionStatus }) {

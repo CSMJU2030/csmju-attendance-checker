@@ -7,7 +7,6 @@ export default defineConfig({
   resolve: {
     alias: {
       // Same mapping as tsconfig `paths`.
-      "@csmju2030/design-system": src("design-system/index.ts"),
       "@": src(""),
     },
   },
