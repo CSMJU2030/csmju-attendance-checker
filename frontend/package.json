@@ -4,10 +4,10 @@
   "private": true,
   "description": "Attendance Checker - Next.js frontend (App Router) of csmju-attendance-checker",
   "scripts": {
-    "dev": "next dev --webpack -p 3102",
-    "start:dev": "next dev --webpack -p 3102",
+    "dev": "next dev --webpack -p 3202",
+    "start:dev": "next dev --webpack -p 3202",
     "build": "next build --webpack",
-    "start": "next start -p 3102",
+    "start": "next start -p 3202",
     "typecheck": "next typegen && tsc --noEmit",
     "lint": "eslint src",
     "test": "vitest run"

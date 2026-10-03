@@ -12,10 +12,10 @@ Attendance Checker (ระบบเช็คชื่อเข้าเรีย
 
 | โฟลเดอร์ | อะไร | พอร์ต |
 |---|---|---|
-| `backend/` | NestJS 11 + Prisma 7.9.1 + PostgreSQL — API, ตรวจ token ผ่าน JWKS, สิทธิ์ทั้งหมด | 3002 |
-| `frontend/` | Next.js 16 (App Router) + Tailwind 3 — หน้าจอทั้งหมด | 3102 |
+| `backend/` | NestJS 11 + Prisma 7.9.1 + PostgreSQL — API, ตรวจ token ผ่าน JWKS, สิทธิ์ทั้งหมด | 4202 |
+| `frontend/` | Next.js 16 (App Router) + Tailwind 4 — หน้าจอทั้งหมด | 3202 |
 
-เบราว์เซอร์คุยกับ frontend (:3102) ที่เดียว frontend ส่ง `/api/*` ต่อไป backend แบบไม่แตะข้อมูล
+เบราว์เซอร์คุยกับ frontend (:3202) ที่เดียว frontend ส่ง `/api/*` ต่อไป backend แบบไม่แตะข้อมูล
 และรับ SSO ที่ `/auth/callback` (ส่ง token ให้ backend ตรวจ แล้ว redirect เข้าหน้าเว็บ)
 
 ## เริ่มทำงาน
@@ -32,18 +32,18 @@ cp frontend/.env.example frontend/.env.local
 pnpm --filter backend prisma:deploy
 pnpm --filter backend prisma:seed
 
-pnpm start:dev                  # backend  → http://localhost:3002
-pnpm start:dev:frontend         # frontend → http://localhost:3102
+pnpm start:dev                  # backend  → http://localhost:4202
+pnpm start:dev:frontend         # frontend → http://localhost:3202
 ```
 
-เปิด http://localhost:3102 แล้วกด "เข้าสู่ระบบผ่าน Core Hub" (บัญชี dev อยู่ใน `standards/fixtures/dev-accounts.json`)
+เปิด http://localhost:3202 แล้วกด "เข้าสู่ระบบผ่าน Core Hub" (บัญชี dev อยู่ใน `standards/fixtures/dev-accounts.json`)
 
-ทะเบียนใน Core Hub ต้องมี `callback_url = http://localhost:3102/auth/callback`
+ทะเบียนใน Core Hub ต้องมี `callback_url = http://localhost:3202/auth/callback`
 
 ## รันด้วย Docker
 
 ```bash
-docker compose up --build        # db :5434 · backend :3002 · frontend :3102
+docker compose up --build        # db :5434 · backend :4202 · frontend :3202
 ```
 
 ต้องมี Core Hub รันบนเครื่อง host (:3000 / :3100) · `BACKEND_URL` และ `NEXT_PUBLIC_*` ของ frontend

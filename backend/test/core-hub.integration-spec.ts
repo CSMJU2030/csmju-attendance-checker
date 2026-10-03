@@ -12,7 +12,7 @@
  * Run it with both services up:
  *
  *   CORE_HUB_URL=http://localhost:3000 \
- *   DEMO_SUBSYSTEM_URL=http://localhost:3002 \
+ *   DEMO_SUBSYSTEM_URL=http://localhost:4202 \
  *   CORE_HUB_TEST_EMAIL=staff@core.local \
  *   CORE_HUB_TEST_PASSWORD=<password> \
  *   pnpm --filter backend test:integration
@@ -25,7 +25,7 @@ import { mapCoreRoleToSubsystemRole } from '../src/auth/role-mapping';
 import { ssoCookieNames } from '../src/auth/sso-session';
 
 const CORE_HUB_URL = process.env.CORE_HUB_URL ?? '';
-const DEMO_URL = process.env.DEMO_SUBSYSTEM_URL ?? 'http://localhost:3002';
+const DEMO_URL = process.env.DEMO_SUBSYSTEM_URL ?? 'http://localhost:4202';
 const EMAIL = process.env.CORE_HUB_TEST_EMAIL ?? '';
 const PASSWORD = process.env.CORE_HUB_TEST_PASSWORD ?? '';
 const PRESET_TOKEN = process.env.CORE_HUB_ACCESS_TOKEN ?? '';

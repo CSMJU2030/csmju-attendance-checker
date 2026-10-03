@@ -7,7 +7,7 @@ import type { NextConfig } from "next";
  * so the SSO cookie the backend sets on this origin comes back to it, and the
  * backend stays the only place that verifies tokens and enforces permissions.
  */
-const backendUrl = (process.env.BACKEND_URL ?? "http://localhost:3002").replace(/\/+$/, "");
+const backendUrl = (process.env.BACKEND_URL ?? "http://localhost:4202").replace(/\/+$/, "");
 
 // The Docker image builds a self-contained server (frontend/Dockerfile sets
 // NEXT_OUTPUT=standalone). Tracing starts at the repo root because pnpm keeps
