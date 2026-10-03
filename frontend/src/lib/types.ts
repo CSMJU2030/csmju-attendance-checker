@@ -1,113 +1,37 @@
 /*
- * Response shapes of the attendance-checker backend.
+ * Response shapes of the attendance-checker backend, generated from
+ * backend/openapi.json (tech-stack.md section 3 - no hand-written API types).
  *
- * tech-stack.md section 3 asks for types generated from the backend's
- * openapi.json; the backend does not publish one yet (no @nestjs/swagger), so
- * these mirror backend/src/**\/*.dto.ts and the Prisma models by hand. Replace
- * this file with `openapi-typescript` output once openapi.json exists.
+ * After a backend change: `pnpm --filter backend generate:openapi`, then
+ * `pnpm --filter frontend generate:api-types`, and commit both files.
+ * This module only gives the generated schemas the names the screens use.
  */
+import type { components } from "./api-schema";
 
-export type SubsystemRole = "STUDENT" | "ALUMNI" | "STAFF" | "ADMIN";
+type Schemas = components["schemas"];
 
-export interface Me {
-  id: string;
-  email: string;
-  coreRole: string;
-  subsystemRole: SubsystemRole;
-  /** `expiresAt` is the token's exp: past it, the next call returns 401 and /auth/login runs again. */
-  session: { expiresAt: string | null };
-}
+export type SubsystemRole = Schemas["SubsystemRole"];
+export type Me = Schemas["MeDto"];
 
-export interface ClassSection {
-  id: string;
-  courseCode: string;
-  courseName: string;
-  sectionCode: string;
-  academicYear: number;
-  term: number;
-  latitude: number;
-  longitude: number;
-  radiusMeters: number;
-  ownerCoreUserId: string;
-  createdAt: string;
-  updatedAt: string;
-}
+export type ClassSection = Schemas["ClassSectionDto"];
+/** Body of POST /api/v1/class-sections; PATCH takes a subset of it. */
+export type ClassSectionInput = Schemas["CreateClassSectionDto"];
 
-export type ClassSectionInput = Pick<
-  ClassSection,
-  | "courseCode"
-  | "courseName"
-  | "sectionCode"
-  | "academicYear"
-  | "term"
-  | "latitude"
-  | "longitude"
-  | "radiusMeters"
->;
+export type AttendanceSessionStatus = Schemas["AttendanceSessionStatus"];
+export type AttendanceSession = Schemas["AttendanceSessionDto"];
+export type CurrentCode = Schemas["CurrentCodeDto"];
 
-export type AttendanceSessionStatus = "OPEN" | "CLOSED";
-
-export interface AttendanceSession {
-  id: string;
-  classSectionId: string;
-  openedByCoreUserId: string;
-  status: AttendanceSessionStatus;
-  openedAt: string;
-  closedAt: string | null;
-  /** Students who checked in to this session. */
-  recordCount: number;
-}
-
-export interface CurrentCode {
-  code: string;
-  expiresAt: string;
-  stepSeconds: number;
-}
-
-export interface AttendanceRecord {
-  id: string;
-  attendanceSessionId: string;
-  coreUserId: string;
-  /** Student id from Core Hub's /people/me; null for an account not linked to a person. No e-mail is kept. */
-  personCode: string | null;
-  checkedInAt: string;
-  distanceMeters: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface SectionSummary {
-  courseCode: string;
-  courseName: string;
-  sectionCode: string;
-  academicYear: number;
-  term: number;
-}
-
-export type AttendanceRecordView = AttendanceRecord & { classSection: SectionSummary | null };
-
+/** A check-in record always means the student attended - there is no "late". */
+export type AttendanceRecord = Schemas["AttendanceRecordDto"];
+export type SectionSummary = Schemas["SectionSummaryDto"];
+export type AttendanceRecordView = Schemas["AttendanceRecordViewDto"];
 /** GET /api/v1/attendance-records/me/summary */
-export interface AttendanceSummary {
-  /** Sessions the student checked in to. */
-  total: number;
-}
+export type AttendanceSummary = Schemas["AttendanceSummaryDto"];
 
-export interface PageMeta {
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-}
+export type PageMeta = Schemas["PageMetaDto"];
+export type ErrorCode = Schemas["ErrorCode"];
 
-export type ErrorCode =
-  | "BAD_REQUEST"
-  | "VALIDATION_ERROR"
-  | "UNAUTHORIZED"
-  | "FORBIDDEN"
-  | "NOT_FOUND"
-  | "CONFLICT"
-  | "INTERNAL_ERROR";
-
+/** An error envelope from the backend, or NETWORK_ERROR when no answer arrived. */
 export interface ApiError {
   code: ErrorCode | "NETWORK_ERROR";
   message: string;

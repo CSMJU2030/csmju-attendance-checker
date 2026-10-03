@@ -1,6 +1,9 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, HttpStatus } from '@nestjs/common';
+import { ApiBearerAuth, ApiCookieAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiEnvelope, ApiErrors } from '../openapi/api-envelope';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { CoreHubIdentity } from './core-hub-identity';
+import { MeDto } from './dto/me.response.dto';
 
 /**
  * GET /api/v1/me (spec §22)
@@ -12,9 +15,15 @@ import { CoreHubIdentity } from './core-hub-identity';
  * `session.expiresAt` is the token's `exp` (auth-contract 5): a frontend can
  * renew ahead of it - through /auth/login - before showing a long form.
  */
+@ApiTags('me')
+@ApiBearerAuth()
+@ApiCookieAuth('session')
 @Controller('v1/me')
 export class MeController {
   @Get()
+  @ApiOperation({ summary: 'The signed-in user and their role in this subsystem' })
+  @ApiEnvelope(MeDto)
+  @ApiErrors(HttpStatus.UNAUTHORIZED, HttpStatus.FORBIDDEN)
   me(@CurrentUser() user: CoreHubIdentity) {
     return {
       id: user.id,

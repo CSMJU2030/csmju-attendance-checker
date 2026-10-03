@@ -7,6 +7,8 @@ packages:
 allowBuilds:
   '@parcel/watcher': true
   '@prisma/engines': true
+  # swagger-ui-dist pulls in @scarf/scarf (install analytics) - never run it
+  '@scarf/scarf': false
   # esbuild (via vitest) ships a prebuilt binary per platform; its install
   # script is only a fallback and is not needed
   esbuild: false

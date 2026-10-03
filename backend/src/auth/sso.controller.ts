@@ -1,8 +1,10 @@
 import { Controller, Get, Header, HttpStatus, Post, Query, Req, Res } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
 
 import { AppException, ErrorCode } from '../common/errors';
+import { ApiErrorDto } from '../openapi/envelope.dto';
 import { AuthEventsLogger } from './auth-events.logger';
 import { TokenRejectionReason, TokenVerificationError } from './auth.errors';
 import { CoreHubTokenPayload } from './core-hub-identity';
@@ -70,6 +72,7 @@ const SIGN_IN_AGAIN_PAGE = `<!doctype html>
  * never writes a second one after a redirect. `@Header` is applied before the
  * validation pipe runs, so even a malformed request gets `no-store`.
  */
+@ApiTags('auth')
 @Controller('auth')
 export class SsoController {
   private readonly names: { session: string; state: string };
@@ -104,6 +107,9 @@ export class SsoController {
    */
   @Public()
   @Get('login')
+  @ApiOperation({ summary: "Start SSO: set a state cookie and redirect to Core Hub's /sso/authorize" })
+  @ApiQuery({ name: 'next', required: false, description: 'Same-origin path to land on after signing in' })
+  @ApiResponse({ status: HttpStatus.FOUND, description: 'Redirect to Core Hub /sso/authorize' })
   @Header('Cache-Control', 'no-store')
   login(@Query('next') next: unknown, @Res() response: Response): void {
     const state = createSsoState();
@@ -143,6 +149,11 @@ export class SsoController {
    */
   @Public()
   @Get('callback')
+  @ApiOperation({ summary: 'SSO callback registered in Core Hub: verify the token, set the session cookie' })
+  @ApiResponse({ status: HttpStatus.FOUND, description: 'Signed in - redirect to the page that started the sign-in' })
+  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'No access_token', type: ApiErrorDto })
+  @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'State or token rejected', type: ApiErrorDto })
+  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Role not accepted here', type: ApiErrorDto })
   @Header('Cache-Control', 'no-store')
   // The next page must not receive this token-bearing URL as its Referer.
   @Header('Referrer-Policy', 'no-referrer')
@@ -242,6 +253,8 @@ export class SsoController {
    */
   @Public()
   @Post('logout')
+  @ApiOperation({ summary: "Clear this subsystem's cookies and continue to Core Hub's /logout" })
+  @ApiResponse({ status: HttpStatus.SEE_OTHER, description: 'Redirect to Core Hub /logout' })
   @Header('Cache-Control', 'no-store')
   logout(@Res() response: Response): void {
     response.setHeader('Set-Cookie', [
