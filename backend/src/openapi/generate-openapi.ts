@@ -17,7 +17,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 // ConfigModule validates the environment at import time; a placeholder is
 // enough here because preview mode never connects to the database.
-process.env.DATABASE_URL ||= 'postgresql://openapi:openapi@localhost:5432/openapi';
+process.env.DATABASE_URL ||= 'postgresql://localhost/openapi-placeholder';
 
 async function generate(): Promise<void> {
   const { AppModule } = await import('../app.module');
