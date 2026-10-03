@@ -10,7 +10,6 @@ const VALID: Values = {
   latitude: "18.8925",
   longitude: "99.0142",
   radiusMeters: "50",
-  lateAfterMinutes: "15",
 };
 
 describe("validateField - mirrors backend class-section DTOs", () => {
@@ -32,7 +31,6 @@ describe("validateField - mirrors backend class-section DTOs", () => {
     ["longitude", "-181"],
     ["radiusMeters", "5"],
     ["radiusMeters", "50.5"],
-    ["lateAfterMinutes", "181"],
   ] as const)("rejects %s = %j", (field, value) => {
     expect(validateField(field, value)).toEqual(expect.any(String));
   });
@@ -43,7 +41,6 @@ describe("validateField - mirrors backend class-section DTOs", () => {
     ["academicYear", "2543"],
     ["latitude", "-90"],
     ["radiusMeters", "500"],
-    ["lateAfterMinutes", "0"],
   ] as const)("accepts boundary %s = %j", (field, value) => {
     expect(validateField(field, value)).toBeUndefined();
   });
@@ -69,7 +66,6 @@ describe("toRequestBody", () => {
       latitude: 18.8925,
       longitude: 99.0142,
       radiusMeters: 50,
-      lateAfterMinutes: 15,
     });
   });
 
@@ -83,7 +79,6 @@ describe("toRequestBody", () => {
       latitude: 18.8925,
       longitude: 99.0142,
       radiusMeters: 50,
-      lateAfterMinutes: 15,
     });
   });
 });

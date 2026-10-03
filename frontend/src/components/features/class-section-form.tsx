@@ -42,7 +42,6 @@ function initialValues(section?: ClassSection): Values {
       latitude: String(section.latitude),
       longitude: String(section.longitude),
       radiusMeters: String(section.radiusMeters),
-      lateAfterMinutes: String(section.lateAfterMinutes),
     };
   }
   const year = Number(new Intl.DateTimeFormat("en-US", { timeZone: "Asia/Bangkok", year: "numeric" }).format(new Date()));
@@ -55,7 +54,6 @@ function initialValues(section?: ClassSection): Values {
     latitude: "",
     longitude: "",
     radiusMeters: "50",
-    lateAfterMinutes: "15",
   };
 }
 
@@ -263,18 +261,6 @@ export function ClassSectionForm({ section }: { section?: ClassSection }) {
               <TextInput
                 {...input("radiusMeters", { inputMode: "numeric", hint: "10–500 เมตร ค่าแนะนำ 50" })}
                 onChange={(event) => set("radiusMeters", event.target.value.replace(/\D/g, ""))}
-              />
-            </FormField>
-            <FormField
-              id="lateAfterMinutes"
-              label="นับว่าสายหลังเปิดรอบ (นาที)"
-              required
-              hint="เช็คชื่อหลังจากนี้จะถูกบันทึกว่ามาสาย"
-              error={errors.lateAfterMinutes}
-            >
-              <TextInput
-                {...input("lateAfterMinutes", { inputMode: "numeric", hint: "เช็คชื่อหลังจากนี้จะถูกบันทึกว่ามาสาย" })}
-                onChange={(event) => set("lateAfterMinutes", event.target.value.replace(/\D/g, ""))}
               />
             </FormField>
           </div>

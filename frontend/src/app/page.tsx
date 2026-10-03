@@ -44,11 +44,6 @@ export default async function OverviewPage() {
   );
 }
 
-/** Share of on-time check-ins, as a whole percentage. */
-function onTimeRate(summary: AttendanceSummary): string {
-  return summary.total === 0 ? "-" : `${Math.round((summary.present / summary.total) * 100)}%`;
-}
-
 /**
  * The call-to-action is static, so it renders straight away (it is the LCP
  * element); the numbers and the latest check-ins stream in behind skeletons.
@@ -103,20 +98,12 @@ async function StudentSummary() {
     return null;
   }
   return (
-        <Card as="section" flush aria-label="สรุปการเช็คชื่อของฉัน" className="grid grid-cols-3 divide-x divide-outline-variant/40">
-          {[
-            { label: "เช็คชื่อทั้งหมด", value: summary.data.total, tone: "text-on-surface", hint: "ครั้ง" },
-            { label: "มาตรงเวลา", value: summary.data.present, tone: "text-emerald-700", hint: onTimeRate(summary.data) },
-            { label: "มาสาย", value: summary.data.late, tone: "text-amber-800", hint: "ครั้ง" },
-          ].map((stat) => (
-            <div key={stat.label} className="flex flex-col items-center gap-1 px-2 py-4 text-center md:py-6">
-              <span className={`font-display text-headline-md font-semibold tabular-nums md:text-[30px]/[1.4] ${stat.tone}`}>
-                {formatNumber(stat.value)}
-              </span>
-              <span className="text-sm/relaxed font-semibold text-on-surface">{stat.label}</span>
-              <span className="text-sm/relaxed text-on-surface-variant">{stat.hint}</span>
-            </div>
-          ))}
+        <Card as="section" flush aria-label="สรุปการเช็คชื่อของฉัน" className="flex flex-col items-center gap-1 px-2 py-4 text-center md:py-6">
+          <span className="font-display text-headline-md font-semibold text-on-surface tabular-nums md:text-[30px]/[1.4]">
+            {formatNumber(summary.data.total)}
+          </span>
+          <span className="text-sm/relaxed font-semibold text-on-surface">เช็คชื่อแล้วทั้งหมด</span>
+          <span className="text-sm/relaxed text-on-surface-variant">ครั้ง</span>
         </Card>
   );
 }
@@ -206,7 +193,6 @@ async function StaffDashboard({ me }: { me: Me }) {
                     </p>
                     <p className="text-sm/relaxed text-on-surface-variant tabular-nums">
                       เปิดเมื่อ {formatTime(session.openedAt)} · เช็คชื่อแล้ว {formatNumber(session.recordCount)} คน
-                      {session.lateCount > 0 ? ` · สาย ${formatNumber(session.lateCount)} คน` : ""}
                     </p>
                   </div>
                   <ButtonLink href={`/attendance-sessions/${session.id}`} variant="secondary" className="w-full sm:w-auto">

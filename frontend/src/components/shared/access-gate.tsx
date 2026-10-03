@@ -17,7 +17,7 @@ import { SignInLink } from "./sign-in-link";
 const HOW_IT_WORKS = [
   { title: "อาจารย์เปิดรอบ", detail: "รหัส 6 หลักขึ้นบนจอในห้อง และเปลี่ยนทุก 2 นาที", icon: <PresentationIcon size={20} /> },
   { title: "นักศึกษากรอกรหัส", detail: "บนมือถือ แล้วอนุญาตให้ระบบใช้ตำแหน่ง", icon: <KeyRoundIcon size={20} /> },
-  { title: "บันทึกทันที", detail: "มาตรงเวลาหรือมาสาย อาจารย์เห็นรายชื่อสดบนจอ", icon: <CheckCircleIcon size={20} /> },
+  { title: "บันทึกทันที", detail: "เช็คชื่อได้จนกว่าอาจารย์จะปิดรอบ อาจารย์เห็นรายชื่อสดบนจอ", icon: <CheckCircleIcon size={20} /> },
 ];
 
 /**

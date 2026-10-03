@@ -28,7 +28,6 @@ export interface ClassSection {
   latitude: number;
   longitude: number;
   radiusMeters: number;
-  lateAfterMinutes: number;
   ownerCoreUserId: string;
   createdAt: string;
   updatedAt: string;
@@ -44,7 +43,6 @@ export type ClassSectionInput = Pick<
   | "latitude"
   | "longitude"
   | "radiusMeters"
-  | "lateAfterMinutes"
 >;
 
 export type AttendanceSessionStatus = "OPEN" | "CLOSED";
@@ -58,8 +56,6 @@ export interface AttendanceSession {
   closedAt: string | null;
   /** Students who checked in to this session. */
   recordCount: number;
-  /** Of those, how many were LATE. */
-  lateCount: number;
 }
 
 export interface CurrentCode {
@@ -68,15 +64,12 @@ export interface CurrentCode {
   stepSeconds: number;
 }
 
-export type AttendanceStatus = "PRESENT" | "LATE";
-
 export interface AttendanceRecord {
   id: string;
   attendanceSessionId: string;
   coreUserId: string;
   /** Student id from Core Hub's /people/me; null for an account not linked to a person. No e-mail is kept. */
   personCode: string | null;
-  status: AttendanceStatus;
   checkedInAt: string;
   distanceMeters: number;
   createdAt: string;
@@ -95,9 +88,8 @@ export type AttendanceRecordView = AttendanceRecord & { classSection: SectionSum
 
 /** GET /api/v1/attendance-records/me/summary */
 export interface AttendanceSummary {
+  /** Sessions the student checked in to. */
   total: number;
-  present: number;
-  late: number;
 }
 
 export interface PageMeta {

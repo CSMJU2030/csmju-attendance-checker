@@ -8,7 +8,6 @@ import {
   ButtonLink,
   Card,
   CheckCircleIcon,
-  ClockIcon,
   FormField,
   KeyRoundIcon,
   MapPinIcon,
@@ -20,6 +19,7 @@ import {
 import { apiRequest } from "@/lib/api-client";
 import { classifyCheckInFailure } from "@/lib/check-in";
 import type { AttendanceRecordView } from "@/lib/types";
+import { ATTENDED_LABEL } from "./attendance-record-list";
 import { CodeInput } from "./code-input";
 
 type Phase = "idle" | "locating" | "submitting";
@@ -35,7 +35,7 @@ const CODE_PATTERN = /^\d{6}$/;
 const STEPS = [
   { title: "กรอกรหัส", detail: "ดูรหัส 6 หลักจากจอในห้องเรียน", icon: <KeyRoundIcon size={16} /> },
   { title: "อนุญาตตำแหน่ง", detail: "เพื่อยืนยันว่าคุณอยู่ในห้อง", icon: <MapPinIcon size={16} /> },
-  { title: "ได้ผลทันที", detail: "มาตรงเวลาหรือมาสาย", icon: <CheckCircleIcon size={16} /> },
+  { title: "ได้ผลทันที", detail: "บันทึกว่ามาเรียนทันที", icon: <CheckCircleIcon size={16} /> },
 ];
 const CODE_HINT = "รหัส 6 หลักที่อาจารย์แสดงในห้องเรียน รหัสเปลี่ยนทุก 2 นาที";
 
@@ -138,19 +138,18 @@ export function CheckInForm({ initialCode = "" }: { initialCode?: string }) {
   }
 
   if (result) {
-    const late = result.status === "LATE";
     const section = result.classSection;
     return (
       <Card flush className="flex flex-col" aria-live="polite">
-        <div className={"flex flex-col items-center gap-3 px-6 py-8 text-center " + (late ? "bg-amber-50" : "bg-success/10")}>
+        <div className="flex flex-col items-center gap-3 bg-success/10 px-6 py-8 text-center">
           <span
             aria-hidden
-            className={"flex size-16 items-center justify-center rounded-full bg-surface-container-lowest " + (late ? "text-amber-800" : "text-emerald-700")}
+            className="flex size-16 items-center justify-center rounded-full bg-surface-container-lowest text-emerald-700"
           >
-            {late ? <ClockIcon size={48} /> : <CheckCircleIcon size={48} />}
+            <CheckCircleIcon size={48} />
           </span>
           <h2 className="font-display text-headline-md font-semibold text-on-surface">เช็คชื่อสำเร็จ</h2>
-          <Badge tone={late ? "warning" : "success"}>{late ? "มาสาย" : "มาตรงเวลา"}</Badge>
+          <Badge tone="success">{ATTENDED_LABEL}</Badge>
         </div>
         <dl className="flex flex-col divide-y divide-outline-variant/40 px-6 text-on-surface-variant">
           {section ? (

@@ -12,7 +12,6 @@ const SECTION = {
   latitude: 18.8925,
   longitude: 99.0142,
   radiusMeters: 50,
-  lateAfterMinutes: 15,
   ownerCoreUserId: 'user-003',
 };
 

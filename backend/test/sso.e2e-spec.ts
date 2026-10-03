@@ -510,7 +510,7 @@ describe('Central SSO 1.1 (e2e)', () => {
         .set('Cookie', pair(cookieNamed(signedIn, SESSION_COOKIE)))
         .expect(200);
 
-      expect(response.body.data).toEqual({ total: 0, present: 0, late: 0 });
+      expect(response.body.data).toEqual({ total: 0 });
     });
 
     it('still enforces subsystem authorization for a cookie session', async () => {

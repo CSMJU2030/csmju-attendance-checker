@@ -15,8 +15,7 @@ export type FieldName =
   | "term"
   | "latitude"
   | "longitude"
-  | "radiusMeters"
-  | "lateAfterMinutes";
+  | "radiusMeters";
 
 export type Values = Record<FieldName, string>;
 export type Errors = Partial<Record<FieldName, string>>;
@@ -30,7 +29,6 @@ export const FIELD_ORDER: FieldName[] = [
   "latitude",
   "longitude",
   "radiusMeters",
-  "lateAfterMinutes",
 ];
 
 /** Course code, section, year and term identify a section and cannot change. */
@@ -64,8 +62,6 @@ export function validateField(name: FieldName, value: string): string | undefine
       return isNumberIn(value, -180, 180) ? undefined : "ลองจิจูดต้องเป็นตัวเลขระหว่าง -180 ถึง 180";
     case "radiusMeters":
       return isNumberIn(value, 10, 500, true) ? undefined : "รัศมีต้องเป็นจำนวนเต็ม 10–500 เมตร";
-    case "lateAfterMinutes":
-      return isNumberIn(value, 0, 180, true) ? undefined : "ต้องเป็นจำนวนเต็ม 0–180 นาที";
   }
 }
 
@@ -92,7 +88,6 @@ export function toRequestBody(values: Values, editing: boolean): Partial<ClassSe
     latitude: Number(values.latitude),
     longitude: Number(values.longitude),
     radiusMeters: Number(values.radiusMeters),
-    lateAfterMinutes: Number(values.lateAfterMinutes),
   };
   if (editing) {
     return editable;
