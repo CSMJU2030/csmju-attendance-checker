@@ -4,9 +4,12 @@ import {
   AttendanceSessionStatus,
   AttendanceStatus,
   ClassSection,
+  Prisma,
 } from '../../generated/prisma/client';
 import { isValidCode } from '../attendance-sessions/attendance-code';
 import { CoreHubIdentity } from '../auth/core-hub-identity';
+import { Permission } from '../auth/permissions';
+import { assertCanManageSection } from '../class-sections/class-sections.service';
 import { PeopleService } from '../core-hub/people.service';
 import { PaginationQueryDto } from '../common/dto/pagination.dto';
 import { AppException } from '../common/errors';
@@ -14,6 +17,7 @@ import { distanceInMeters } from '../common/geo';
 import { PrismaService } from '../prisma/prisma.service';
 import { CheckInAttempts } from './check-in-attempts';
 import { CheckInDto } from './dto/check-in.dto';
+import { QueryAttendanceRecordsDto } from './dto/query-attendance-records.dto';
 
 /** A location fix less precise than this cannot prove the student is in class. */
 export const MAX_ACCURACY_METERS = 100;
@@ -173,6 +177,48 @@ export class AttendanceRecordsService {
       return { ...record, classSection: section ? summarize(section) : null };
     });
 
+    return { items, total };
+  }
+
+  /**
+   * Check-ins of one class section for its staff, newest first, optionally
+   * narrowed to a student id prefix and a time range.
+   */
+  async findForSection(
+    query: QueryAttendanceRecordsDto,
+    user: CoreHubIdentity,
+  ): Promise<{ items: AttendanceRecord[]; total: number }> {
+    const from = query.from ? new Date(query.from) : undefined;
+    const to = query.to ? new Date(query.to) : undefined;
+    if (from && to && from >= to) {
+      throw AppException.badRequest('วันที่เริ่มต้นต้องมาก่อนวันที่สิ้นสุด');
+    }
+
+    const section = await this.prisma.classSection.findUnique({
+      where: { id: query.classSectionId },
+    });
+    if (!section) {
+      throw AppException.notFound('ไม่พบกลุ่มเรียนนี้');
+    }
+    assertCanManageSection(section, user, Permission.ATTENDANCE_SESSION_MANAGE_ANY);
+
+    const sessions = await this.prisma.attendanceSession.findMany({
+      where: { classSectionId: section.id },
+    });
+    const where: Prisma.AttendanceRecordWhereInput = {
+      attendanceSessionId: { in: sessions.map((session) => session.id) },
+      personCode: query.personCode ? { startsWith: query.personCode } : undefined,
+      checkedInAt: from || to ? { gte: from, lt: to } : undefined,
+    };
+    const [items, total] = await Promise.all([
+      this.prisma.attendanceRecord.findMany({
+        where,
+        orderBy: [{ checkedInAt: 'desc' }, { id: 'asc' }],
+        skip: query.skip,
+        take: query.take,
+      }),
+      this.prisma.attendanceRecord.count({ where }),
+    ]);
     return { items, total };
   }
 
