@@ -8,6 +8,7 @@ import { CollectionResult } from '../common/api-response';
 import { PaginationQueryDto, buildPaginationMeta } from '../common/dto/pagination.dto';
 import { AttendanceRecordsService } from './attendance-records.service';
 import { CheckInDto } from './dto/check-in.dto';
+import { QueryAttendanceRecordsDto } from './dto/query-attendance-records.dto';
 
 @Controller('v1/attendance-records')
 export class AttendanceRecordsController {
@@ -21,6 +22,20 @@ export class AttendanceRecordsController {
     @CoreHubAccessToken() token: string,
   ) {
     return this.records.checkIn(dto, user, token);
+  }
+
+  /** Staff: search the check-ins of a class section they manage. */
+  @Get()
+  @RequirePermissions(
+    Permission.ATTENDANCE_SESSION_MANAGE_ANY,
+    Permission.ATTENDANCE_SESSION_MANAGE_OWN,
+  )
+  async findForSection(
+    @Query() query: QueryAttendanceRecordsDto,
+    @CurrentUser() user: CoreHubIdentity,
+  ) {
+    const { items, total } = await this.records.findForSection(query, user);
+    return new CollectionResult(items, buildPaginationMeta(total, query.page ?? 1, query.take));
   }
 
   @Get('me/summary')

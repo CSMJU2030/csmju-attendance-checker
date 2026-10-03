@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { QRCodeSVG } from "qrcode.react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
@@ -22,6 +23,27 @@ import { ATTENDANCE_STATUS } from "./attendance-record-list";
 import { SessionStatusBadge } from "./session-status";
 
 const RECORDS_POLL_MS = 5_000;
+
+/**
+ * Opens this subsystem's check-in page with the current code filled in. The
+ * student still signs in through Core Hub and is still checked against the
+ * room's location - the QR only saves typing the 6 digits.
+ */
+function CheckInQr({ code }: { code: string }) {
+  const url = `${window.location.origin}/check-in?code=${code}`;
+  return (
+    <div className="rounded-xl bg-white p-3 ring-1 ring-outline-variant/40">
+      <QRCodeSVG
+        value={url}
+        size={176}
+        marginSize={1}
+        role="img"
+        aria-label="คิวอาร์โค้ดสำหรับเช็คชื่อ สแกนแล้วจะเปิดหน้าเช็คชื่อพร้อมใส่รหัสให้"
+        className="size-44 md:size-56"
+      />
+    </div>
+  );
+}
 
 function formatCountdown(seconds: number): string {
   const safe = Math.max(0, seconds);
@@ -177,13 +199,16 @@ export function LiveSession({ initialSession, sectionLabel }: { initialSession: 
               {codeError}
             </Alert>
           ) : (
-            <p
-              aria-live="polite"
-              aria-label={code ? `รหัส ${code.code.split("").join(" ")}` : "กำลังโหลดรหัส"}
-              className="font-mono text-[56px]/[1.2] font-semibold text-on-surface tabular-nums md:text-[96px]/[1.1]"
-            >
-              {code ? `${code.code.slice(0, 3)} ${code.code.slice(3)}` : "--- ---"}
-            </p>
+            <div className="flex flex-col items-center gap-6">
+              <p
+                aria-live="polite"
+                aria-label={code ? `รหัส ${code.code.split("").join(" ")}` : "กำลังโหลดรหัส"}
+                className="whitespace-nowrap font-mono text-[56px]/[1.2] font-semibold text-on-surface tabular-nums md:text-[96px]/[1.1]"
+              >
+                {code ? `${code.code.slice(0, 3)} ${code.code.slice(3)}` : "--- ---"}
+              </p>
+              {code ? <CheckInQr code={code.code} /> : null}
+            </div>
           )}
           <div className="flex w-full max-w-md flex-col gap-2">
             <div className="h-2 w-full overflow-hidden rounded-full bg-primary-container/10" aria-hidden>
@@ -199,7 +224,7 @@ export function LiveSession({ initialSession, sectionLabel }: { initialSession: 
             </p>
           </div>
           <p className="max-w-prose text-on-surface-variant">
-            ให้นักศึกษาเปิดเมนู &quot;เช็คชื่อ&quot; ในระบบเช็คชื่อเข้าเรียน แล้วกรอกรหัสนี้ขณะอยู่ในห้องเรียน
+            ให้นักศึกษาสแกนคิวอาร์โค้ด หรือเปิดเมนู &quot;เช็คชื่อ&quot; ในระบบเช็คชื่อเข้าเรียนแล้วกรอกรหัสนี้ ขณะอยู่ในห้องเรียน
           </p>
           <div className="flex flex-wrap justify-center gap-2">
             <Button variant="secondary" onClick={toggleFullscreen}>

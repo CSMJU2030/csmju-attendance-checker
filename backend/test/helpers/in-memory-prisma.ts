@@ -41,21 +41,33 @@ function matches(row: Row, where: Row | undefined): boolean {
         ? haystack.toLowerCase().includes(needle.toLowerCase())
         : haystack.includes(needle);
     }
+    if (condition && typeof condition === 'object' && 'startsWith' in condition) {
+      return String(row[field] ?? '').startsWith(String((condition as Row).startsWith));
+    }
+    if (condition && typeof condition === 'object' && ('gte' in condition || 'lt' in condition)) {
+      const { gte, lt } = condition as Row;
+      return (gte === undefined || row[field] >= gte) && (lt === undefined || row[field] < lt);
+    }
     return row[field] === condition;
   });
 }
 
-function sortRows(rows: Row[], orderBy?: Row): Row[] {
+function sortRows(rows: Row[], orderBy?: Row | Row[]): Row[] {
   if (!orderBy) {
     return rows;
   }
-  const [field, direction] = Object.entries(orderBy)[0] as [string, 'asc' | 'desc'];
+  const keys = (Array.isArray(orderBy) ? orderBy : [orderBy]).map(
+    (clause) => Object.entries(clause)[0] as [string, 'asc' | 'desc'],
+  );
   return [...rows].sort((a, b) => {
-    const left = a[field];
-    const right = b[field];
-    if (left === right) return 0;
-    const result = left > right ? 1 : -1;
-    return direction === 'desc' ? -result : result;
+    for (const [field, direction] of keys) {
+      const left = a[field];
+      const right = b[field];
+      if (left === right) continue;
+      const result = left > right ? 1 : -1;
+      return direction === 'desc' ? -result : result;
+    }
+    return 0;
   });
 }
 
@@ -96,7 +108,7 @@ class Table {
     return row;
   }
 
-  async findMany(args: { where?: Row; orderBy?: Row; skip?: number; take?: number } = {}): Promise<Row[]> {
+  async findMany(args: { where?: Row; orderBy?: Row | Row[]; skip?: number; take?: number } = {}): Promise<Row[]> {
     const filtered = this.rows.filter((row) => matches(row, args.where));
     const sorted = sortRows(filtered, args.orderBy);
     const start = args.skip ?? 0;

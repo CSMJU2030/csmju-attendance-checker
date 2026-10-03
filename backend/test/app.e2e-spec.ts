@@ -524,6 +524,63 @@ describe('Attendance Checker (e2e)', () => {
       expect(mine.body.data[0]).toMatchObject({ attendanceSessionId: sessionId, status: 'PRESENT' });
     });
 
+    describe('GET /api/v1/attendance-records (staff search)', () => {
+      const search = (query: string, token = staffToken) =>
+        request(app.getHttpServer())
+          .get(`/api/v1/attendance-records?classSectionId=${sectionId}${query}`)
+          .set(bearer(token));
+
+      beforeEach(async () => {
+        const opened = await openSession();
+        await checkIn({ code: opened.body.data.code.code, ...ROOM }).expect(201);
+      });
+
+      it('lists the section check-ins and filters by a student id prefix', async () => {
+        const all = await search('').expect(200);
+        expect(all.body.data).toHaveLength(1);
+        expect(all.body.data[0]).toMatchObject({ personCode: '6504101234', status: 'PRESENT' });
+        expect(all.body.meta).toMatchObject({ total: 1, page: 1 });
+
+        expect((await search('&personCode=650410').expect(200)).body.data).toHaveLength(1);
+        expect((await search('&personCode=6599').expect(200)).body.data).toHaveLength(0);
+      });
+
+      it('filters by a half-open time range', async () => {
+        const hourAgo = new Date(Date.now() - 3_600_000).toISOString();
+        const hourAhead = new Date(Date.now() + 3_600_000).toISOString();
+
+        expect((await search(`&from=${hourAgo}&to=${hourAhead}`).expect(200)).body.data).toHaveLength(1);
+        expect((await search(`&to=${hourAgo}`).expect(200)).body.data).toHaveLength(0);
+        expect((await search(`&from=${hourAhead}`).expect(200)).body.data).toHaveLength(0);
+      });
+
+      it('rejects bad filters with 400', async () => {
+        const later = new Date(Date.now() + 3_600_000).toISOString();
+        const earlier = new Date(Date.now() - 3_600_000).toISOString();
+
+        expect((await search(`&from=${later}&to=${earlier}`)).status).toBe(400);
+        expect((await search('&from=yesterday')).body.error.code).toBe('VALIDATION_ERROR');
+        expect((await search('&personCode=65%25')).status).toBe(400);
+        await request(app.getHttpServer())
+          .get('/api/v1/attendance-records')
+          .set(bearer(staffToken))
+          .expect(400);
+      });
+
+      it('is limited to staff who manage the section', async () => {
+        expect((await search('', otherStaffToken)).status).toBe(403);
+        expect((await search('', studentToken)).status).toBe(403);
+        expect((await search('', adminToken).expect(200)).body.data).toHaveLength(1);
+      });
+
+      it('returns 404 for an unknown section', async () => {
+        await request(app.getHttpServer())
+          .get('/api/v1/attendance-records?classSectionId=99999999-9999-4999-8999-999999999999')
+          .set(bearer(staffToken))
+          .expect(404);
+      });
+    });
+
     it('reports check-in counts on the session and a summary for the student', async () => {
       const opened = await openSession();
       const sessionId = opened.body.data.id;
