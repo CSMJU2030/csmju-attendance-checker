@@ -9,9 +9,10 @@ import {
   PresentationIcon,
   ShieldOffIcon,
 } from "@/components/shared/kit";
-import { CORE_HUB_WEB_URL, signInHref } from "@/lib/config";
+import { CORE_HUB_WEB_URL } from "@/lib/config";
 import { STANDARD_MESSAGE } from "@/lib/errors";
 import type { ApiError } from "@/lib/types";
+import { SignInLink } from "./sign-in-link";
 
 const HOW_IT_WORKS = [
   { title: "อาจารย์เปิดรอบ", detail: "รหัส 6 หลักขึ้นบนจอในห้อง และเปลี่ยนทุก 2 นาที", icon: <PresentationIcon size={20} /> },
@@ -34,9 +35,7 @@ export function AccessGate({ status, error }: { status: number; error: ApiError 
             เช็คชื่อด้วยรหัสที่อาจารย์แสดงในห้องเรียน ระบบยืนยันว่าคุณอยู่ในห้องจากตำแหน่งของอุปกรณ์
             เข้าสู่ระบบด้วยบัญชีของมหาวิทยาลัยผ่าน Core Hub
           </p>
-          <ButtonLink href={signInHref()} size="lg" className="mt-2 w-full sm:w-auto">
-            เข้าสู่ระบบผ่าน Core Hub
-          </ButtonLink>
+          <SignInLink className="mt-2 w-full sm:w-auto">เข้าสู่ระบบผ่าน Core Hub</SignInLink>
         </Card>
 
         <section aria-labelledby="how-it-works" className="flex flex-col gap-4">

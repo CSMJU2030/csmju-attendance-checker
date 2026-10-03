@@ -67,8 +67,10 @@ function locate(): Promise<GeolocationPosition> {
   });
 }
 
-export function CheckInForm() {
-  const [code, setCode] = useState("");
+/** `initialCode` comes from the classroom QR (`/check-in?code=`), already validated. */
+export function CheckInForm({ initialCode = "" }: { initialCode?: string }) {
+  const [code, setCode] = useState(initialCode);
+  const [fromQr, setFromQr] = useState(initialCode !== "");
   const [codeError, setCodeError] = useState<string>();
   const [phase, setPhase] = useState<Phase>("idle");
   const [notice, setNotice] = useState<Notice | null>(null);
@@ -122,6 +124,7 @@ export function CheckInForm() {
     if (response.ok) {
       setResult(response.data);
       setCode("");
+      setFromQr(false);
       return;
     }
 
@@ -193,6 +196,10 @@ export function CheckInForm() {
           <Alert tone={notice.tone} title={notice.title}>
             {notice.message}
           </Alert>
+        ) : fromQr ? (
+          <Alert tone="info" title="ใส่รหัสจากคิวอาร์โค้ดให้แล้ว">
+            กดปุ่ม &quot;เช็คชื่อ&quot; ได้เลย ถ้ารหัสเปลี่ยนไปแล้ว ให้กรอกรหัสล่าสุดบนจอแทน
+          </Alert>
         ) : null}
 
         <FormField
@@ -208,7 +215,10 @@ export function CheckInForm() {
             name="code"
             value={code}
             invalid={Boolean(codeError)}
-            onChange={setCode}
+            onChange={(value) => {
+              setCode(value);
+              setFromQr(false);
+            }}
             onBlur={() => code && setCodeError(validate(code))}
           />
         </FormField>
