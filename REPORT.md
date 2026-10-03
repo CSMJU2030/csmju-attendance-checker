@@ -1,7 +1,7 @@
 # REPORT — csmju-attendance-checker
 
 ระบบเช็คชื่อเข้าเรียน: อาจารย์เปิดรอบเช็คชื่อแล้วแสดงรหัส 6 หลักในห้อง (เปลี่ยนทุก 2 นาที)
-นักศึกษากรอกรหัสพร้อมตำแหน่ง GPS ระบบรับเฉพาะคนที่อยู่ในรัศมีของห้อง และเก็บสถานะ `PRESENT` / `LATE`
+นักศึกษากรอกรหัสพร้อมตำแหน่ง GPS ระบบรับเฉพาะคนที่อยู่ในรัศมีของห้อง (ตั้งแต่ 2026-10-03 ไม่มีสถานะ `LATE` แล้ว: เช็คชื่อได้จนกว่าอาจารย์จะปิดรอบ)
 
 เป้าหมาย conformance: **L3** · standards **v1.0.0** · รันวันที่ 2026-09-29
 
@@ -71,15 +71,15 @@ RESULT: 63 passed · 0 failed · 0 skipped
 - `backend/prisma/seed.ts` — ข้อมูลตัวอย่างกลุ่มเรียน CS201
 - `backend/src/class-sections/` — CRUD กลุ่มเรียน · `?mine=true` · ลบได้เฉพาะกลุ่มที่ยังไม่มีรอบเช็คชื่อ
 - `backend/src/attendance-sessions/` — เปิด/ปิดรอบ · รหัส TOTP 6 หลักจาก `code_secret` · ดูรายชื่อผู้เช็คชื่อ
-- `backend/src/attendance-records/` — เช็คชื่อ (ตรวจรหัส · ความแม่นยำ GPS · รัศมี · ซ้ำ · มาสาย) · ประวัติของตัวเอง · ล็อกเมื่อกรอกรหัสผิดหลายครั้ง
+- `backend/src/attendance-records/` — เช็คชื่อ (ตรวจรหัส · ความแม่นยำ GPS · รัศมี · ซ้ำ) · ประวัติของตัวเอง · ล็อกเมื่อกรอกรหัสผิดหลายครั้ง
 - `backend/src/common/geo.ts` — คำนวณระยะทาง haversine (ไฟล์ใหม่ ไม่ได้แตะ envelope/exception filter)
 - `backend/src/auth/permissions.ts` — permission ของโดเมน (ดูด้านล่าง)
 - `backend/src/auth/role-mapping.ts` — ตัด `alumni` ออกให้ตรงกับทะเบียน
 - `backend/src/app.module.ts` · `config/configuration.ts` · `prisma/prisma.service.ts` · `.env.example` — ผูกโมดูลใหม่และค่าตั้งของระบบนี้
 - `backend/test/` — e2e ของโดเมนใหม่ และปรับ in-memory Prisma ให้มีตารางใหม่
 - ลบ `backend/src/{students,courses,enrollments}/` — เป็นโดเมนตัวอย่างของ demo ที่ไม่ใช้ในระบบนี้
-- `backend/src/attendance-sessions/` — รอบเช็คชื่อส่ง `recordCount` / `lateCount` (นับด้วย `groupBy` ครั้งเดียวต่อหน้า)
-- `backend/src/attendance-records/` — `GET /api/v1/attendance-records/me/summary` → `{ total, present, late }` ของนักศึกษาเอง
+- `backend/src/attendance-sessions/` — รอบเช็คชื่อส่ง `recordCount` (นับด้วย `groupBy` ครั้งเดียวต่อหน้า)
+- `backend/src/attendance-records/` — `GET /api/v1/attendance-records/me/summary` → `{ total }` ของนักศึกษาเอง
 - `frontend/` — Next.js 16 App Router + Tailwind 3 (ดูหัวข้อ "frontend" ด้านล่าง)
 - `pnpm-workspace.yaml` · `package.json` — เพิ่ม workspace `frontend` และ script `start:dev:frontend`
 - `subsystem.yaml` — `base_url` เปลี่ยนเป็น frontend `http://localhost:3102`

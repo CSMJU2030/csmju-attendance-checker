@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import {
   AttendanceRecord,
   AttendanceSessionStatus,
-  AttendanceStatus,
   ClassSection,
   Prisma,
 } from '../../generated/prisma/client';
@@ -30,9 +29,8 @@ type SectionSummary = Pick<
 export type AttendanceRecordView = AttendanceRecord & { classSection: SectionSummary | null };
 
 export interface AttendanceSummary {
+  /** Sessions the student checked in to. */
   total: number;
-  present: number;
-  late: number;
 }
 
 function summarize(section: ClassSection): SectionSummary {
@@ -121,12 +119,6 @@ export class AttendanceRecordsService {
       throw AppException.conflict('คุณเช็คชื่อในรอบนี้แล้ว');
     }
 
-    const lateAfterMs = section.lateAfterMinutes * 60 * 1000;
-    const status =
-      now.getTime() - session.openedAt.getTime() > lateAfterMs
-        ? AttendanceStatus.LATE
-        : AttendanceStatus.PRESENT;
-
     const personCode = await this.people.myPersonCode(token);
 
     const record = await this.prisma.attendanceRecord.create({
@@ -134,7 +126,6 @@ export class AttendanceRecordsService {
         attendanceSessionId: session.id,
         coreUserId: user.id,
         personCode,
-        status,
         checkedInAt: now,
         distanceMeters: distance,
       },
@@ -222,18 +213,9 @@ export class AttendanceRecordsService {
     return { items, total };
   }
 
-  /** How many times the student checked in, on time and late. */
+  /** How many sessions the student checked in to. */
   async summaryMine(user: CoreHubIdentity): Promise<AttendanceSummary> {
-    const groups = await this.prisma.attendanceRecord.groupBy({
-      by: ['status'],
-      where: { coreUserId: user.id },
-      _count: { _all: true },
-    });
-
-    const count = (status: AttendanceStatus) =>
-      groups.find((group) => group.status === status)?._count._all ?? 0;
-    const present = count(AttendanceStatus.PRESENT);
-    const late = count(AttendanceStatus.LATE);
-    return { total: present + late, present, late };
+    const total = await this.prisma.attendanceRecord.count({ where: { coreUserId: user.id } });
+    return { total };
   }
 }

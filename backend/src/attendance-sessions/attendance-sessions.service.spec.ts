@@ -111,16 +111,14 @@ describe('AttendanceSessionsService - business rules', () => {
     await expect(service.getCode(SESSION.id, OWNER, NOW)).rejects.toMatchObject({ status: 409 });
   });
 
-  it('reports how many students checked in and how many were late', async () => {
+  it('reports how many students checked in', async () => {
     prisma.attendanceRecord.groupBy.mockResolvedValue([
-      { attendanceSessionId: SESSION.id, status: 'PRESENT', _count: { _all: 10 } },
-      { attendanceSessionId: SESSION.id, status: 'LATE', _count: { _all: 3 } },
+      { attendanceSessionId: SESSION.id, _count: { _all: 13 } },
     ]);
 
-    await expect(service.findOne(SESSION.id, OWNER)).resolves.toMatchObject({
-      recordCount: 13,
-      lateCount: 3,
-    });
+    const session = await service.findOne(SESSION.id, OWNER);
+    expect(session).toMatchObject({ recordCount: 13 });
+    expect(session).not.toHaveProperty('lateCount');
     expect(prisma.attendanceRecord.groupBy).toHaveBeenCalledWith(
       expect.objectContaining({ where: { attendanceSessionId: { in: [SESSION.id] } } }),
     );
@@ -131,17 +129,14 @@ describe('AttendanceSessionsService - business rules', () => {
     prisma.attendanceSession.findMany.mockResolvedValue([SESSION, other]);
     prisma.attendanceSession.count.mockResolvedValue(2);
     prisma.attendanceRecord.groupBy.mockResolvedValue([
-      { attendanceSessionId: SESSION.id, status: 'PRESENT', _count: { _all: 4 } },
+      { attendanceSessionId: SESSION.id, _count: { _all: 4 } },
     ]);
 
     const { items } = await service.findAll(
       Object.assign(new QueryAttendanceSessionsDto(), { classSectionId: SECTION.id }),
       OWNER,
     );
-    expect(items.map((item) => [item.recordCount, item.lateCount])).toEqual([
-      [4, 0],
-      [0, 0],
-    ]);
+    expect(items.map((item) => item.recordCount)).toEqual([4, 0]);
   });
 
   it('returns 404 for an unknown session', async () => {

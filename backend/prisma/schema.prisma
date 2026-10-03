@@ -27,29 +27,21 @@ enum AttendanceSessionStatus {
   CLOSED
 }
 
-enum AttendanceStatus {
-  PRESENT
-  LATE
-}
-
 /// A class group that takes attendance in one room.
 model ClassSection {
   id String @id @default(uuid())
 
-  courseCode  String @map("course_code")
-  courseName  String @map("course_name")
-  sectionCode String @map("section_code")
+  courseCode   String @map("course_code")
+  courseName   String @map("course_name")
+  sectionCode  String @map("section_code")
   /// Academic year in the Gregorian calendar (data is ISO; the UI shows B.E.).
-  academicYear Int @map("academic_year")
+  academicYear Int    @map("academic_year")
   term         Int
 
   /// Check-in point of the room. Students must be within `radiusMeters`.
   latitude     Float
   longitude    Float
   radiusMeters Int   @default(50) @map("radius_meters")
-
-  /// A check-in later than this many minutes after the session opened is LATE.
-  lateAfterMinutes Int @default(15) @map("late_after_minutes")
 
   /// Core Hub user (`sub`) of the staff member who owns this section.
   ownerCoreUserId String @map("owner_core_user_id")
@@ -88,20 +80,22 @@ model AttendanceSession {
   @@map("attendance_sessions")
 }
 
-/// One student's check-in for one session. Only the distance is kept, never
-/// the student's raw coordinates. The student is identified by ids only
+/// One student's check-in for one session - its existence means the student
+/// attended. There is no "late": the lecturer decides the window by opening
+/// and closing the session, and a closed session without a record for a
+/// student counts as absent. Only the distance is kept, never the student's
+/// raw coordinates. The student is identified by ids only
 /// (reference-data.md 8): `coreUserId` is the token's `sub`, and `personCode`
 /// (student id) comes from Core Hub's GET /people/me - no names, no emails.
 model AttendanceRecord {
   id String @id @default(uuid())
 
-  attendanceSessionId String           @map("attendance_session_id")
-  coreUserId          String           @map("core_user_id")
+  attendanceSessionId String   @map("attendance_session_id")
+  coreUserId          String   @map("core_user_id")
   /// Null when the Core Hub account is not linked to a person (e.g. test accounts).
-  personCode          String?          @map("person_code")
-  status              AttendanceStatus
-  checkedInAt         DateTime         @default(now()) @map("checked_in_at")
-  distanceMeters      Int              @map("distance_meters")
+  personCode          String?  @map("person_code")
+  checkedInAt         DateTime @default(now()) @map("checked_in_at")
+  distanceMeters      Int      @map("distance_meters")
 
   attendanceSession AttendanceSession @relation(fields: [attendanceSessionId], references: [id], onDelete: Cascade)
 

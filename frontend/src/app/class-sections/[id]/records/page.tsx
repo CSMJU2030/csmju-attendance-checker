@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import {
   Alert,
-  Badge,
   Button,
   ButtonLink,
   Card,
@@ -21,7 +20,6 @@ import { ApiErrorView } from "@/components/shared/api-error-view";
 import { apiGet, getMe } from "@/lib/api-server";
 import { canManageSection } from "@/lib/permissions";
 import {
-  STATUS_LABEL,
   hasFilters,
   rangeError,
   readRecordFilters,
@@ -180,10 +178,6 @@ export default async function SectionRecordsPage({
   );
 }
 
-function StatusBadgeFor({ status }: { status: AttendanceRecord["status"] }) {
-  return <Badge tone={status === "LATE" ? "warning" : "success"}>{STATUS_LABEL[status]}</Badge>;
-}
-
 function PersonCode({ value }: { value: string | null }) {
   return value ? (
     <span className="font-mono text-on-surface tabular-nums">{value}</span>
@@ -204,7 +198,6 @@ function RecordTable({ records }: { records: AttendanceRecord[] }) {
                 {formatDate(record.checkedInAt)} {formatTime(record.checkedInAt)} · ห่าง {formatNumber(record.distanceMeters)} ม.
               </span>
             </span>
-            <StatusBadgeFor status={record.status} />
           </li>
         ))}
       </ul>
@@ -217,7 +210,6 @@ function RecordTable({ records }: { records: AttendanceRecord[] }) {
               <th scope="col" className="px-6 py-3">วันที่</th>
               <th scope="col" className="px-6 py-3">เวลา</th>
               <th scope="col" className="px-6 py-3">รหัสนักศึกษา</th>
-              <th scope="col" className="px-6 py-3">สถานะ</th>
               <th scope="col" className="px-6 py-3 text-right">ระยะห่าง</th>
             </tr>
           </thead>
@@ -228,9 +220,6 @@ function RecordTable({ records }: { records: AttendanceRecord[] }) {
                 <td className="px-6 tabular-nums">{formatTime(record.checkedInAt)}</td>
                 <td className="px-6">
                   <PersonCode value={record.personCode} />
-                </td>
-                <td className="px-6">
-                  <StatusBadgeFor status={record.status} />
                 </td>
                 <td className="px-6 text-right tabular-nums">{formatNumber(record.distanceMeters)} ม.</td>
               </tr>

@@ -1,4 +1,4 @@
-import { AttendanceSessionStatus, AttendanceStatus } from '../../generated/prisma/client';
+import { AttendanceSessionStatus } from '../../generated/prisma/client';
 import { currentCode } from '../attendance-sessions/attendance-code';
 import { CoreHubIdentity, SubsystemRole } from '../auth/core-hub-identity';
 import { PeopleService } from '../core-hub/people.service';
@@ -18,7 +18,6 @@ const SECTION = {
   term: 1,
   ...ROOM,
   radiusMeters: 50,
-  lateAfterMinutes: 15,
   ownerCoreUserId: 'user-003',
   createdAt: OPENED_AT,
   updatedAt: OPENED_AT,
@@ -53,7 +52,7 @@ describe('AttendanceRecordsService.checkIn - business rules', () => {
   let prisma: {
     attendanceSession: { findMany: jest.Mock };
     classSection: { findUnique: jest.Mock };
-    attendanceRecord: { groupBy: jest.Mock; findUnique: jest.Mock; create: jest.Mock };
+    attendanceRecord: { count: jest.Mock; findUnique: jest.Mock; create: jest.Mock };
   };
   let people: { myPersonCode: jest.Mock };
   let service: AttendanceRecordsService;
@@ -64,7 +63,7 @@ describe('AttendanceRecordsService.checkIn - business rules', () => {
       attendanceSession: { findMany: jest.fn().mockResolvedValue([SESSION]) },
       classSection: { findUnique: jest.fn().mockResolvedValue(SECTION) },
       attendanceRecord: {
-        groupBy: jest.fn().mockResolvedValue([]),
+        count: jest.fn().mockResolvedValue(0),
         findUnique: jest.fn().mockResolvedValue(null),
         create: jest.fn().mockImplementation(({ data }) => Promise.resolve({ id: 'rec-1', ...data })),
       },
@@ -75,7 +74,7 @@ describe('AttendanceRecordsService.checkIn - business rules', () => {
     );
   });
 
-  it('records PRESENT inside the radius and before the late threshold', async () => {
+  it('records the check-in inside the radius', async () => {
     const now = minutesAfterOpen(5);
 
     const record = await service.checkIn({ code: codeAt(now), ...ROOM }, STUDENT, TOKEN, now);
@@ -84,7 +83,6 @@ describe('AttendanceRecordsService.checkIn - business rules', () => {
       attendanceSessionId: SESSION.id,
       coreUserId: STUDENT.id,
       personCode: '6504101234',
-      status: AttendanceStatus.PRESENT,
       distanceMeters: 0,
       classSection: { courseCode: 'CS201', sectionCode: '1' },
     });
@@ -93,10 +91,11 @@ describe('AttendanceRecordsService.checkIn - business rules', () => {
     });
   });
 
-  it('records LATE after the late threshold', async () => {
-    const now = minutesAfterOpen(16);
+  it('accepts a check-in however long after opening - the lecturer closes the window', async () => {
+    const now = minutesAfterOpen(150);
     const record = await service.checkIn({ code: codeAt(now), ...ROOM }, STUDENT, TOKEN, now);
-    expect(record.status).toBe(AttendanceStatus.LATE);
+    expect(record).not.toHaveProperty('status');
+    expect(prisma.attendanceRecord.create.mock.calls[0][0].data).not.toHaveProperty('status');
   });
 
   it('rejects a wrong code with 400', async () => {
@@ -160,20 +159,15 @@ describe('AttendanceRecordsService.checkIn - business rules', () => {
     ).rejects.toMatchObject({ status: 400 });
   });
 
-  it('summarises the own check-ins of the student by status', async () => {
-    prisma.attendanceRecord.groupBy.mockResolvedValue([
-      { status: 'PRESENT', _count: { _all: 7 } },
-      { status: 'LATE', _count: { _all: 2 } },
-    ]);
+  it('counts the own check-ins of the student', async () => {
+    prisma.attendanceRecord.count.mockResolvedValue(9);
 
-    await expect(service.summaryMine(STUDENT)).resolves.toEqual({ total: 9, present: 7, late: 2 });
-    expect(prisma.attendanceRecord.groupBy).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { coreUserId: STUDENT.id } }),
-    );
+    await expect(service.summaryMine(STUDENT)).resolves.toEqual({ total: 9 });
+    expect(prisma.attendanceRecord.count).toHaveBeenCalledWith({ where: { coreUserId: STUDENT.id } });
   });
 
-  it('summarises a student with no check-ins as zeros', async () => {
-    await expect(service.summaryMine(STUDENT)).resolves.toEqual({ total: 0, present: 0, late: 0 });
+  it('summarises a student with no check-ins as zero', async () => {
+    await expect(service.summaryMine(STUDENT)).resolves.toEqual({ total: 0 });
   });
 
   it('keeps the student id from Core Hub, never the e-mail address', async () => {

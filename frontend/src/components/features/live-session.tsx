@@ -19,7 +19,6 @@ import { Modal } from "@/csmju";
 import { apiRequest } from "@/lib/api-client";
 import { errorMessage } from "@/lib/errors";
 import type { AttendanceRecord, AttendanceSession, CurrentCode } from "@/lib/types";
-import { ATTENDANCE_STATUS } from "./attendance-record-list";
 import { SessionStatusBadge } from "./session-status";
 
 const RECORDS_POLL_MS = 5_000;
@@ -171,7 +170,6 @@ export function LiveSession({ initialSession, sectionLabel }: { initialSession: 
     }
   }
 
-  const late = records.filter((record) => record.status === "LATE").length;
   const stepSeconds = code?.stepSeconds ?? 120;
   const progress = code ? Math.min(100, Math.max(0, (secondsLeft / stepSeconds) * 100)) : 0;
   // Last 20 s of a window: warn so staff do not read out a code that is about to change.
@@ -244,13 +242,8 @@ export function LiveSession({ initialSession, sectionLabel }: { initialSession: 
       <Card flush className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center justify-between gap-2 px-4 pt-4 md:px-6 md:pt-6">
           <CardTitle>นักศึกษาที่เช็คชื่อแล้ว</CardTitle>
-          <p className="flex gap-4 text-on-surface-variant tabular-nums" aria-live="polite">
-            <span>
-              ทั้งหมด <span className="font-display text-[20px]/[1.5] font-semibold text-on-surface">{total}</span> คน
-            </span>
-            <span>
-              มาสาย <span className="font-display text-[20px]/[1.5] font-semibold text-amber-800">{late}</span> คน
-            </span>
+          <p className="text-on-surface-variant tabular-nums" aria-live="polite">
+            ทั้งหมด <span className="font-display text-[20px]/[1.5] font-semibold text-on-surface">{total}</span> คน
           </p>
         </div>
 
@@ -271,7 +264,6 @@ export function LiveSession({ initialSession, sectionLabel }: { initialSession: 
         ) : (
           <ul className="flex flex-col divide-y divide-outline-variant/40 border-t border-outline-variant/40">
             {records.map((record) => {
-              const status = ATTENDANCE_STATUS[record.status];
               const isNew = fresh.has(record.id);
               return (
                 <li
@@ -299,7 +291,6 @@ export function LiveSession({ initialSession, sectionLabel }: { initialSession: 
                     </span>
                   </span>
                   {isNew ? <Badge tone="success">ใหม่</Badge> : null}
-                  <Badge tone={status.tone}>{status.label}</Badge>
                 </li>
               );
             })}

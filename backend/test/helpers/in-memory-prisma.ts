@@ -183,7 +183,7 @@ export class InMemoryPrisma {
   classSection = new Table(
     [],
     [['courseCode', 'sectionCode', 'academicYear', 'term']],
-    () => ({ radiusMeters: 50, lateAfterMinutes: 15 }),
+    () => ({ radiusMeters: 50 }),
   );
   attendanceSession = new Table([], [], () => ({
     status: 'OPEN',

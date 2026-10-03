@@ -47,11 +47,4 @@ export class CreateClassSectionDto {
   @Min(10)
   @Max(500)
   radiusMeters?: number;
-
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(0)
-  @Max(180)
-  lateAfterMinutes?: number;
 }
