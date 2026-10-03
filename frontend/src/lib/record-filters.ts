@@ -87,11 +87,6 @@ export function recordsPageQuery(filters: RecordFilters, page = 1): string {
   return query.toString();
 }
 
-export const STATUS_LABEL: Record<AttendanceRecord["status"], string> = {
-  PRESENT: "มาตรงเวลา",
-  LATE: "มาสาย",
-};
-
 /**
  * One CSV cell. Quotes when needed, and defuses values a spreadsheet would
  * run as a formula (OWASP CSV injection).
@@ -105,12 +100,11 @@ const BOM = String.fromCharCode(0xfeff);
 
 /** CSV for Excel: a UTF-8 BOM so Thai text opens correctly, and CRLF line ends. */
 export function recordsCsv(records: AttendanceRecord[]): string {
-  const header = ["วันที่", "เวลา", "รหัสนักศึกษา", "สถานะ", "ระยะห่างจากจุดเช็คชื่อ (เมตร)"];
+  const header = ["วันที่", "เวลา", "รหัสนักศึกษา", "ระยะห่างจากจุดเช็คชื่อ (เมตร)"];
   const rows = records.map((record) => [
     formatDate(record.checkedInAt),
     formatTime(record.checkedInAt),
     record.personCode ?? "",
-    STATUS_LABEL[record.status],
     String(record.distanceMeters),
   ]);
   return `${BOM}${[header, ...rows].map((row) => row.map(cell).join(",")).join("\r\n")}\r\n`;

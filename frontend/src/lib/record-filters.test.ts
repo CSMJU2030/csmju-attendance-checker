@@ -18,7 +18,6 @@ function record(overrides: Partial<AttendanceRecord>): AttendanceRecord {
     attendanceSessionId: "s1",
     coreUserId: "user-001",
     personCode: "6504101234",
-    status: "PRESENT",
     // 09:05 in Bangkok
     checkedInAt: "2026-09-29T02:05:00.000Z",
     distanceMeters: 12,
@@ -80,13 +79,13 @@ describe("date range", () => {
 });
 
 describe("recordsCsv", () => {
-  it("starts with a BOM, uses CRLF and shows Bangkok time and Thai labels", () => {
-    const csv = recordsCsv([record({}), record({ id: "r2", status: "LATE", personCode: null })]);
+  it("starts with a BOM, uses CRLF and shows Bangkok time in the Buddhist era", () => {
+    const csv = recordsCsv([record({}), record({ id: "r2", personCode: null })]);
     expect(csv.charCodeAt(0)).toBe(0xfeff);
     const lines = csv.slice(1).split("\r\n");
-    expect(lines[0]).toBe("วันที่,เวลา,รหัสนักศึกษา,สถานะ,ระยะห่างจากจุดเช็คชื่อ (เมตร)");
-    expect(lines[1]).toBe("29 ก.ย. 2569,09:05 น.,6504101234,มาตรงเวลา,12");
-    expect(lines[2]).toBe("29 ก.ย. 2569,09:05 น.,,มาสาย,12");
+    expect(lines[0]).toBe("วันที่,เวลา,รหัสนักศึกษา,ระยะห่างจากจุดเช็คชื่อ (เมตร)");
+    expect(lines[1]).toBe("29 ก.ย. 2569,09:05 น.,6504101234,12");
+    expect(lines[2]).toBe("29 ก.ย. 2569,09:05 น.,,12");
     expect(lines[3]).toBe("");
   });
 

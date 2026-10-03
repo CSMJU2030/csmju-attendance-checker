@@ -37,17 +37,13 @@ export function PageSkeleton() {
   );
 }
 
-/** Same footprint as the student summary card (three numbers). */
+/** Same footprint as the student summary card (one number). */
 export function SummarySkeleton() {
   return (
-    <div aria-hidden className="grid grid-cols-3 divide-x divide-outline-variant/40 rounded-2xl border border-outline-variant/40 bg-surface-container-lowest">
-      {[0, 1, 2].map((index) => (
-        <div key={index} className="flex flex-col items-center gap-2 px-2 py-4 md:py-6">
-          <Skeleton className="h-8 w-10" />
-          <Skeleton className="h-4 w-20 max-w-full" />
-          <Skeleton className="h-4 w-10" />
-        </div>
-      ))}
+    <div aria-hidden className="flex flex-col items-center gap-2 rounded-2xl border border-outline-variant/40 bg-surface-container-lowest px-2 py-4 md:py-6">
+      <Skeleton className="h-8 w-10" />
+      <Skeleton className="h-4 w-full max-w-28" />
+      <Skeleton className="h-4 w-10" />
     </div>
   );
 }

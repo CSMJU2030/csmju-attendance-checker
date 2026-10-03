@@ -1,35 +1,30 @@
 import {
   Badge,
   CheckCircleIcon,
-  ClockIcon,
   dayKey,
   formatDateTime,
   formatDayLabel,
   formatTerm,
   formatTime,
 } from "@/components/shared/kit";
-import type { AttendanceRecordView, AttendanceStatus } from "@/lib/types";
+import type { AttendanceRecordView } from "@/lib/types";
 
-export const ATTENDANCE_STATUS: Record<AttendanceStatus, { label: string; tone: "success" | "warning" }> = {
-  PRESENT: { label: "มาตรงเวลา", tone: "success" },
-  LATE: { label: "มาสาย", tone: "warning" },
-};
+/**
+ * A check-in record always means the student attended: there is no "late",
+ * the lecturer decides the window by opening and closing the session.
+ */
+export const ATTENDED_LABEL = "มาเรียน";
 
 /** Inside a day group only the time is shown; elsewhere the full date too. */
 function RecordRow({ record, withDate }: { record: AttendanceRecordView; withDate: boolean }) {
-  const status = ATTENDANCE_STATUS[record.status];
   const section = record.classSection;
-  const late = record.status === "LATE";
   return (
     <li className="flex items-start gap-3 py-4 first:pt-0 last:pb-0">
       <span
         aria-hidden
-        className={
-          "mt-1 flex size-9 shrink-0 items-center justify-center rounded-full " +
-          (late ? "bg-amber-50 text-amber-800" : "bg-success/10 text-emerald-700")
-        }
+        className="mt-1 flex size-9 shrink-0 items-center justify-center rounded-full bg-success/10 text-emerald-700"
       >
-        {late ? <ClockIcon size={16} /> : <CheckCircleIcon size={16} />}
+        <CheckCircleIcon size={16} />
       </span>
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <p className="font-semibold text-on-surface">
@@ -41,7 +36,7 @@ function RecordRow({ record, withDate }: { record: AttendanceRecordView; withDat
           {section ? <span className="hidden sm:inline"> · {formatTerm(section.term, section.academicYear)}</span> : null}
         </p>
       </div>
-      <Badge tone={status.tone}>{status.label}</Badge>
+      <Badge tone="success">{ATTENDED_LABEL}</Badge>
     </li>
   );
 }

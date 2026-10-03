@@ -5,8 +5,8 @@ import {
   ButtonLink,
   Card,
   CardTitle,
+  CheckCircleIcon,
   ChevronRightIcon,
-  ClockIcon,
   EmptyState,
   ExternalLinkIcon,
   HistoryIcon,
@@ -61,6 +61,7 @@ export default async function ClassSectionPage({
   const closed = sessionList.filter((session) => session.status === "CLOSED");
   const averageAttendance =
     closed.length > 0 ? Math.round(closed.reduce((sum, session) => sum + session.recordCount, 0) / closed.length) : null;
+  const totalCheckIns = sessionList.reduce((sum, session) => sum + session.recordCount, 0);
   const label = `${section.courseCode} ${section.courseName} กลุ่ม ${section.sectionCode}`;
   const mapUrl = `https://www.google.com/maps?q=${section.latitude},${section.longitude}`;
 
@@ -97,11 +98,12 @@ export default async function ClassSectionPage({
             tone="neutral"
           />
           <StatCard
-            label="นับว่าสายหลังเปิดรอบ"
-            value={formatNumber(section.lateAfterMinutes)}
-            unit="นาที"
-            icon={<ClockIcon />}
-            tone="warning"
+            label="เช็คชื่อรวม"
+            value={formatNumber(totalCheckIns)}
+            unit="ครั้ง"
+            hint={sessionTotal > sessionList.length ? `จาก ${sessionList.length} รอบล่าสุด` : undefined}
+            icon={<CheckCircleIcon />}
+            tone="success"
           />
         </section>
       ) : null}
@@ -129,8 +131,7 @@ export default async function ClassSectionPage({
             <span className="font-mono text-sm/relaxed text-on-surface tabular-nums">
               {section.latitude.toFixed(6)}, {section.longitude.toFixed(6)}
             </span>{" "}
-            และเช็คชื่อหลังเปิดรอบเกิน{" "}
-            <span className="font-semibold text-on-surface tabular-nums">{section.lateAfterMinutes} นาที</span> จะนับว่ามาสาย
+            เช็คชื่อได้ตลอดเวลาที่รอบเปิดอยู่ จนกว่าอาจารย์จะปิดรอบ ใครไม่ได้เช็คชื่อในรอบที่ปิดแล้วจะนับว่าขาด
           </p>
         </div>
       </Card>
@@ -170,7 +171,6 @@ export default async function ClassSectionPage({
                       </span>
                       <span className="text-sm/relaxed text-on-surface-variant tabular-nums">
                         เช็คชื่อ {formatNumber(session.recordCount)} คน
-                        {session.lateCount > 0 ? ` · สาย ${formatNumber(session.lateCount)} คน` : ""}
                       </span>
                     </span>
                     <SessionStatusBadge status={session.status} />

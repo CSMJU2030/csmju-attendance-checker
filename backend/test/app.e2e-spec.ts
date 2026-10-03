@@ -344,6 +344,16 @@ describe('Attendance Checker (e2e)', () => {
       expect(response.body.error.code).toBe('VALIDATION_ERROR');
     });
 
+    it('no longer accepts a late threshold - attendance has no "late" status', async () => {
+      const response = await request(app.getHttpServer())
+        .post('/api/v1/class-sections')
+        .set(bearer(staffToken))
+        .send({ ...newSection, lateAfterMinutes: 15 })
+        .expect(400);
+
+      expect(response.body.error.code).toBe('VALIDATION_ERROR');
+    });
+
     it('rejects a duplicate course, section, year and term (409)', async () => {
       await request(app.getHttpServer())
         .post('/api/v1/class-sections')
@@ -475,7 +485,6 @@ describe('Attendance Checker (e2e)', () => {
       expect(response.body.data).toMatchObject({
         coreUserId: STUDENT_CORE_ID,
         personCode: '6504101234',
-        status: 'PRESENT',
         distanceMeters: 0,
         classSection: { courseCode: 'CS201', sectionCode: '1' },
       });
@@ -521,7 +530,8 @@ describe('Attendance Checker (e2e)', () => {
         .get('/api/v1/attendance-records/me')
         .set(bearer(studentToken))
         .expect(200);
-      expect(mine.body.data[0]).toMatchObject({ attendanceSessionId: sessionId, status: 'PRESENT' });
+      expect(mine.body.data[0]).toMatchObject({ attendanceSessionId: sessionId });
+      expect(mine.body.data[0]).not.toHaveProperty('status');
     });
 
     describe('GET /api/v1/attendance-records (staff search)', () => {
@@ -538,7 +548,7 @@ describe('Attendance Checker (e2e)', () => {
       it('lists the section check-ins and filters by a student id prefix', async () => {
         const all = await search('').expect(200);
         expect(all.body.data).toHaveLength(1);
-        expect(all.body.data[0]).toMatchObject({ personCode: '6504101234', status: 'PRESENT' });
+        expect(all.body.data[0]).toMatchObject({ personCode: '6504101234' });
         expect(all.body.meta).toMatchObject({ total: 1, page: 1 });
 
         expect((await search('&personCode=650410').expect(200)).body.data).toHaveLength(1);
@@ -584,26 +594,27 @@ describe('Attendance Checker (e2e)', () => {
     it('reports check-in counts on the session and a summary for the student', async () => {
       const opened = await openSession();
       const sessionId = opened.body.data.id;
-      expect(opened.body.data).toMatchObject({ recordCount: 0, lateCount: 0 });
+      expect(opened.body.data).toMatchObject({ recordCount: 0 });
+      expect(opened.body.data).not.toHaveProperty('lateCount');
       await checkIn({ code: opened.body.data.code.code, ...ROOM }).expect(201);
 
       const session = await request(app.getHttpServer())
         .get(`/api/v1/attendance-sessions/${sessionId}`)
         .set(bearer(staffToken))
         .expect(200);
-      expect(session.body.data).toMatchObject({ recordCount: 1, lateCount: 0 });
+      expect(session.body.data).toMatchObject({ recordCount: 1 });
 
       const list = await request(app.getHttpServer())
         .get(`/api/v1/attendance-sessions?classSectionId=${sectionId}`)
         .set(bearer(staffToken))
         .expect(200);
-      expect(list.body.data[0]).toMatchObject({ id: sessionId, recordCount: 1, lateCount: 0 });
+      expect(list.body.data[0]).toMatchObject({ id: sessionId, recordCount: 1 });
 
       const summary = await request(app.getHttpServer())
         .get('/api/v1/attendance-records/me/summary')
         .set(bearer(studentToken))
         .expect(200);
-      expect(summary.body.data).toEqual({ total: 1, present: 1, late: 0 });
+      expect(summary.body.data).toEqual({ total: 1 });
 
       await request(app.getHttpServer())
         .get('/api/v1/attendance-records/me/summary')

@@ -3,7 +3,6 @@ import {
   AttendanceRecord,
   AttendanceSession,
   AttendanceSessionStatus,
-  AttendanceStatus,
   Prisma,
 } from '../../generated/prisma/client';
 import { CoreHubIdentity } from '../auth/core-hub-identity';
@@ -13,12 +12,7 @@ import { PaginationQueryDto } from '../common/dto/pagination.dto';
 import { AppException } from '../common/errors';
 import { PrismaService } from '../prisma/prisma.service';
 import { CurrentCode, currentCode, generateCodeSecret } from './attendance-code';
-import {
-  AttendanceSessionView,
-  NO_COUNTS,
-  SessionCounts,
-  toSessionView,
-} from './attendance-session.view';
+import { AttendanceSessionView, SessionCounts, toSessionView } from './attendance-session.view';
 import { OpenAttendanceSessionDto } from './dto/open-attendance-session.dto';
 import { QueryAttendanceSessionsDto } from './dto/query-attendance-sessions.dto';
 
@@ -151,7 +145,7 @@ export class AttendanceSessionsService {
     return { items, total };
   }
 
-  /** Check-ins and late check-ins per session, in one grouped query. */
+  /** Check-ins per session, in one grouped query. */
   private async countsFor(sessionIds: string[]): Promise<Map<string, SessionCounts>> {
     const counts = new Map<string, SessionCounts>();
     if (sessionIds.length === 0) {
@@ -159,18 +153,13 @@ export class AttendanceSessionsService {
     }
 
     const groups = await this.prisma.attendanceRecord.groupBy({
-      by: ['attendanceSessionId', 'status'],
+      by: ['attendanceSessionId'],
       where: { attendanceSessionId: { in: sessionIds } },
       _count: { _all: true },
     });
 
     for (const group of groups) {
-      const current = counts.get(group.attendanceSessionId) ?? { ...NO_COUNTS };
-      current.recordCount += group._count._all;
-      if (group.status === AttendanceStatus.LATE) {
-        current.lateCount += group._count._all;
-      }
-      counts.set(group.attendanceSessionId, current);
+      counts.set(group.attendanceSessionId, { recordCount: group._count._all });
     }
     return counts;
   }
