@@ -188,7 +188,8 @@ function ClassSectionTable({ sections, liveIds }: { sections: ClassSection[]; li
         ))}
       </ul>
 
-      <div className="hidden overflow-x-auto md:block">
+      {/* w-0 + min-w-full: a long row scrolls inside this box instead of widening the shell's main column. */}
+      <div className="relative hidden w-0 min-w-full overflow-x-auto md:block">
         <table className="w-full text-left">
           <thead className="bg-surface-container-low text-sm/relaxed font-semibold text-on-surface">
             <tr>

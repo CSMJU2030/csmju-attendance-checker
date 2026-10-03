@@ -9,6 +9,7 @@ import {
   ClockIcon,
   EmptyState,
   ExternalLinkIcon,
+  HistoryIcon,
   MapPinIcon,
   PageHeaderBar,
   PencilIcon,
@@ -136,8 +137,15 @@ export default async function ClassSectionPage({
 
       {canManage ? (
         <Card flush className="flex flex-col">
-          <div className="px-4 pt-4 md:px-6 md:pt-6">
+          <div className="flex flex-wrap items-center justify-between gap-2 px-4 pt-4 md:px-6 md:pt-6">
             <CardTitle>รอบเช็คชื่อ</CardTitle>
+            <Link
+              href={`/class-sections/${section.id}/records`}
+              className="inline-flex min-h-11 items-center gap-1 text-sm/relaxed font-semibold text-primary-container hover:underline"
+            >
+              <HistoryIcon size={16} />
+              ค้นหาประวัติ / ดาวน์โหลด
+            </Link>
           </div>
           {sessions && !sessions.ok ? (
             <ApiErrorView error={sessions.error} retryHref={`/class-sections/${section.id}`} />
