@@ -24,7 +24,7 @@ export function signInHref(next = "/"): string {
 
 /** Server-side only - never reaches the browser bundle. */
 export function backendUrl(): string {
-  return (process.env.BACKEND_URL ?? "http://127.0.0.1:3002").replace(/\/+$/, "");
+  return (process.env.BACKEND_URL ?? "http://127.0.0.1:4202").replace(/\/+$/, "");
 }
 
 /**

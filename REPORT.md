@@ -5,8 +5,8 @@
 
 เป้าหมาย conformance: **L3** · standards **v1.0.0** · รันวันที่ 2026-09-29
 
-มีทั้ง backend (NestJS, :3002) และ frontend (Next.js, :3102) · conformance รันผ่าน frontend
-(`base_url: http://localhost:3102`) ซึ่งส่ง `/api/*` ต่อไป backend และรับ SSO ที่ `/auth/callback`
+มีทั้ง backend (NestJS, :4202) และ frontend (Next.js, :3202) · conformance รันผ่าน frontend
+(`base_url: http://localhost:3202`) ซึ่งส่ง `/api/*` ต่อไป backend และรับ SSO ที่ `/auth/callback`
 
 ## ผลรัน
 
