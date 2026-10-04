@@ -14,9 +14,26 @@ const backendUrl = (process.env.BACKEND_URL ?? "http://localhost:4202").replace(
 // the dependency store there. `next build` always runs inside frontend/.
 const standalone = process.env.NEXT_OUTPUT === "standalone";
 
+// Sent with every page. HSTS is added to the built server (next build runs
+// with NODE_ENV=production); browsers only honour it over https, which the
+// reverse proxy in front of this server provides, and ignore it on localhost.
+const securityHeaders = [
+  { key: "X-Content-Type-Options", value: "nosniff" },
+  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+  { key: "X-Frame-Options", value: "DENY" },
+  // Check-in needs the device location; nothing here uses the camera or microphone.
+  { key: "Permissions-Policy", value: "geolocation=(self), camera=(), microphone=()" },
+  ...(process.env.NODE_ENV === "production"
+    ? [{ key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" }]
+    : []),
+];
+
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   ...(standalone ? { output: "standalone", outputFileTracingRoot: path.resolve(process.cwd(), "..") } : {}),
+  async headers() {
+    return [{ source: "/:path*", headers: securityHeaders }];
+  },
   async rewrites() {
     // auth-contract 5: the backend owns sign-in (anti-forgery state, callback,
     // cookie) and sign-out; the browser only ever sees this origin.

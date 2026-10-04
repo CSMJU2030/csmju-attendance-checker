@@ -15,11 +15,13 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      # Set a long random POSTGRES_PASSWORD in .env on a real server.
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       POSTGRES_DB: attendance_checker_db
     ports:
-      # 5434 on the host so it cannot collide with a local PostgreSQL on 5432
-      - '5434:5432'
+      # 5434 on the host so it cannot collide with a local PostgreSQL on 5432.
+      # Bound to 127.0.0.1: the database is never reachable from outside.
+      - '127.0.0.1:5434:5432'
     volumes:
       - attendance-checker-db-data:/var/lib/postgresql/data
     healthcheck:
@@ -40,7 +42,7 @@ services:
     environment:
       NODE_ENV: ${NODE_ENV:-development}
       PORT: 4202
-      DATABASE_URL: postgresql://postgres:postgres@attendance-checker-db:5432/attendance_checker_db
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@attendance-checker-db:5432/attendance_checker_db
       # The real Core Hub by default; set CORE_HUB_URL to use one on the host.
       CORE_HUB_URL: ${CORE_HUB_URL:-https://csmju2030.jowave.com}
       CORE_HUB_JWKS_URL: ${CORE_HUB_JWKS_URL:-https://csmju2030.jowave.com/api/v1/.well-known/jwks.json}
@@ -51,7 +53,9 @@ services:
       SUBSYSTEM_ID: csmju-attendance-checker
       SUBSYSTEM_NAME: Attendance Checker
     ports:
-      - '4202:4202'
+      # Browsers only talk to the frontend, which proxies /api and /auth here,
+      # so the API is published on 127.0.0.1 only.
+      - '127.0.0.1:4202:4202'
     extra_hosts:
       # Lets the container reach a Core Hub running on the host (Linux support)
       - 'host.docker.internal:host-gateway'
