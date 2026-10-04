@@ -78,7 +78,12 @@ export function ClassSectionForm({ section }: { section?: ClassSection }) {
     }
   }
 
+  // Leaving an empty field is not a mistake yet - empty required fields are
+  // reported on submit. A filled-in value is checked as soon as it is left.
   function blur(name: FieldName) {
+    if (values[name].trim() === "" && !errors[name]) {
+      return;
+    }
     setErrors((current) => ({ ...current, [name]: validateField(name, values[name]) }));
   }
 

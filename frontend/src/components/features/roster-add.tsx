@@ -66,7 +66,7 @@ export function RosterAdd({ sectionId, canSearchPeople }: { sectionId: string; c
   const tabs = canSearchPeople
     ? [
         { id: "paste" as const, label: "วางรหัส / CSV" },
-        { id: "cohort" as const, label: "ตามสาขาและชั้นปี" },
+        { id: "cohort" as const, label: "ตามสาขาและปีที่เข้า" },
       ]
     : [{ id: "paste" as const, label: "วางรหัส / CSV" }];
 

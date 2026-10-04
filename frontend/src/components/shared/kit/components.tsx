@@ -374,10 +374,14 @@ export function Select({ className, ...props }: ComponentPropsWithRef<"select">)
   return <select className={cx(inputClass, "min-h-11", props["aria-invalid"] ? "input-error" : "", className)} {...props} />;
 }
 
-/** Uses the central `custom-checkbox` style from globals.css. */
+/**
+ * Uses the central `custom-checkbox` style from globals.css. That style sets
+ * `outline: none` and has no focus state, so the label draws the keyboard
+ * focus ring instead (section 12.1: focus must always be visible).
+ */
 export function Checkbox({ label, ...props }: ComponentPropsWithRef<"input"> & { label: string }) {
   return (
-    <label className="custom-checkbox inline-flex min-h-11 cursor-pointer items-center gap-2 text-body-md text-on-surface-variant">
+    <label className="custom-checkbox inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-lg px-1 text-body-md text-on-surface-variant has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-offset-2 has-[input:focus-visible]:outline-accent">
       <input type="checkbox" {...props} />
       {label}
     </label>
