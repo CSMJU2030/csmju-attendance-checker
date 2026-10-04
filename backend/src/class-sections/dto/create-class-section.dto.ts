@@ -1,15 +1,11 @@
 import { Type } from 'class-transformer';
-import { IsInt, IsNumber, IsOptional, IsString, Length, Matches, Max, Min } from 'class-validator';
+import { IsInt, IsNumber, IsOptional, IsString, Matches, Max, Min } from 'class-validator';
 
 export class CreateClassSectionDto {
-  /** e.g. CS201 */
+  /** Core Hub course code with its version, e.g. 10301111-1 (GET /api/v1/courses). */
   @IsString()
-  @Matches(/^[A-Z]{2,4}\d{3,4}$/, { message: 'courseCode must look like CS201' })
+  @Matches(/^[0-9A-Za-z][0-9A-Za-z_.-]{0,39}$/, { message: 'courseCode must be a Core Hub course code' })
   courseCode!: string;
-
-  @IsString()
-  @Length(1, 200)
-  courseName!: string;
 
   /** e.g. 1 or 01 */
   @IsString()

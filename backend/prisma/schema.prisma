@@ -31,11 +31,15 @@ enum AttendanceSessionStatus {
 model ClassSection {
   id String @id @default(uuid())
 
-  courseCode   String @map("course_code")
-  courseName   String @map("course_name")
-  sectionCode  String @map("section_code")
+  /// Core Hub course `code` with its version, e.g. 10301111-1 (reference-data.md 4.6).
+  /// Sections made before the Core Hub link may hold a typed code that is not in Core Hub.
+  courseCode   String  @map("course_code")
+  /// Only for sections made before the Core Hub link. A linked course's name is read
+  /// from Core Hub when shown and never stored (reference-data.md 8).
+  courseName   String? @map("course_name")
+  sectionCode  String  @map("section_code")
   /// Academic year in the Gregorian calendar (data is ISO; the UI shows B.E.).
-  academicYear Int    @map("academic_year")
+  academicYear Int     @map("academic_year")
   term         Int
 
   /// Check-in point of the room. Students must be within `radiusMeters`.

@@ -446,6 +446,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "Core Hub is unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -456,7 +466,7 @@
             "bearer": []
           }
         ],
-        "summary": "Staff: create a class section - the caller becomes its owner",
+        "summary": "Staff: create a class section for an open Core Hub course - the caller owns it",
         "tags": [
           "class-sections"
         ]
@@ -652,7 +662,7 @@
             "bearer": []
           }
         ],
-        "summary": "Staff: change the name, location or thresholds of a section",
+        "summary": "Staff: change the check-in point of a section",
         "tags": [
           "class-sections"
         ]
@@ -2169,6 +2179,121 @@
         ]
       }
     },
+    "/api/v1/courses": {
+      "get": {
+        "operationId": "DirectoryController_searchCourses",
+        "parameters": [
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "description": "Part of the course code or name.",
+            "schema": {
+              "minLength": 1,
+              "maxLength": 100,
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "data",
+                    "meta"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/CourseSummaryDto"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/PageMetaDto"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request or VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid Core Hub session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The role or ownership does not allow this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorDto"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Core Hub is unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Staff: open Core Hub courses by code or name, for a new class section",
+        "tags": [
+          "directory"
+        ]
+      }
+    },
     "/api/v1/people": {
       "get": {
         "operationId": "DirectoryController_students",
@@ -2582,10 +2707,16 @@
             "type": "string"
           },
           "courseCode": {
-            "type": "string"
+            "type": "string",
+            "description": "Core Hub course code with its version, e.g. 10301111-1."
           },
           "courseName": {
-            "type": "string"
+            "type": "string",
+            "description": "From Core Hub when the course is in its catalog, else the name typed before the link."
+          },
+          "courseInCatalog": {
+            "type": "boolean",
+            "description": "False for a section typed in before the Core Hub link, or while Core Hub is unreachable."
           },
           "sectionCode": {
             "type": "string"
@@ -2624,6 +2755,7 @@
           "id",
           "courseCode",
           "courseName",
+          "courseInCatalog",
           "sectionCode",
           "academicYear",
           "term",
@@ -2640,13 +2772,8 @@
         "properties": {
           "courseCode": {
             "type": "string",
-            "description": "e.g. CS201",
-            "pattern": "^[A-Z]{2,4}\\d{3,4}$"
-          },
-          "courseName": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 200
+            "description": "Core Hub course code with its version, e.g. 10301111-1 (GET /api/v1/courses).",
+            "pattern": "^[0-9A-Za-z][0-9A-Za-z_.-]{0,39}$"
           },
           "sectionCode": {
             "type": "string",
@@ -2682,7 +2809,6 @@
         },
         "required": [
           "courseCode",
-          "courseName",
           "sectionCode",
           "academicYear",
           "term",
@@ -2693,11 +2819,6 @@
       "UpdateClassSectionDto": {
         "type": "object",
         "properties": {
-          "courseName": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 200
-          },
           "latitude": {
             "type": "number",
             "minimum": -90,
@@ -3108,6 +3229,31 @@
         },
         "required": [
           "total"
+        ]
+      },
+      "CourseSummaryDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Full code with its version, e.g. 10301111-1 - what a class section keeps."
+          },
+          "nameTh": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": "string",
+            "nullable": true
+          },
+          "credits": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "code",
+          "nameTh",
+          "nameEn",
+          "credits"
         ]
       },
       "StudentSummaryDto": {

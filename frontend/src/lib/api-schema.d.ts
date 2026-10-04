@@ -99,7 +99,7 @@ export interface paths {
         /** Staff: list and search class sections */
         get: operations["ClassSectionsController_findAll"];
         put?: never;
-        /** Staff: create a class section - the caller becomes its owner */
+        /** Staff: create a class section for an open Core Hub course - the caller owns it */
         post: operations["ClassSectionsController_create"];
         delete?: never;
         options?: never;
@@ -122,7 +122,7 @@ export interface paths {
         delete: operations["ClassSectionsController_remove"];
         options?: never;
         head?: never;
-        /** Staff: change the name, location or thresholds of a section */
+        /** Staff: change the check-in point of a section */
         patch: operations["ClassSectionsController_update"];
         trace?: never;
     };
@@ -299,6 +299,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/courses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Staff: open Core Hub courses by code or name, for a new class section */
+        get: operations["DirectoryController_searchCourses"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/people": {
         parameters: {
             query?: never;
@@ -386,8 +403,12 @@ export interface components {
         };
         ClassSectionDto: {
             id: string;
+            /** @description Core Hub course code with its version, e.g. 10301111-1. */
             courseCode: string;
+            /** @description From Core Hub when the course is in its catalog, else the name typed before the link. */
             courseName: string;
+            /** @description False for a section typed in before the Core Hub link, or while Core Hub is unreachable. */
+            courseInCatalog: boolean;
             sectionCode: string;
             /** @description Gregorian year; the UI shows the Buddhist era. */
             academicYear: number;
@@ -404,9 +425,8 @@ export interface components {
             updatedAt: string;
         };
         CreateClassSectionDto: {
-            /** @description e.g. CS201 */
+            /** @description Core Hub course code with its version, e.g. 10301111-1 (GET /api/v1/courses). */
             courseCode: string;
-            courseName: string;
             /** @description e.g. 1 or 01 */
             sectionCode: string;
             /** @description Gregorian year, e.g. 2026 (the UI shows 2569). */
@@ -417,7 +437,6 @@ export interface components {
             radiusMeters?: number;
         };
         UpdateClassSectionDto: {
-            courseName?: string;
             latitude?: number;
             longitude?: number;
             radiusMeters?: number;
@@ -539,6 +558,13 @@ export interface components {
         AttendanceSummaryDto: {
             /** @description Sessions the student checked in to. */
             total: number;
+        };
+        CourseSummaryDto: {
+            /** @description Full code with its version, e.g. 10301111-1 - what a class section keeps. */
+            code: string;
+            nameTh: string;
+            nameEn: string | null;
+            credits: number;
         };
         StudentSummaryDto: {
             personCode: string;
@@ -832,6 +858,15 @@ export interface operations {
             };
             /** @description Conflicts with the current state */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorDto"];
+                };
+            };
+            /** @description Core Hub is unavailable */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1867,6 +1902,71 @@ export interface operations {
             };
             /** @description The role or ownership does not allow this */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorDto"];
+                };
+            };
+        };
+    };
+    DirectoryController_searchCourses: {
+        parameters: {
+            query?: {
+                /** @description Part of the course code or name. */
+                q?: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["CourseSummaryDto"][];
+                        meta: components["schemas"]["PageMetaDto"];
+                    };
+                };
+            };
+            /** @description Bad request or VALIDATION_ERROR */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorDto"];
+                };
+            };
+            /** @description No valid Core Hub session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorDto"];
+                };
+            };
+            /** @description The role or ownership does not allow this */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorDto"];
+                };
+            };
+            /** @description Core Hub is unavailable */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

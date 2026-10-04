@@ -2,8 +2,7 @@ import { describe, expect, it } from "vitest";
 import { FIELD_ORDER, IDENTITY_FIELDS, toRequestBody, validateAll, validateField, type Values } from "./class-section-validation";
 
 const VALID: Values = {
-  courseCode: "CS201",
-  courseName: "โครงสร้างข้อมูล",
+  courseCode: "10301111-1",
   sectionCode: "1",
   academicYear: "2569",
   term: "1",
@@ -18,10 +17,9 @@ describe("validateField - mirrors backend class-section DTOs", () => {
   });
 
   it.each([
-    ["courseCode", "cs201"],
-    ["courseCode", "C201"],
-    ["courseCode", "CS20"],
-    ["courseName", "   "],
+    ["courseCode", ""],
+    ["courseCode", "-1"],
+    ["courseCode", "10301111 1"],
     ["sectionCode", "1234"],
     ["sectionCode", "A"],
     ["academicYear", "2026"],
@@ -36,7 +34,7 @@ describe("validateField - mirrors backend class-section DTOs", () => {
   });
 
   it.each([
-    ["courseCode", "ABCD1234"],
+    ["courseCode", "CS201"],
     ["sectionCode", "01"],
     ["academicYear", "2543"],
     ["latitude", "-90"],
@@ -57,9 +55,8 @@ describe("validateField - mirrors backend class-section DTOs", () => {
 
 describe("toRequestBody", () => {
   it("converts the Buddhist-era year to Gregorian and numbers to numbers on create", () => {
-    expect(toRequestBody({ ...VALID, courseName: "  โครงสร้างข้อมูล  " }, false)).toEqual({
-      courseCode: "CS201",
-      courseName: "โครงสร้างข้อมูล",
+    expect(toRequestBody(VALID, false)).toEqual({
+      courseCode: "10301111-1",
       sectionCode: "1",
       academicYear: 2026,
       term: 1,
@@ -75,7 +72,6 @@ describe("toRequestBody", () => {
       expect(body).not.toHaveProperty(field);
     }
     expect(body).toEqual({
-      courseName: "โครงสร้างข้อมูล",
       latitude: 18.8925,
       longitude: 99.0142,
       radiusMeters: 50,

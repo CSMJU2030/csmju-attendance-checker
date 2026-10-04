@@ -36,6 +36,8 @@ export type AddRosterStudentsResult = Schemas["AddRosterStudentsResultDto"];
 /** A student from Core Hub's /people, shown while picking a roster - never stored. */
 export type StudentSummary = Schemas["StudentSummaryDto"];
 export type Department = Schemas["DepartmentDto"];
+/** An open Core Hub course, for the class section form. */
+export type CourseSummary = Schemas["CourseSummaryDto"];
 
 export type PageMeta = Schemas["PageMetaDto"];
 export type ErrorCode = Schemas["ErrorCode"];

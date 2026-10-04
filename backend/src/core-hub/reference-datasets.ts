@@ -12,6 +12,7 @@ export interface ReferenceDatasetConfig {
 export const REFERENCE_DATASETS = {
   faculties: { path: '/faculties' },
   departments: { path: '/departments' },
+  courses: { path: '/courses' },
   rooms: { path: '/rooms' },
   'academic-terms': { path: '/academic-terms' },
 } as const satisfies Record<string, ReferenceDatasetConfig>;
