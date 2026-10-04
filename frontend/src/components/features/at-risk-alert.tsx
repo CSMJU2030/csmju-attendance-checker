@@ -12,8 +12,8 @@ const SHOWN = 5;
  * ones are new since the lecturer last pressed "รับทราบ". What was seen is
  * remembered in this browser only (localStorage) - a convenience, not data.
  */
-export function AtRiskAlert({ entries, userId }: { entries: AtRiskEntry[]; userId: string }) {
-  const storageKey = `attendance-checker:seen-at-risk:${userId}`;
+export function AtRiskAlert({ entries, coreUserId }: { entries: AtRiskEntry[]; coreUserId: string }) {
+  const storageKey = `attendance-checker:seen-at-risk:${coreUserId}`;
   const [seen, setSeen] = useState<Set<string> | null>(null);
 
   useEffect(() => {

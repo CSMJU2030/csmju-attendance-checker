@@ -156,7 +156,7 @@ async function StaffDashboard({ me }: { me: Me }) {
 
   return (
     <>
-      {atRisk.ok ? <AtRiskAlert entries={atRisk.data} userId={me.id} /> : null}
+      {atRisk.ok ? <AtRiskAlert entries={atRisk.data} coreUserId={me.id} /> : null}
 
       <section aria-label="สรุป" className="grid gap-4 sm:grid-cols-3">
         <StatCard
