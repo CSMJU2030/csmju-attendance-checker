@@ -983,6 +983,23 @@ describe('Attendance Checker (e2e)', () => {
       });
     });
 
+    it('lists at-risk students across the caller sections for the export and the alert', async () => {
+      const response = await get('/at-risk').expect(200);
+      expect(response.body.data.map((row: { personCode: string }) => row.personCode)).toEqual([
+        '6500000003',
+        '6500000002',
+      ]);
+      expect(response.body.data[0]).toMatchObject({
+        classSectionId: sectionId,
+        courseCode: 'CS201',
+        courseName: 'โครงสร้างข้อมูล',
+        closedSessions: 4,
+        absent: 4,
+      });
+      expect((await get('/at-risk', otherStaffToken).expect(200)).body.data).toEqual([]);
+      await get('/at-risk', studentToken).expect(403);
+    });
+
     it('shows another lecturer nothing of this section, ADMIN everything, students nothing', async () => {
       expect((await get('/sections', otherStaffToken).expect(200)).body.data).toEqual([]);
       expect((await get('/summary', otherStaffToken).expect(200)).body.data.sections).toBe(0);

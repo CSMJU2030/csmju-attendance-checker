@@ -367,6 +367,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/attendance-stats/at-risk": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Staff: every at-risk student across the caller sections, worst first */
+        get: operations["AttendanceStatsController_atRisk"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/attendance-stats/sections": {
         parameters: {
             query?: never;
@@ -636,6 +653,25 @@ export interface components {
             /** @description 0-1, across every visible section; null before the first closed session. */
             attendanceRate: number | null;
             atRiskStudents: number;
+        };
+        AtRiskEntryDto: {
+            classSectionId: string;
+            courseCode: string;
+            courseName: string;
+            sectionCode: string;
+            academicYear: number;
+            term: number;
+            /** @description Closed sessions of that section. */
+            closedSessions: number;
+            personCode: string;
+            /** @description Closed sessions the student checked in to. */
+            attended: number;
+            /** @description Closed sessions without a check-in from the student. */
+            absent: number;
+            /** @description 0-1 share of the closed sessions the student missed. */
+            absenceRate: number;
+            /** @description Missed at least 30% of the closed sessions. */
+            atRisk: boolean;
         };
         /**
          * @description ROSTER: the section's roster. CHECKED_IN: no roster yet, so only students who checked in at least once.
@@ -2230,6 +2266,49 @@ export interface operations {
                         /** @enum {boolean} */
                         success: true;
                         data: components["schemas"]["StatsSummaryDto"];
+                    };
+                };
+            };
+            /** @description No valid Core Hub session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorDto"];
+                };
+            };
+            /** @description The role or ownership does not allow this */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorDto"];
+                };
+            };
+        };
+    };
+    AttendanceStatsController_atRisk: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["AtRiskEntryDto"][];
+                        meta: components["schemas"]["PageMetaDto"];
                     };
                 };
             };

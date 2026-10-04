@@ -44,6 +44,8 @@ export type StatsSummary = Schemas["StatsSummaryDto"];
 export type SectionStat = Schemas["SectionStatDto"];
 export type SectionStatDetail = Schemas["SectionStatDetailDto"];
 export type StudentStat = Schemas["StudentStatDto"];
+/** One at-risk student in one section (GET /api/v1/attendance-stats/at-risk). */
+export type AtRiskEntry = Schemas["AtRiskEntryDto"];
 
 export type PageMeta = Schemas["PageMetaDto"];
 export type ErrorCode = Schemas["ErrorCode"];

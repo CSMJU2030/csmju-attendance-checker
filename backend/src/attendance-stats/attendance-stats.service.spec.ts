@@ -121,4 +121,20 @@ describe('AttendanceStatsService', () => {
     expect(prisma.classSection.findMany.mock.calls[1][0].where).toEqual({});
     expect(summary).toEqual({ sections: 1, closedSessions: 4, students: 4, attendanceRate: 9 / 16, atRiskStudents: 2 });
   });
+
+  it('lists at-risk students across sections, worst first, with their section', async () => {
+    const entries = await service.atRisk(OWNER, 'token');
+    expect(entries.map((entry) => [entry.personCode, entry.absenceRate])).toEqual([
+      ['E', 1],
+      ['B', 0.5],
+    ]);
+    expect(entries[0]).toMatchObject({
+      classSectionId: SECTION.id,
+      courseCode: '10301111-1',
+      courseName: 'การเขียนโปรแกรมคอมพิวเตอร์',
+      closedSessions: 4,
+      atRisk: true,
+    });
+    expect(prisma.classSection.findMany.mock.calls[0][0].where).toEqual({ ownerCoreUserId: OWNER.id });
+  });
 });

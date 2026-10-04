@@ -18,12 +18,20 @@ import {
   formatTerm,
   formatTime,
 } from "@/components/shared/kit";
+import { AtRiskAlert } from "@/components/features/at-risk-alert";
 import { AttendanceRecordList } from "@/components/features/attendance-record-list";
 import { ApiErrorView } from "@/components/shared/api-error-view";
 import { RowsSkeleton, StatsSkeleton, SummarySkeleton } from "@/components/shared/skeletons";
 import { apiGet, getMe } from "@/lib/api-server";
 import { can } from "@/lib/permissions";
-import type { AttendanceRecordView, AttendanceSession, AttendanceSummary, ClassSection, Me } from "@/lib/types";
+import type {
+  AtRiskEntry,
+  AttendanceRecordView,
+  AttendanceSession,
+  AttendanceSummary,
+  ClassSection,
+  Me,
+} from "@/lib/types";
 
 export default async function OverviewPage() {
   const me = await getMe();
@@ -137,9 +145,10 @@ function StaffOverview({ me }: { me: Me }) {
 }
 
 async function StaffDashboard({ me }: { me: Me }) {
-  const [openSessions, sections] = await Promise.all([
+  const [openSessions, sections, atRisk] = await Promise.all([
     apiGet<AttendanceSession[]>("/api/v1/attendance-sessions?status=OPEN&limit=20"),
     apiGet<ClassSection[]>("/api/v1/class-sections?mine=true&limit=6"),
+    apiGet<AtRiskEntry[]>("/api/v1/attendance-stats/at-risk"),
   ]);
   const sectionById = new Map((sections.ok ? sections.data : []).map((section) => [section.id, section]));
   const open = openSessions.ok ? openSessions.data : [];
@@ -147,6 +156,8 @@ async function StaffDashboard({ me }: { me: Me }) {
 
   return (
     <>
+      {atRisk.ok ? <AtRiskAlert entries={atRisk.data} coreUserId={me.id} /> : null}
+
       <section aria-label="สรุป" className="grid gap-4 sm:grid-cols-3">
         <StatCard
           label="กลุ่มเรียนของฉัน"
@@ -227,7 +238,7 @@ async function StaffDashboard({ me }: { me: Me }) {
             }
           />
         ) : (
-          <ul className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <ul className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
             {sections.data.map((section) => {
               const live = open.some((session) => session.classSectionId === section.id);
               return (

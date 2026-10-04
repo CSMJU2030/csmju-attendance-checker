@@ -1,4 +1,5 @@
 import { formatDate, formatTime } from "@/components/shared/kit/format";
+import { toCsv } from "./csv";
 import { firstParam } from "./search-params";
 import type { StaffAttendanceRecord } from "./types";
 
@@ -87,20 +88,9 @@ export function recordsPageQuery(filters: RecordFilters, page = 1): string {
   return query.toString();
 }
 
-/**
- * One CSV cell. Quotes when needed, and defuses values a spreadsheet would
- * run as a formula (OWASP CSV injection).
- */
-function cell(value: string): string {
-  const safe = /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
-  return /[",\r\n]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
-}
-
-const BOM = String.fromCharCode(0xfeff);
-
-/** CSV for Excel: a UTF-8 BOM so Thai text opens correctly, and CRLF line ends. */
 const ROSTER_LABEL = (inRoster: boolean | null) => (inRoster === null ? "" : inRoster ? "อยู่" : "ไม่อยู่");
 
+/** CSV of check-ins for Excel. */
 export function recordsCsv(records: StaffAttendanceRecord[]): string {
   const header = ["วันที่", "เวลา", "รหัสนักศึกษา", "ในรายชื่อกลุ่มเรียน", "ระยะห่างจากจุดเช็คชื่อ (เมตร)"];
   const rows = records.map((record) => [
@@ -110,5 +100,5 @@ export function recordsCsv(records: StaffAttendanceRecord[]): string {
     ROSTER_LABEL(record.inRoster),
     String(record.distanceMeters),
   ]);
-  return `${BOM}${[header, ...rows].map((row) => row.map(cell).join(",")).join("\r\n")}\r\n`;
+  return toCsv(header, rows);
 }
