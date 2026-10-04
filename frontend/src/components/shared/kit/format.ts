@@ -51,6 +51,11 @@ export function formatNumber(value: number): string {
   return numberFormat.format(value);
 }
 
+/** A 0-1 rate as a whole percentage, `-` when there is none yet: `56%`. */
+export function formatPercent(rate: number | null | undefined): string {
+  return rate === null || rate === undefined ? "-" : `${Math.round(rate * 100)}%`;
+}
+
 /** Gregorian year from the API → Buddhist-era year for display. */
 export function toBuddhistYear(gregorianYear: number): number {
   return gregorianYear + 543;

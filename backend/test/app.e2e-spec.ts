@@ -915,6 +915,88 @@ describe('Attendance Checker (e2e)', () => {
     });
   });
 
+  // ---------------------------------------------------------------- stats --
+  describe('Attendance statistics and the at-risk group', () => {
+    const get = (path: string, token = staffToken) =>
+      request(app.getHttpServer()).get(`/api/v1/attendance-stats${path}`).set(bearer(token));
+
+    beforeEach(async () => {
+      // Four closed sessions; a fifth is still open and must not count.
+      const ids: string[] = [];
+      for (let i = 0; i < 4; i += 1) {
+        const session = await db.attendanceSession.create({
+          data: { classSectionId: sectionId, openedByCoreUserId: STAFF_CORE_ID, codeSecret: 'x', status: 'CLOSED' },
+        });
+        ids.push(session.id);
+      }
+      const open = await db.attendanceSession.create({
+        data: { classSectionId: sectionId, openedByCoreUserId: STAFF_CORE_ID, codeSecret: 'y', status: 'OPEN' },
+      });
+      const checkIn = (sessionId: string, personCode: string) =>
+        db.attendanceRecord.create({
+          data: { attendanceSessionId: sessionId, coreUserId: `user-${personCode}`, personCode, distanceMeters: 1 },
+        });
+      for (const id of ids) await checkIn(id, '6500000001');
+      await checkIn(ids[0], '6500000002');
+      await checkIn(ids[1], '6500000002');
+      await checkIn(open.id, '6500000002');
+      await checkIn(ids[3], '6599999999');
+      for (const personCode of ['6500000001', '6500000002', '6500000003']) {
+        await db.classSectionStudent.create({
+          data: { classSectionId: sectionId, personCode, addedByCoreUserId: STAFF_CORE_ID },
+        });
+      }
+    });
+
+    it('lists every roster student, at-risk ones first, from closed sessions only', async () => {
+      const response = await get(`/sections/${sectionId}`).expect(200);
+      expect(response.body.data).toMatchObject({
+        courseCode: 'CS201',
+        courseName: 'โครงสร้างข้อมูล',
+        closedSessions: 4,
+        studentSource: 'ROSTER',
+        studentCount: 3,
+        attendanceRate: 6 / 12,
+        atRiskCount: 2,
+        offRosterCount: 1,
+      });
+      expect(response.body.data.students).toEqual([
+        { personCode: '6500000003', attended: 0, absent: 4, absenceRate: 1, atRisk: true },
+        { personCode: '6500000002', attended: 2, absent: 2, absenceRate: 0.5, atRisk: true },
+        { personCode: '6500000001', attended: 4, absent: 0, absenceRate: 0, atRisk: false },
+      ]);
+    });
+
+    it('gives per-section numbers and a summary for the caller sections', async () => {
+      const sections = await get('/sections').expect(200);
+      expect(sections.body.data).toHaveLength(1);
+      expect(sections.body.data[0]).toMatchObject({ classSectionId: sectionId, atRiskCount: 2 });
+      expect(sections.body.meta).toMatchObject({ total: 1 });
+
+      const summary = await get('/summary').expect(200);
+      expect(summary.body.data).toEqual({
+        sections: 1,
+        closedSessions: 4,
+        students: 3,
+        attendanceRate: 0.5,
+        atRiskStudents: 2,
+      });
+    });
+
+    it('shows another lecturer nothing of this section, ADMIN everything, students nothing', async () => {
+      expect((await get('/sections', otherStaffToken).expect(200)).body.data).toEqual([]);
+      expect((await get('/summary', otherStaffToken).expect(200)).body.data.sections).toBe(0);
+      await get(`/sections/${sectionId}`, otherStaffToken).expect(403);
+
+      expect((await get('/sections', adminToken).expect(200)).body.data).toHaveLength(1);
+      await get(`/sections/${sectionId}`, adminToken).expect(200);
+
+      await get('/summary', studentToken).expect(403);
+      await get(`/sections/${sectionId}`, studentToken).expect(403);
+      await get('/sections/99999999-9999-4999-8999-999999999999').expect(404);
+    });
+  });
+
   // ------------------------------------------------------------- rotation --
   describe('Core Hub key rotation (spec §40)', () => {
     it('accepts a token signed with a newly rotated key after refreshing JWKS', async () => {

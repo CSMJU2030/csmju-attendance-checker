@@ -68,5 +68,8 @@ export function navFor(role: SubsystemRole): NavItem[] {
   if (can(role, "class-section:read")) {
     nav.push({ label: "กลุ่มเรียน", labelEn: "Sections", href: "/class-sections", icon: "school" });
   }
+  if (can(role, "attendance-session:manage:own") || can(role, "attendance-session:manage:any")) {
+    nav.push({ label: "สถิติและกลุ่มเสี่ยง", labelEn: "Statistics", href: "/stats", icon: "group" });
+  }
   return nav;
 }
