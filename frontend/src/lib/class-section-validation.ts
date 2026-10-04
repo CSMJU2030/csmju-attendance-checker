@@ -52,8 +52,10 @@ export function validateField(name: FieldName, value: string): string | undefine
     case "term":
       return isNumberIn(value, 1, 3, true) ? undefined : "เลือกภาคเรียน";
     case "latitude":
+      if (value.trim() === "") return "กรอกละติจูด หรือกดใช้ตำแหน่งปัจจุบันของฉัน";
       return isNumberIn(value, -90, 90) ? undefined : "ละติจูดต้องเป็นตัวเลขระหว่าง -90 ถึง 90";
     case "longitude":
+      if (value.trim() === "") return "กรอกลองจิจูด หรือกดใช้ตำแหน่งปัจจุบันของฉัน";
       return isNumberIn(value, -180, 180) ? undefined : "ลองจิจูดต้องเป็นตัวเลขระหว่าง -180 ถึง 180";
     case "radiusMeters":
       return isNumberIn(value, 10, 500, true) ? undefined : "รัศมีต้องเป็นจำนวนเต็ม 10–500 เมตร";

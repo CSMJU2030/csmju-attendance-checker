@@ -78,3 +78,10 @@ describe("toRequestBody", () => {
     });
   });
 });
+
+describe("empty location fields", () => {
+  it("asks for the value or the 'use my location' button instead of a range error", () => {
+    expect(validateField("latitude", "")).toBe("กรอกละติจูด หรือกดใช้ตำแหน่งปัจจุบันของฉัน");
+    expect(validateField("longitude", " ")).toBe("กรอกลองจิจูด หรือกดใช้ตำแหน่งปัจจุบันของฉัน");
+  });
+});
