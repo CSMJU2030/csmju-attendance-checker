@@ -39,7 +39,8 @@ COPY backend/prisma ./backend/prisma
 COPY backend/prisma.config.ts ./backend/prisma.config.ts
 COPY backend/docker/entrypoint.sh ./backend/docker/entrypoint.sh
 
-RUN chmod +x ./backend/docker/entrypoint.sh && chown -R node:node /app
+# Strip CR in case the script was checked out with Windows line endings.
+RUN sed -i 's/\r$//' ./backend/docker/entrypoint.sh && chmod +x ./backend/docker/entrypoint.sh && chown -R node:node /app
 USER node
 WORKDIR /app/backend
 
