@@ -44,6 +44,17 @@ export interface SectionStat {
   offRosterCount: number;
 }
 
+/** One at-risk student in one section - for the export and the dashboard alert. */
+export interface AtRiskEntry extends StudentStat {
+  classSectionId: string;
+  courseCode: string;
+  courseName: string;
+  sectionCode: string;
+  academicYear: number;
+  term: number;
+  closedSessions: number;
+}
+
 export interface StatsSummary {
   sections: number;
   closedSessions: number;
@@ -110,6 +121,36 @@ export class AttendanceStatsService {
       attendanceRate: expected > 0 ? attended / expected : null,
       atRiskStudents,
     };
+  }
+
+  /** Every at-risk student across the sections the caller may see, worst first. */
+  async atRisk(user: CoreHubIdentity, token: string): Promise<AtRiskEntry[]> {
+    const rows = await this.prisma.classSection.findMany({
+      where: this.visibleWhere(user),
+      orderBy: [{ courseCode: 'asc' }, { sectionCode: 'asc' }],
+    });
+    const computed = await this.withNames(rows, token, (section) => this.computeSection(section));
+    const entries: AtRiskEntry[] = [];
+    for (const { stat, students } of computed) {
+      for (const student of students.filter((candidate) => candidate.atRisk)) {
+        entries.push({
+          ...student,
+          classSectionId: stat.classSectionId,
+          courseCode: stat.courseCode,
+          courseName: stat.courseName,
+          sectionCode: stat.sectionCode,
+          academicYear: stat.academicYear,
+          term: stat.term,
+          closedSessions: stat.closedSessions,
+        });
+      }
+    }
+    return entries.sort(
+      (a, b) =>
+        b.absenceRate - a.absenceRate ||
+        a.courseCode.localeCompare(b.courseCode) ||
+        a.personCode.localeCompare(b.personCode),
+    );
   }
 
   async section(

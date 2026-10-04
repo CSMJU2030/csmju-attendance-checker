@@ -2587,6 +2587,78 @@
         ]
       }
     },
+    "/api/v1/attendance-stats/at-risk": {
+      "get": {
+        "operationId": "AttendanceStatsController_atRisk",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "data",
+                    "meta"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/AtRiskEntryDto"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/PageMetaDto"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid Core Hub session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The role or ownership does not allow this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Staff: every at-risk student across the caller sections, worst first",
+        "tags": [
+          "attendance-stats"
+        ]
+      }
+    },
     "/api/v1/attendance-stats/sections": {
       "get": {
         "operationId": "AttendanceStatsController_sections",
@@ -3595,6 +3667,66 @@
           "students",
           "attendanceRate",
           "atRiskStudents"
+        ]
+      },
+      "AtRiskEntryDto": {
+        "type": "object",
+        "properties": {
+          "classSectionId": {
+            "type": "string"
+          },
+          "courseCode": {
+            "type": "string"
+          },
+          "courseName": {
+            "type": "string"
+          },
+          "sectionCode": {
+            "type": "string"
+          },
+          "academicYear": {
+            "type": "number"
+          },
+          "term": {
+            "type": "number"
+          },
+          "closedSessions": {
+            "type": "number",
+            "description": "Closed sessions of that section."
+          },
+          "personCode": {
+            "type": "string"
+          },
+          "attended": {
+            "type": "number",
+            "description": "Closed sessions the student checked in to."
+          },
+          "absent": {
+            "type": "number",
+            "description": "Closed sessions without a check-in from the student."
+          },
+          "absenceRate": {
+            "type": "number",
+            "description": "0-1 share of the closed sessions the student missed."
+          },
+          "atRisk": {
+            "type": "boolean",
+            "description": "Missed at least 30% of the closed sessions."
+          }
+        },
+        "required": [
+          "classSectionId",
+          "courseCode",
+          "courseName",
+          "sectionCode",
+          "academicYear",
+          "term",
+          "closedSessions",
+          "personCode",
+          "attended",
+          "absent",
+          "absenceRate",
+          "atRisk"
         ]
       },
       "StudentSource": {

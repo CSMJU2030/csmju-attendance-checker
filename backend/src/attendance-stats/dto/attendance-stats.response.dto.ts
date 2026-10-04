@@ -39,6 +39,18 @@ export class SectionStatDetailDto extends SectionStatDto {
   students!: StudentStatDto[];
 }
 
+/** One at-risk student in one section. */
+export class AtRiskEntryDto extends StudentStatDto {
+  classSectionId!: string;
+  courseCode!: string;
+  courseName!: string;
+  sectionCode!: string;
+  academicYear!: number;
+  term!: number;
+  /** Closed sessions of that section. */
+  closedSessions!: number;
+}
+
 export class StatsSummaryDto {
   sections!: number;
   closedSessions!: number;

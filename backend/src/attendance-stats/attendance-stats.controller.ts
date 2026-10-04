@@ -9,7 +9,12 @@ import { CollectionResult } from '../common/api-response';
 import { PaginationQueryDto, buildPaginationMeta } from '../common/dto/pagination.dto';
 import { ApiEnvelope, ApiErrors } from '../openapi/api-envelope';
 import { AttendanceStatsService } from './attendance-stats.service';
-import { SectionStatDetailDto, SectionStatDto, StatsSummaryDto } from './dto/attendance-stats.response.dto';
+import {
+  AtRiskEntryDto,
+  SectionStatDetailDto,
+  SectionStatDto,
+  StatsSummaryDto,
+} from './dto/attendance-stats.response.dto';
 
 const MANAGE = [
   Permission.ATTENDANCE_SESSION_MANAGE_ANY,
@@ -34,6 +39,15 @@ export class AttendanceStatsController {
   @ApiEnvelope(StatsSummaryDto)
   summary(@CurrentUser() user: CoreHubIdentity) {
     return this.stats.summary(user);
+  }
+
+  @Get('at-risk')
+  @RequirePermissions(...MANAGE)
+  @ApiOperation({ summary: 'Staff: every at-risk student across the caller sections, worst first' })
+  @ApiEnvelope(AtRiskEntryDto, { collection: true })
+  async atRisk(@CurrentUser() user: CoreHubIdentity, @CoreHubAccessToken() token: string) {
+    const items = await this.stats.atRisk(user, token);
+    return new CollectionResult(items, buildPaginationMeta(items.length, 1, items.length));
   }
 
   @Get('sections')

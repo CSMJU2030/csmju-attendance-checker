@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Alert, Button, DownloadIcon } from "@/components/shared/kit";
 import { apiRequest } from "@/lib/api-client";
+import { downloadCsv } from "@/lib/csv";
 import { errorMessage } from "@/lib/errors";
 import { type RecordFilters, recordsApiQuery, recordsCsv } from "@/lib/record-filters";
 import type { StaffAttendanceRecord } from "@/lib/types";
@@ -51,14 +52,7 @@ export function RecordsCsvButton({
         }
       }
 
-      const url = URL.createObjectURL(new Blob([recordsCsv(records)], { type: "text/csv;charset=utf-8" }));
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = fileName;
-      document.body.append(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(url);
+      downloadCsv(recordsCsv(records), fileName);
     } finally {
       setBusy(false);
     }

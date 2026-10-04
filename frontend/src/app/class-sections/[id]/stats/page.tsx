@@ -15,7 +15,9 @@ import {
   formatPercent,
   formatTerm,
 } from "@/components/shared/kit";
+import { CsvDownloadButton } from "@/components/features/csv-download-button";
 import { ApiErrorView } from "@/components/shared/api-error-view";
+import { sectionStudentsCsv } from "@/lib/at-risk";
 import { apiGet, getMe } from "@/lib/api-server";
 import type { SectionStatDetail, StudentStat } from "@/lib/types";
 
@@ -41,6 +43,15 @@ export default async function SectionStatsPage({ params }: { params: Promise<{ i
         title="สถิติและกลุ่มเสี่ยง"
         description={`${stat.courseCode} ${stat.courseName} · กลุ่ม ${stat.sectionCode} · ${formatTerm(stat.term, stat.academicYear)}`}
         back={{ href: sectionHref, label: "กลุ่มเรียน" }}
+        actions={
+          stat.closedSessions > 0 && stat.students.length > 0 ? (
+            <CsvDownloadButton
+              csv={sectionStudentsCsv(stat.students, stat.closedSessions)}
+              fileName={`attendance-stats-${stat.courseCode}-${stat.sectionCode}-${stat.academicYear + 543}-${stat.term}.csv`}
+              label="ดาวน์โหลด CSV"
+            />
+          ) : null
+        }
       />
 
       {stat.studentSource === "CHECKED_IN" ? (

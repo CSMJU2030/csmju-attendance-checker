@@ -16,11 +16,13 @@ import {
   formatPercent,
   formatTerm,
 } from "@/components/shared/kit";
+import { CsvDownloadButton } from "@/components/features/csv-download-button";
 import { ApiErrorView } from "@/components/shared/api-error-view";
+import { atRiskCsv } from "@/lib/at-risk";
 import { apiGet, getMe } from "@/lib/api-server";
 import { can } from "@/lib/permissions";
 import { pageParam } from "@/lib/search-params";
-import type { SectionStat, StatsSummary } from "@/lib/types";
+import type { AtRiskEntry, SectionStat, StatsSummary } from "@/lib/types";
 
 export const metadata: Metadata = { title: "สถิติและกลุ่มเสี่ยง" };
 
@@ -40,8 +42,9 @@ export default async function StatsPage({
     return <ApiErrorView error={{ code: "FORBIDDEN", message: "" }} retryHref="/stats" />;
   }
   const page = pageParam((await searchParams).page);
-  const [summary, sections] = await Promise.all([
+  const [summary, atRisk, sections] = await Promise.all([
     apiGet<StatsSummary>("/api/v1/attendance-stats/summary"),
+    apiGet<AtRiskEntry[]>("/api/v1/attendance-stats/at-risk"),
     apiGet<SectionStat[]>(`/api/v1/attendance-stats/sections?page=${page}&limit=${PAGE_SIZE}`),
   ]);
   const everySection = can(role, "attendance-session:manage:any");
@@ -51,6 +54,15 @@ export default async function StatsPage({
       <PageHeaderBar
         title="สถิติและกลุ่มเสี่ยง"
         description={everySection ? "ทุกกลุ่มเรียนในระบบ" : "กลุ่มเรียนที่คุณเป็นผู้สอน"}
+        actions={
+          atRisk.ok && atRisk.data.length > 0 ? (
+            <CsvDownloadButton
+              csv={atRiskCsv(atRisk.data)}
+              fileName={`at-risk-${new Date().toISOString().slice(0, 10)}.csv`}
+              label="ดาวน์โหลดกลุ่มเสี่ยง (CSV)"
+            />
+          ) : null
+        }
       />
       <p className="max-w-prose text-on-surface-variant">
         นับเฉพาะรอบเช็คชื่อที่ปิดแล้ว นักศึกษาที่ไม่ได้เช็คชื่อในรอบที่ปิดแล้วนับว่าขาด และคนที่ขาดตั้งแต่ 30%
