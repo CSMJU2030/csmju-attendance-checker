@@ -9,7 +9,6 @@ import type { ClassSectionInput } from "./types";
 
 export type FieldName =
   | "courseCode"
-  | "courseName"
   | "sectionCode"
   | "academicYear"
   | "term"
@@ -22,7 +21,6 @@ export type Errors = Partial<Record<FieldName, string>>;
 
 export const FIELD_ORDER: FieldName[] = [
   "courseCode",
-  "courseName",
   "sectionCode",
   "academicYear",
   "term",
@@ -45,11 +43,8 @@ function isNumberIn(value: string, min: number, max: number, integer = false): b
 export function validateField(name: FieldName, value: string): string | undefined {
   switch (name) {
     case "courseCode":
-      return /^[A-Z]{2,4}\d{3,4}$/.test(value)
-        ? undefined
-        : "รหัสวิชาต้องเป็นอักษรภาษาอังกฤษ 2–4 ตัว ตามด้วยตัวเลข 3–4 หลัก เช่น CS201";
-    case "courseName":
-      return value.trim().length >= 1 && value.trim().length <= 200 ? undefined : "กรอกชื่อวิชา (ไม่เกิน 200 ตัวอักษร)";
+      // Picked from Core Hub's course list - the backend checks it exists and is open.
+      return /^[0-9A-Za-z][0-9A-Za-z_.-]{0,39}$/.test(value) ? undefined : "ค้นหาแล้วเลือกรายวิชาจากรายการ";
     case "sectionCode":
       return /^\d{1,3}$/.test(value) ? undefined : "กลุ่มเรียนต้องเป็นตัวเลข 1–3 หลัก เช่น 1";
     case "academicYear":
@@ -84,7 +79,6 @@ export function validateAll(values: Values, fields: readonly FieldName[]): Error
  */
 export function toRequestBody(values: Values, editing: boolean): Partial<ClassSectionInput> {
   const editable = {
-    courseName: values.courseName.trim(),
     latitude: Number(values.latitude),
     longitude: Number(values.longitude),
     radiusMeters: Number(values.radiusMeters),

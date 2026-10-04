@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiCookieAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CoreHubIdentity } from '../auth/core-hub-identity';
+import { CoreHubAccessToken } from '../auth/decorators/core-hub-access-token.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { RequirePermissions } from '../auth/decorators/require-permissions.decorator';
 import { Permission } from '../auth/permissions';
@@ -37,9 +38,16 @@ export class ClassSectionsController {
   @ApiOperation({ summary: 'Staff: list and search class sections' })
   @ApiEnvelope(ClassSectionDto, { collection: true })
   @ApiErrors(HttpStatus.BAD_REQUEST)
-  async findAll(@Query() query: QueryClassSectionsDto, @CurrentUser() user: CoreHubIdentity) {
-    const { items, total } = await this.sections.findAll(query, user);
-    return new CollectionResult(items, buildPaginationMeta(total, query.page ?? 1, query.take));
+  async findAll(
+    @Query() query: QueryClassSectionsDto,
+    @CurrentUser() user: CoreHubIdentity,
+    @CoreHubAccessToken() token: string,
+  ) {
+    const { items, total } = await this.sections.findAll(query, user, token);
+    return new CollectionResult(
+      await this.sections.views(items, token),
+      buildPaginationMeta(total, query.page ?? 1, query.take),
+    );
   }
 
   @Get(':id')
@@ -47,30 +55,38 @@ export class ClassSectionsController {
   @ApiOperation({ summary: 'Staff: one class section' })
   @ApiEnvelope(ClassSectionDto)
   @ApiErrors(HttpStatus.BAD_REQUEST, HttpStatus.NOT_FOUND)
-  findOne(@Param('id', ParseUUIDPipe) id: string) {
-    return this.sections.findOne(id);
+  async findOne(@Param('id', ParseUUIDPipe) id: string, @CoreHubAccessToken() token: string) {
+    const [view] = await this.sections.views([await this.sections.findOne(id)], token);
+    return view;
   }
 
   @Post()
   @RequirePermissions(Permission.CLASS_SECTION_CREATE)
-  @ApiOperation({ summary: 'Staff: create a class section - the caller becomes its owner' })
+  @ApiOperation({ summary: 'Staff: create a class section for an open Core Hub course - the caller owns it' })
   @ApiEnvelope(ClassSectionDto, { status: HttpStatus.CREATED })
-  @ApiErrors(HttpStatus.BAD_REQUEST, HttpStatus.CONFLICT)
-  create(@Body() dto: CreateClassSectionDto, @CurrentUser() user: CoreHubIdentity) {
-    return this.sections.create(dto, user);
+  @ApiErrors(HttpStatus.BAD_REQUEST, HttpStatus.CONFLICT, HttpStatus.SERVICE_UNAVAILABLE)
+  async create(
+    @Body() dto: CreateClassSectionDto,
+    @CurrentUser() user: CoreHubIdentity,
+    @CoreHubAccessToken() token: string,
+  ) {
+    const [view] = await this.sections.views([await this.sections.create(dto, user, token)], token);
+    return view;
   }
 
   @Patch(':id')
   @RequirePermissions(Permission.CLASS_SECTION_UPDATE_ANY, Permission.CLASS_SECTION_UPDATE_OWN)
-  @ApiOperation({ summary: 'Staff: change the name, location or thresholds of a section' })
+  @ApiOperation({ summary: 'Staff: change the check-in point of a section' })
   @ApiEnvelope(ClassSectionDto)
   @ApiErrors(HttpStatus.BAD_REQUEST, HttpStatus.NOT_FOUND)
-  update(
+  async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateClassSectionDto,
     @CurrentUser() user: CoreHubIdentity,
+    @CoreHubAccessToken() token: string,
   ) {
-    return this.sections.update(id, dto, user);
+    const [view] = await this.sections.views([await this.sections.update(id, dto, user)], token);
+    return view;
   }
 
   @Delete(':id')

@@ -68,8 +68,12 @@ export class AttendanceRecordsController {
   @ApiOperation({ summary: 'Student: their own check-ins, newest first' })
   @ApiEnvelope(AttendanceRecordViewDto, { collection: true })
   @ApiErrors(HttpStatus.BAD_REQUEST)
-  async findMine(@Query() query: PaginationQueryDto, @CurrentUser() user: CoreHubIdentity) {
-    const { items, total } = await this.records.findMine(query, user);
+  async findMine(
+    @Query() query: PaginationQueryDto,
+    @CurrentUser() user: CoreHubIdentity,
+    @CoreHubAccessToken() token: string,
+  ) {
+    const { items, total } = await this.records.findMine(query, user, token);
     return new CollectionResult(items, buildPaginationMeta(total, query.page ?? 1, query.take));
   }
 }

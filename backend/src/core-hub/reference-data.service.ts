@@ -94,6 +94,11 @@ export class ReferenceDataService {
     return items.filter((item) => item.isActive && (!predicate || predicate(item)));
   }
 
+  /** ทุกรายการ รวมที่ปิดใช้งานแล้ว — ใช้แสดงชื่อในประวัติ (รับข้อมูลเข้าใช้ list/assertActive) */
+  async all<T extends ReferenceItem>(dataset: ReferenceDatasetName, token: string): Promise<T[]> {
+    return (await this.load(dataset, token)) as T[];
+  }
+
   /** รายการเดียว — รวมที่ปิดใช้งานแล้ว (ใช้แสดงชื่อในประวัติ) · ไม่พบคืน null */
   async get<T extends ReferenceItem>(
     dataset: ReferenceDatasetName,

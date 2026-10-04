@@ -5,11 +5,18 @@ import { RequirePermissions } from '../auth/decorators/require-permissions.decor
 import { Permission } from '../auth/permissions';
 import { CollectionResult } from '../common/api-response';
 import { buildPaginationMeta } from '../common/dto/pagination.dto';
+import { CourseCatalog } from '../core-hub/course-catalog.service';
 import { PeopleService } from '../core-hub/people.service';
 import { Department } from '../core-hub/reference-data.types';
 import { ReferenceDataService } from '../core-hub/reference-data.service';
 import { ApiEnvelope, ApiErrors } from '../openapi/api-envelope';
-import { DepartmentDto, QueryStudentsDto, StudentSummaryDto } from './dto/directory.dto';
+import {
+  CourseSummaryDto,
+  DepartmentDto,
+  QueryCoursesDto,
+  QueryStudentsDto,
+  StudentSummaryDto,
+} from './dto/directory.dto';
 
 /**
  * Core Hub data the roster screen needs, read with the caller's own token.
@@ -24,7 +31,25 @@ export class DirectoryController {
   constructor(
     private readonly people: PeopleService,
     private readonly reference: ReferenceDataService,
+    private readonly courses: CourseCatalog,
   ) {}
+
+  @Get('courses')
+  @RequirePermissions(Permission.CLASS_SECTION_CREATE)
+  @ApiOperation({ summary: 'Staff: open Core Hub courses by code or name, for a new class section' })
+  @ApiEnvelope(CourseSummaryDto, { collection: true })
+  @ApiErrors(HttpStatus.BAD_REQUEST)
+  async searchCourses(@Query() query: QueryCoursesDto, @CoreHubAccessToken() token: string) {
+    const limit = query.limit ?? 20;
+    const found = await this.courses.search(query.q ?? '', token, limit);
+    const items = found.map((course) => ({
+      code: course.code,
+      nameTh: course.nameTh,
+      nameEn: course.nameEn ?? null,
+      credits: course.credits,
+    }));
+    return new CollectionResult(items, buildPaginationMeta(items.length, 1, limit));
+  }
 
   @Get('people')
   @RequirePermissions(Permission.PEOPLE_SEARCH)

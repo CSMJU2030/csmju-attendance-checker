@@ -60,6 +60,22 @@ describe('Attendance Checker (e2e)', () => {
     // configuration factory reads them when the testing module is compiled.
     // GET /people/me: the student is linked to a person, staff accounts are not.
     coreHub.setPeople({ [STUDENT_CORE_ID]: { personCode: '6504101234', personType: 'STUDENT' } });
+    const course = (code: string, nameTh: string, isActive = true) => ({
+      code,
+      baseCode: code,
+      nameTh,
+      nameEn: null,
+      credits: 3,
+      departmentCode: 'CS',
+      isActive,
+      updatedAt: '2026-01-01T00:00:00Z',
+    });
+    coreHub.setCourses([
+      course('CS201', 'โครงสร้างข้อมูล'),
+      course('CS305', 'วิศวกรรมซอฟต์แวร์'),
+      course('CS310', 'ระบบปฏิบัติการ'),
+      course('CS100', 'วิชาที่ปิดแล้ว', false),
+    ]);
     process.env.CORE_HUB_URL = coreHub.url;
     process.env.CORE_HUB_JWKS_URL = coreHub.jwksUrl;
 
@@ -283,7 +299,6 @@ describe('Attendance Checker (e2e)', () => {
         .set(bearer(lecturerToken))
         .send({
           courseCode: 'CS310',
-          courseName: 'Lecturer section',
           sectionCode: '1',
           academicYear: 2026,
           term: 1,
@@ -303,7 +318,6 @@ describe('Attendance Checker (e2e)', () => {
   describe('Class sections', () => {
     const newSection = {
       courseCode: 'CS305',
-      courseName: 'Software Engineering',
       sectionCode: '1',
       academicYear: 2026,
       term: 1,
@@ -354,11 +368,87 @@ describe('Attendance Checker (e2e)', () => {
       expect(response.body.error.code).toBe('VALIDATION_ERROR');
     });
 
+    it('takes only an open Core Hub course and shows its name from Core Hub', async () => {
+      const created = await request(app.getHttpServer())
+        .post('/api/v1/class-sections')
+        .set(bearer(staffToken))
+        .send(newSection)
+        .expect(201);
+      expect(created.body.data).toMatchObject({
+        courseCode: 'CS305',
+        courseName: 'วิศวกรรมซอฟต์แวร์',
+        courseInCatalog: true,
+      });
+      // The Core Hub name is shown, never stored (reference-data.md 8).
+      const stored = await db.classSection.findUnique({ where: { id: created.body.data.id } });
+      expect(stored?.courseName ?? null).toBeNull();
+
+      for (const courseCode of ['NOPE999', 'CS100']) {
+        const refused = await request(app.getHttpServer())
+          .post('/api/v1/class-sections')
+          .set(bearer(staffToken))
+          .send({ ...newSection, courseCode, sectionCode: '9' })
+          .expect(400);
+        expect(refused.body.error.code).toBe('VALIDATION_ERROR');
+      }
+
+      await request(app.getHttpServer())
+        .post('/api/v1/class-sections')
+        .set(bearer(staffToken))
+        .send({ ...newSection, courseName: 'typed name' })
+        .expect(400);
+    });
+
+    it('shows a section typed in before the link with its own name', async () => {
+      const legacy = await db.classSection.create({
+        data: {
+          courseCode: 'OLD101',
+          courseName: 'วิชาเดิม',
+          sectionCode: '1',
+          academicYear: 2026,
+          term: 1,
+          ...ROOM,
+          ownerCoreUserId: STAFF_CORE_ID,
+        },
+      });
+      const response = await request(app.getHttpServer())
+        .get(`/api/v1/class-sections/${legacy.id}`)
+        .set(bearer(staffToken))
+        .expect(200);
+      expect(response.body.data).toMatchObject({ courseName: 'วิชาเดิม', courseInCatalog: false });
+
+      const linked = await request(app.getHttpServer())
+        .get(`/api/v1/class-sections/${sectionId}`)
+        .set(bearer(staffToken))
+        .expect(200);
+      expect(linked.body.data).toMatchObject({ courseName: 'โครงสร้างข้อมูล', courseInCatalog: true });
+    });
+
+    it('finds a section by its Core Hub course name', async () => {
+      const response = await request(app.getHttpServer())
+        .get(`/api/v1/class-sections?q=${encodeURIComponent('โครงสร้าง')}`)
+        .set(bearer(staffToken))
+        .expect(200);
+      expect(response.body.data.map((row: { id: string }) => row.id)).toEqual([sectionId]);
+    });
+
+    it('searches open Core Hub courses for the form', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/api/v1/courses?q=cs3')
+        .set(bearer(staffToken))
+        .expect(200);
+      expect(response.body.data).toEqual([
+        { code: 'CS305', nameTh: 'วิศวกรรมซอฟต์แวร์', nameEn: null, credits: 3 },
+        { code: 'CS310', nameTh: 'ระบบปฏิบัติการ', nameEn: null, credits: 3 },
+      ]);
+      await request(app.getHttpServer()).get('/api/v1/courses').set(bearer(studentToken)).expect(403);
+    });
+
     it('rejects a duplicate course, section, year and term (409)', async () => {
       await request(app.getHttpServer())
         .post('/api/v1/class-sections')
         .set(bearer(staffToken))
-        .send({ ...newSection, courseCode: 'CS201', courseName: 'Data Structures' })
+        .send({ ...newSection, courseCode: 'CS201' })
         .expect(409);
     });
 

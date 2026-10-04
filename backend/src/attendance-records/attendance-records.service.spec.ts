@@ -1,6 +1,7 @@
 import { AttendanceSessionStatus } from '../../generated/prisma/client';
 import { currentCode } from '../attendance-sessions/attendance-code';
 import { CoreHubIdentity, SubsystemRole } from '../auth/core-hub-identity';
+import { CourseCatalog } from '../core-hub/course-catalog.service';
 import { PeopleService } from '../core-hub/people.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AttendanceRecordsService } from './attendance-records.service';
@@ -71,6 +72,7 @@ describe('AttendanceRecordsService.checkIn - business rules', () => {
     service = new AttendanceRecordsService(
       prisma as unknown as PrismaService,
       people as unknown as PeopleService,
+      { names: jest.fn().mockResolvedValue(new Map()) } as unknown as CourseCatalog,
     );
   });
 

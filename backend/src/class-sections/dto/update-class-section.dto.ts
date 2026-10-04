@@ -1,16 +1,11 @@
 import { Type } from 'class-transformer';
-import { IsInt, IsNumber, IsOptional, IsString, Length, Max, Min } from 'class-validator';
+import { IsInt, IsNumber, IsOptional, Max, Min } from 'class-validator';
 
 /**
  * Course code, section, year and term identify the section and stay fixed;
- * only the name, check-in point and timing rules can change.
+ * only the check-in point can change. The course name comes from Core Hub.
  */
 export class UpdateClassSectionDto {
-  @IsOptional()
-  @IsString()
-  @Length(1, 200)
-  courseName?: string;
-
   @IsOptional()
   @Type(() => Number)
   @IsNumber()

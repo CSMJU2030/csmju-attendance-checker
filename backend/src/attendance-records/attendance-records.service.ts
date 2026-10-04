@@ -10,6 +10,7 @@ import { CoreHubIdentity } from '../auth/core-hub-identity';
 import { Permission } from '../auth/permissions';
 import { assertCanManageSection } from '../class-sections/class-sections.service';
 import { rosterMembership } from '../class-sections/roster';
+import { CourseCatalog, CourseName } from '../core-hub/course-catalog.service';
 import { PeopleService } from '../core-hub/people.service';
 import { PaginationQueryDto } from '../common/dto/pagination.dto';
 import { AppException } from '../common/errors';
@@ -36,10 +37,10 @@ export interface AttendanceSummary {
   total: number;
 }
 
-function summarize(section: ClassSection): SectionSummary {
+function summarize(section: ClassSection, names: Map<string, CourseName>): SectionSummary {
   return {
     courseCode: section.courseCode,
-    courseName: section.courseName,
+    courseName: names.get(section.courseCode)?.nameTh ?? section.courseName ?? section.courseCode,
     sectionCode: section.sectionCode,
     academicYear: section.academicYear,
     term: section.term,
@@ -53,6 +54,7 @@ export class AttendanceRecordsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly people: PeopleService,
+    private readonly courses: CourseCatalog,
   ) {}
 
   /**
@@ -134,12 +136,14 @@ export class AttendanceRecordsService {
       },
     });
 
-    return { ...record, classSection: summarize(section) };
+    const names = await this.courses.names([section.courseCode], token);
+    return { ...record, classSection: summarize(section, names) };
   }
 
   async findMine(
     query: PaginationQueryDto,
     user: CoreHubIdentity,
+    token: string,
   ): Promise<{ items: AttendanceRecordView[]; total: number }> {
     const where = { coreUserId: user.id };
     const [records, total] = await Promise.all([
@@ -166,9 +170,13 @@ export class AttendanceRecordsService {
       ]),
     );
 
+    const names = await this.courses.names(
+      sections.map((section) => section.courseCode),
+      token,
+    );
     const items = records.map((record) => {
       const section = sectionBySession.get(record.attendanceSessionId);
-      return { ...record, classSection: section ? summarize(section) : null };
+      return { ...record, classSection: section ? summarize(section, names) : null };
     });
 
     return { items, total };

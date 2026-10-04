@@ -1,6 +1,9 @@
 import { CoreHubIdentity, SubsystemRole } from '../auth/core-hub-identity';
 import { PrismaService } from '../prisma/prisma.service';
+import { CourseCatalog } from '../core-hub/course-catalog.service';
 import { ClassSectionsService } from './class-sections.service';
+
+const TOKEN = 'staff-token';
 
 const SECTION = {
   id: '11111111-1111-4111-8111-111111111111',
@@ -44,6 +47,7 @@ describe('ClassSectionsService - business rules', () => {
     };
     attendanceSession: { count: jest.Mock };
   };
+  let courses: { names: jest.Mock; assertOpen: jest.Mock; codesNamed: jest.Mock };
   let service: ClassSectionsService;
 
   beforeEach(() => {
@@ -56,11 +60,19 @@ describe('ClassSectionsService - business rules', () => {
       },
       attendanceSession: { count: jest.fn().mockResolvedValue(0) },
     };
-    service = new ClassSectionsService(prisma as unknown as PrismaService);
+    courses = {
+      names: jest.fn().mockResolvedValue(new Map([['CS201', { nameTh: 'โครงสร้างข้อมูล', isActive: true }]])),
+      assertOpen: jest.fn().mockResolvedValue(undefined),
+      codesNamed: jest.fn().mockResolvedValue([]),
+    };
+    service = new ClassSectionsService(
+      prisma as unknown as PrismaService,
+      courses as unknown as CourseCatalog,
+    );
   });
 
   it('makes the caller the owner of a new section', async () => {
-    await expect(service.create(CREATE, STAFF)).resolves.toMatchObject({
+    await expect(service.create(CREATE, STAFF, TOKEN)).resolves.toMatchObject({
       courseCode: 'CS305',
       ownerCoreUserId: STAFF.id,
     });
@@ -68,7 +80,7 @@ describe('ClassSectionsService - business rules', () => {
 
   it('refuses a duplicate course, section, year and term with 409', async () => {
     prisma.classSection.findUnique.mockResolvedValue(SECTION);
-    await expect(service.create(CREATE, STAFF)).rejects.toMatchObject({ status: 409 });
+    await expect(service.create(CREATE, STAFF, TOKEN)).rejects.toMatchObject({ status: 409 });
   });
 
   it('lets only the owner update a section', async () => {
@@ -109,5 +121,27 @@ describe('ClassSectionsService - business rules', () => {
 
     await expect(service.remove(SECTION.id, STAFF)).rejects.toMatchObject({ status: 409 });
     expect(prisma.classSection.delete).not.toHaveBeenCalled();
+  });
+
+  it('checks the course against Core Hub before creating', async () => {
+    courses.assertOpen.mockRejectedValue(Object.assign(new Error('closed'), { status: 400 }));
+    await expect(service.create(CREATE, STAFF, TOKEN)).rejects.toMatchObject({ status: 400 });
+    expect(courses.assertOpen).toHaveBeenCalledWith(CREATE.courseCode, TOKEN);
+    expect(prisma.classSection.create).not.toHaveBeenCalled();
+  });
+
+  it('shows the Core Hub course name, else the typed name, else the code', async () => {
+    const legacy = { ...SECTION, id: 'b', courseCode: 'OLD101', courseName: 'วิชาเดิม' };
+    const bare = { ...SECTION, id: 'c', courseCode: 'X999', courseName: null };
+    const at = { createdAt: new Date(0), updatedAt: new Date(0) };
+    const views = await service.views(
+      [SECTION, legacy, bare].map((section) => ({ ...section, ...at })),
+      TOKEN,
+    );
+    expect(views.map((view) => [view.courseName, view.courseInCatalog])).toEqual([
+      ['โครงสร้างข้อมูล', true],
+      ['วิชาเดิม', false],
+      ['X999', false],
+    ]);
   });
 });

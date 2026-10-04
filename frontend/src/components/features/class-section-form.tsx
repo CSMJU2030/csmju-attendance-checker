@@ -29,13 +29,13 @@ import {
   type Values,
 } from "@/lib/class-section-validation";
 import { errorMessage } from "@/lib/errors";
-import type { ClassSection } from "@/lib/types";
+import type { ClassSection, CourseSummary } from "@/lib/types";
+import { CoursePicker } from "./course-picker";
 
 function initialValues(section?: ClassSection): Values {
   if (section) {
     return {
       courseCode: section.courseCode,
-      courseName: section.courseName,
       sectionCode: section.sectionCode,
       academicYear: String(toBuddhistYear(section.academicYear)),
       term: String(section.term),
@@ -47,7 +47,6 @@ function initialValues(section?: ClassSection): Values {
   const year = Number(new Intl.DateTimeFormat("en-US", { timeZone: "Asia/Bangkok", year: "numeric" }).format(new Date()));
   return {
     courseCode: "",
-    courseName: "",
     sectionCode: "1",
     academicYear: String(toBuddhistYear(year)),
     term: "1",
@@ -61,6 +60,7 @@ export function ClassSectionForm({ section }: { section?: ClassSection }) {
   const router = useRouter();
   const editing = section !== undefined;
   const [values, setValues] = useState<Values>(() => initialValues(section));
+  const [course, setCourse] = useState<CourseSummary | null>(null);
   const [errors, setErrors] = useState<Errors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [announce, setAnnounce] = useState("");
@@ -172,34 +172,39 @@ export function ClassSectionForm({ section }: { section?: ClassSection }) {
             <DescriptionList
               items={[
                 { term: "รหัสวิชา", value: <span className="font-mono">{section.courseCode}</span> },
+                {
+                  term: "ชื่อวิชา",
+                  value: section.courseInCatalog
+                    ? section.courseName
+                    : `${section.courseName} (ไม่อยู่ในรายวิชาของ Core Hub)`,
+                },
                 { term: "กลุ่มเรียน", value: section.sectionCode },
                 { term: "ภาคเรียน", value: formatTerm(section.term, section.academicYear) },
               ]}
             />
           ) : (
-            <div className="grid gap-4 md:grid-cols-2">
-              <FormField id="courseCode" label="รหัสวิชา" required hint="เช่น CS201" error={errors.courseCode}>
-                <TextInput
-                  {...input("courseCode", { hint: "เช่น CS201" })}
-                  autoCapitalize="characters"
-                  onChange={(event) => set("courseCode", event.target.value.toUpperCase().replace(/\s/g, ""))}
-                />
-              </FormField>
+            <CoursePicker
+              selected={course}
+              onSelect={(picked) => {
+                setCourse(picked);
+                set("courseCode", picked?.code ?? "");
+                if (picked) setErrors((current) => ({ ...current, courseCode: undefined }));
+              }}
+              error={errors.courseCode}
+              inputRef={(element) => {
+                refs.current.courseCode = element;
+              }}
+            />
+          )}
+
+          {editing ? null : (
+            <div className="grid gap-4 md:grid-cols-3">
               <FormField id="sectionCode" label="กลุ่มเรียน" required hint="ตัวเลข เช่น 1" error={errors.sectionCode}>
                 <TextInput
                   {...input("sectionCode", { inputMode: "numeric", hint: "ตัวเลข เช่น 1" })}
                   onChange={(event) => set("sectionCode", event.target.value.replace(/\D/g, ""))}
                 />
               </FormField>
-            </div>
-          )}
-
-          <FormField id="courseName" label="ชื่อวิชา" required error={errors.courseName}>
-            <TextInput {...input("courseName")} onChange={(event) => set("courseName", event.target.value)} />
-          </FormField>
-
-          {editing ? null : (
-            <div className="grid gap-4 md:grid-cols-2">
               <FormField id="academicYear" label="ปีการศึกษา (พ.ศ.)" required hint="เช่น 2569" error={errors.academicYear}>
                 <TextInput
                   {...input("academicYear", { inputMode: "numeric", hint: "เช่น 2569" })}

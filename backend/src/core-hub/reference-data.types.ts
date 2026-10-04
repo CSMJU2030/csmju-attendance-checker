@@ -16,6 +16,15 @@ export interface Department extends ReferenceItem {
   facultyCode: string;
 }
 
+/** `code` is the full code with its version, e.g. 10301111-1 (reference-data.md 4.6). */
+export interface Course extends ReferenceItem {
+  baseCode: string;
+  nameTh: string;
+  nameEn: string | null;
+  credits: number;
+  departmentCode: string | null;
+}
+
 export type RoomType = 'LECTURE' | 'LAB' | 'SEMINAR' | 'MEETING' | 'PROJECT' | 'OFFICE';
 
 export interface Room extends ReferenceItem {

@@ -46,6 +46,7 @@ export class FakeCoreHub {
   /** Everyone GET /api/v1/people lists (the directory, not linked accounts). */
   private directory: Array<Record<string, unknown>> = [];
   private departments: Array<Record<string, unknown> & { isActive: boolean }> = [];
+  private courses: Array<Record<string, unknown> & { isActive: boolean }> = [];
   /** Query strings of GET /api/v1/people calls, in order. */
   peopleListQueries: string[] = [];
 
@@ -74,6 +75,10 @@ export class FakeCoreHub {
         this.serveDepartments(req, res);
         return;
       }
+      if (req.url?.startsWith('/api/v1/courses')) {
+        this.serveReference(req, res, this.courses);
+        return;
+      }
       res.writeHead(404, { 'content-type': 'application/json' });
       res.end(JSON.stringify({ error: 'not found' }));
     });
@@ -94,6 +99,11 @@ export class FakeCoreHub {
   /** The people directory behind GET /api/v1/people. */
   setDirectory(people: Array<Record<string, unknown>>): void {
     this.directory = people;
+  }
+
+  /** The courses reference data behind GET /api/v1/courses (closed ones too). */
+  setCourses(courses: Array<Record<string, unknown> & { isActive: boolean }>): void {
+    this.courses = courses;
   }
 
   /** The departments reference data behind GET /api/v1/departments. */
@@ -231,11 +241,20 @@ export class FakeCoreHub {
 
   /** GET /api/v1/departments - paged reference data, open ones only. */
   private serveDepartments(req: IncomingMessage, res: ServerResponse): void {
+    this.serveReference(req, res, this.departments);
+  }
+
+  /** Any reference dataset: paged, open rows only unless includeInactive=true. */
+  private serveReference(
+    req: IncomingMessage,
+    res: ServerResponse,
+    rows: Array<Record<string, unknown> & { isActive: boolean }>,
+  ): void {
     const query = new URL(req.url ?? '/', 'http://core-hub.test').searchParams;
     const page = Number(query.get('page') ?? '1');
     const limit = Number(query.get('limit') ?? '20');
     const items =
-      query.get('includeInactive') === 'true' ? this.departments : this.departments.filter((d) => d.isActive);
+      query.get('includeInactive') === 'true' ? rows : rows.filter((row) => row.isActive);
     res.writeHead(200, { 'content-type': 'application/json' });
     res.end(
       JSON.stringify({
