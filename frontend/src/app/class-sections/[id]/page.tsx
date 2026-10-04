@@ -26,7 +26,7 @@ import { SessionStatusBadge } from "@/components/features/session-status";
 import { ApiErrorView } from "@/components/shared/api-error-view";
 import { apiGet, getMe } from "@/lib/api-server";
 import { canManageSection } from "@/lib/permissions";
-import type { AttendanceSession, ClassSection } from "@/lib/types";
+import type { AttendanceSession, ClassSection, RosterStudent } from "@/lib/types";
 
 export const metadata: Metadata = { title: "รายละเอียดกลุ่มเรียน" };
 
@@ -55,6 +55,10 @@ export default async function ClassSectionPage({
   const sessions = canManage
     ? await apiGet<AttendanceSession[]>(`/api/v1/attendance-sessions?classSectionId=${section.id}&limit=50`)
     : null;
+  const roster = canEdit
+    ? await apiGet<RosterStudent[]>(`/api/v1/class-sections/${section.id}/students?limit=1`)
+    : null;
+  const rosterTotal = roster?.ok ? (roster.meta?.total ?? roster.data.length) : null;
   const sessionList = sessions?.ok ? sessions.data : [];
   const sessionTotal = sessions?.ok ? (sessions.meta?.total ?? sessionList.length) : 0;
   const openSession = sessionList.find((session) => session.status === "OPEN") ?? null;
@@ -135,6 +139,29 @@ export default async function ClassSectionPage({
           </p>
         </div>
       </Card>
+
+      {canEdit ? (
+        <Card className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3">
+            <span aria-hidden className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary-container/10 text-primary-container">
+              <UsersIcon />
+            </span>
+            <div className="flex flex-col gap-1">
+              <CardTitle>รายชื่อนักศึกษา</CardTitle>
+              <p className="text-on-surface-variant">
+                {rosterTotal === null
+                  ? "โหลดจำนวนนักศึกษาไม่สำเร็จ"
+                  : rosterTotal === 0
+                    ? "ยังไม่มีรายชื่อ เพิ่มรายชื่อเพื่อให้ระบบติดป้ายคนที่เช็คชื่อแต่ไม่อยู่ในรายชื่อ"
+                    : `${formatNumber(rosterTotal)} คน`}
+              </p>
+            </div>
+          </div>
+          <ButtonLink href={`/class-sections/${section.id}/students`} variant="secondary" className="w-full sm:w-auto">
+            {rosterTotal ? "จัดการรายชื่อ" : "เพิ่มรายชื่อนักศึกษา"}
+          </ButtonLink>
+        </Card>
+      ) : null}
 
       {canManage ? (
         <Card flush className="flex flex-col">

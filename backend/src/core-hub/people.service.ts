@@ -50,4 +50,72 @@ export class PeopleService {
     }
     return personCode;
   }
+
+  /**
+   * Active students from `GET /people` - one Core Hub call per page of up to
+   * 100, never one call per person (reference-data.md 7.2). Needs a token
+   * with `people:read` (staff, lecturer, admin). Only the fields the roster
+   * screen shows are passed on; nothing is cached or stored.
+   */
+  async searchStudents(token: string, filter: StudentSearch): Promise<StudentPage> {
+    const query = new URLSearchParams({
+      personType: 'STUDENT',
+      status: 'ACTIVE',
+      page: String(filter.page),
+      limit: String(filter.limit),
+    });
+    if (filter.departmentCode) query.set('departmentCode', filter.departmentCode);
+    if (filter.entryYear !== undefined) query.set('entryYear', String(filter.entryYear));
+    if (filter.q) query.set('q', filter.q);
+
+    let body: unknown;
+    try {
+      body = await getFromCoreHub(`${this.baseUrl}/api/v1/people?${query}`, token, this.requestTimeoutMs);
+    } catch (error) {
+      throw coreHubFailure(error);
+    }
+
+    const { success, data, meta } = (body ?? {}) as { success?: unknown; data?: unknown; meta?: unknown };
+    if (success !== true || !Array.isArray(data)) {
+      throw coreHubFailure(new Error('GET /people answered without a list'));
+    }
+    const items = data.flatMap((raw): StudentSummary[] => {
+      const person = raw as Record<string, unknown>;
+      if (typeof person.personCode !== 'string') return [];
+      const department = person.department as { code?: unknown; nameTh?: unknown } | null | undefined;
+      return [
+        {
+          personCode: person.personCode,
+          fullNameTh: typeof person.fullNameTh === 'string' ? person.fullNameTh : '',
+          entryYear: typeof person.entryYear === 'number' ? person.entryYear : null,
+          departmentCode: typeof department?.code === 'string' ? department.code : null,
+          departmentNameTh: typeof department?.nameTh === 'string' ? department.nameTh : null,
+        },
+      ];
+    });
+    const total = Number((meta as { total?: unknown } | undefined)?.total);
+    return { items, total: Number.isFinite(total) ? total : items.length };
+  }
+}
+
+export interface StudentSearch {
+  departmentCode?: string;
+  /** Buddhist-era year the student entered. */
+  entryYear?: number;
+  q?: string;
+  page: number;
+  limit: number;
+}
+
+export interface StudentSummary {
+  personCode: string;
+  fullNameTh: string;
+  entryYear: number | null;
+  departmentCode: string | null;
+  departmentNameTh: string | null;
+}
+
+export interface StudentPage {
+  items: StudentSummary[];
+  total: number;
 }

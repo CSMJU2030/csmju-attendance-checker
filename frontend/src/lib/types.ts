@@ -21,12 +21,21 @@ export type AttendanceSessionStatus = Schemas["AttendanceSessionStatus"];
 export type AttendanceSession = Schemas["AttendanceSessionDto"];
 export type CurrentCode = Schemas["CurrentCodeDto"];
 
-/** A check-in record always means the student attended - there is no "late". */
-export type AttendanceRecord = Schemas["AttendanceRecordDto"];
+/**
+ * A check-in as staff see it, with `inRoster` (null while the section has no
+ * roster). A check-in always means the student attended - there is no "late".
+ */
+export type StaffAttendanceRecord = Schemas["StaffAttendanceRecordDto"];
 export type SectionSummary = Schemas["SectionSummaryDto"];
 export type AttendanceRecordView = Schemas["AttendanceRecordViewDto"];
 /** GET /api/v1/attendance-records/me/summary */
 export type AttendanceSummary = Schemas["AttendanceSummaryDto"];
+
+export type RosterStudent = Schemas["RosterStudentDto"];
+export type AddRosterStudentsResult = Schemas["AddRosterStudentsResultDto"];
+/** A student from Core Hub's /people, shown while picking a roster - never stored. */
+export type StudentSummary = Schemas["StudentSummaryDto"];
+export type Department = Schemas["DepartmentDto"];
 
 export type PageMeta = Schemas["PageMetaDto"];
 export type ErrorCode = Schemas["ErrorCode"];

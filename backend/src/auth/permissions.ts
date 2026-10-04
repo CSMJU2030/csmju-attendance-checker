@@ -21,6 +21,9 @@ export enum Permission {
   ATTENDANCE_SESSION_MANAGE_ANY = 'attendance-session:manage:any',
   ATTENDANCE_SESSION_MANAGE_OWN = 'attendance-session:manage:own',
 
+  /** Look up active students in Core Hub to build a class section roster. */
+  PEOPLE_SEARCH = 'people:search',
+
   ATTENDANCE_CHECK_IN = 'attendance:check-in',
   ATTENDANCE_RECORD_READ_OWN = 'attendance-record:read:own',
 }
@@ -39,6 +42,7 @@ const STAFF_PERMISSIONS: Permission[] = [
   Permission.CLASS_SECTION_UPDATE_OWN,
   Permission.CLASS_SECTION_DELETE_OWN,
   Permission.ATTENDANCE_SESSION_MANAGE_OWN,
+  Permission.PEOPLE_SEARCH,
 ];
 
 const ADMIN_PERMISSIONS: Permission[] = Object.values(Permission);

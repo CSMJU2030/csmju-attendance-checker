@@ -760,6 +760,341 @@
         ]
       }
     },
+    "/api/v1/class-sections/{id}/students": {
+      "get": {
+        "operationId": "ClassSectionStudentsController_list",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "description": "Student id, or its leading digits.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "data",
+                    "meta"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/RosterStudentDto"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/PageMetaDto"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request or VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid Core Hub session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The role or ownership does not allow this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Staff: the roster of a class section, by student id",
+        "tags": [
+          "class-sections"
+        ]
+      },
+      "post": {
+        "operationId": "ClassSectionStudentsController_add",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddRosterStudentsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "data"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/AddRosterStudentsResultDto"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request or VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid Core Hub session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The role or ownership does not allow this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Staff: add student ids to the roster (up to 500 per call)",
+        "tags": [
+          "class-sections"
+        ]
+      }
+    },
+    "/api/v1/class-sections/{id}/students/{personCode}": {
+      "delete": {
+        "operationId": "ClassSectionStudentsController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "personCode",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "data"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/RemovedRosterStudentDto"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request or VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid Core Hub session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The role or ownership does not allow this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Staff: take one student off the roster",
+        "tags": [
+          "class-sections"
+        ]
+      }
+    },
     "/api/v1/attendance-sessions": {
       "get": {
         "operationId": "AttendanceSessionsController_findAll",
@@ -1346,7 +1681,7 @@
                     "data": {
                       "type": "array",
                       "items": {
-                        "$ref": "#/components/schemas/AttendanceRecordDto"
+                        "$ref": "#/components/schemas/StaffAttendanceRecordDto"
                       }
                     },
                     "meta": {
@@ -1599,7 +1934,7 @@
                     "data": {
                       "type": "array",
                       "items": {
-                        "$ref": "#/components/schemas/AttendanceRecordDto"
+                        "$ref": "#/components/schemas/StaffAttendanceRecordDto"
                       }
                     },
                     "meta": {
@@ -1831,6 +2166,234 @@
         "summary": "Student: their own check-ins, newest first",
         "tags": [
           "attendance-records"
+        ]
+      }
+    },
+    "/api/v1/people": {
+      "get": {
+        "operationId": "DirectoryController_students",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 100,
+              "type": "number"
+            }
+          },
+          {
+            "name": "departmentCode",
+            "required": false,
+            "in": "query",
+            "description": "Department code from GET /api/v1/departments.",
+            "schema": {
+              "pattern": "^[0-9A-Za-z_-]{1,30}$",
+              "type": "string"
+            }
+          },
+          {
+            "name": "entryYear",
+            "required": false,
+            "in": "query",
+            "description": "Buddhist-era year the student entered, e.g. 2566.",
+            "schema": {
+              "minimum": 2500,
+              "maximum": 2700,
+              "type": "number"
+            }
+          },
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "description": "Student id or part of a name.",
+            "schema": {
+              "minLength": 1,
+              "maxLength": 100,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "data",
+                    "meta"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/StudentSummaryDto"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/PageMetaDto"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request or VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid Core Hub session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The role or ownership does not allow this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorDto"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Core Hub is unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Staff: active students in Core Hub, by department, entry year or name",
+        "tags": [
+          "directory"
+        ]
+      }
+    },
+    "/api/v1/departments": {
+      "get": {
+        "operationId": "DirectoryController_departments",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "data",
+                    "meta"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/DepartmentDto"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/PageMetaDto"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid Core Hub session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The role or ownership does not allow this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorDto"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Core Hub is unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Staff: active departments (Core Hub reference data, cached)",
+        "tags": [
+          "directory"
         ]
       }
     }
@@ -2170,6 +2733,78 @@
           "id"
         ]
       },
+      "RosterStudentDto": {
+        "type": "object",
+        "properties": {
+          "personCode": {
+            "type": "string"
+          },
+          "addedAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "When the student was added to the roster."
+          }
+        },
+        "required": [
+          "personCode",
+          "addedAt"
+        ]
+      },
+      "AddRosterStudentsResultDto": {
+        "type": "object",
+        "properties": {
+          "added": {
+            "type": "number",
+            "description": "How many student ids were newly added."
+          },
+          "alreadyOnRoster": {
+            "description": "Ids that were already on the roster and were skipped.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "added",
+          "alreadyOnRoster"
+        ]
+      },
+      "AddRosterStudentsDto": {
+        "type": "object",
+        "properties": {
+          "personCodes": {
+            "description": "Student ids to add. Ids already on the roster are skipped.",
+            "minItems": 1,
+            "maxItems": 500,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "personCodes"
+        ]
+      },
+      "RemovedRosterStudentDto": {
+        "type": "object",
+        "properties": {
+          "removed": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "personCode": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "removed",
+          "personCode"
+        ]
+      },
       "AttendanceSessionStatus": {
         "type": "string",
         "enum": [
@@ -2299,9 +2934,14 @@
           "classSectionId"
         ]
       },
-      "AttendanceRecordDto": {
+      "StaffAttendanceRecordDto": {
         "type": "object",
         "properties": {
+          "inRoster": {
+            "type": "boolean",
+            "nullable": true,
+            "description": "On the section's roster? `null` while the section has no roster yet."
+          },
           "id": {
             "type": "string"
           },
@@ -2335,6 +2975,7 @@
           }
         },
         "required": [
+          "inRoster",
           "id",
           "attendanceSessionId",
           "coreUserId",
@@ -2375,6 +3016,15 @@
       "AttendanceRecordViewDto": {
         "type": "object",
         "properties": {
+          "classSection": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SectionSummaryDto"
+              }
+            ]
+          },
           "id": {
             "type": "string"
           },
@@ -2405,18 +3055,10 @@
           "updatedAt": {
             "format": "date-time",
             "type": "string"
-          },
-          "classSection": {
-            "nullable": true,
-            "type": "object",
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/SectionSummaryDto"
-              }
-            ]
           }
         },
         "required": [
+          "classSection",
           "id",
           "attendanceSessionId",
           "coreUserId",
@@ -2424,8 +3066,7 @@
           "checkedInAt",
           "distanceMeters",
           "createdAt",
-          "updatedAt",
-          "classSection"
+          "updatedAt"
         ]
       },
       "CheckInDto": {
@@ -2467,6 +3108,55 @@
         },
         "required": [
           "total"
+        ]
+      },
+      "StudentSummaryDto": {
+        "type": "object",
+        "properties": {
+          "personCode": {
+            "type": "string"
+          },
+          "fullNameTh": {
+            "type": "string"
+          },
+          "entryYear": {
+            "type": "number",
+            "nullable": true
+          },
+          "departmentCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "departmentNameTh": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "personCode",
+          "fullNameTh",
+          "entryYear",
+          "departmentCode",
+          "departmentNameTh"
+        ]
+      },
+      "DepartmentDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "nameTh": {
+            "type": "string"
+          },
+          "facultyCode": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "nameTh",
+          "facultyCode"
         ]
       }
     }

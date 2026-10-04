@@ -43,6 +43,11 @@ export class FakeCoreHub {
   peopleFailure: CoreHubFailure | null = null;
   /** The person linked to each account, by `sub`; anyone else is linked to none. */
   private people = new Map<string, Record<string, unknown>>();
+  /** Everyone GET /api/v1/people lists (the directory, not linked accounts). */
+  private directory: Array<Record<string, unknown>> = [];
+  private departments: Array<Record<string, unknown> & { isActive: boolean }> = [];
+  /** Query strings of GET /api/v1/people calls, in order. */
+  peopleListQueries: string[] = [];
 
   async start(keys: TestSigningKey[]): Promise<void> {
     this.keys = keys;
@@ -61,6 +66,14 @@ export class FakeCoreHub {
         this.servePeopleMe(req, res);
         return;
       }
+      if (req.url === '/api/v1/people' || req.url?.startsWith('/api/v1/people?')) {
+        this.servePeopleList(req, res);
+        return;
+      }
+      if (req.url?.startsWith('/api/v1/departments')) {
+        this.serveDepartments(req, res);
+        return;
+      }
       res.writeHead(404, { 'content-type': 'application/json' });
       res.end(JSON.stringify({ error: 'not found' }));
     });
@@ -76,6 +89,16 @@ export class FakeCoreHub {
   /** The rooms Core Hub holds, in the shape of its GET /api/v1/rooms. */
   setRooms(rooms: Array<Record<string, unknown> & { isActive: boolean }>): void {
     this.rooms = rooms;
+  }
+
+  /** The people directory behind GET /api/v1/people. */
+  setDirectory(people: Array<Record<string, unknown>>): void {
+    this.directory = people;
+  }
+
+  /** The departments reference data behind GET /api/v1/departments. */
+  setDepartments(departments: Array<Record<string, unknown> & { isActive: boolean }>): void {
+    this.departments = departments;
   }
 
   /** People Core Hub has linked to accounts, by the account's `sub`. */
@@ -157,6 +180,70 @@ export class FakeCoreHub {
       requestId: 'fake-core-hub',
       timestamp: new Date().toISOString(),
     });
+  }
+
+  /**
+   * GET /api/v1/people for staff, lecturer and admin tokens (`people:read`):
+   * filters by personType, status (default ACTIVE), departmentCode, entryYear and q.
+   */
+  private servePeopleList(req: IncomingMessage, res: ServerResponse): void {
+    const send = (status: number, body: unknown) => {
+      res.writeHead(status, { 'content-type': 'application/json', 'cache-control': 'no-store' });
+      res.end(JSON.stringify(body));
+    };
+    const token = /^Bearer (\S+)$/.exec(req.headers.authorization ?? '')?.[1];
+    let claims: { role?: unknown } | undefined;
+    try {
+      claims = token ? decodeJwt(token) : undefined;
+    } catch {
+      claims = undefined;
+    }
+    if (!claims) {
+      send(401, { success: false, error: { code: 'UNAUTHORIZED', message: 'token required' } });
+      return;
+    }
+    if (!['staff', 'lecturer', 'admin'].includes(String(claims.role))) {
+      send(403, { success: false, error: { code: 'FORBIDDEN', message: 'people:read' } });
+      return;
+    }
+    const url = new URL(req.url ?? '/', 'http://core-hub.test');
+    this.peopleListQueries.push(url.search);
+    const query = url.searchParams;
+    const page = Number(query.get('page') ?? '1');
+    const limit = Number(query.get('limit') ?? '20');
+    const status = query.get('status') ?? 'ACTIVE';
+    const q = query.get('q')?.toLowerCase();
+    const matches = this.directory.filter(
+      (person) =>
+        (!query.get('personType') || person.personType === query.get('personType')) &&
+        (status === 'ALL' || person.status === status) &&
+        (!query.get('departmentCode') ||
+          (person.department as { code?: string } | null)?.code === query.get('departmentCode')) &&
+        (!query.get('entryYear') || String(person.entryYear) === query.get('entryYear')) &&
+        (!q || `${String(person.personCode)} ${String(person.fullNameTh)}`.toLowerCase().includes(q)),
+    );
+    send(200, {
+      success: true,
+      data: matches.slice((page - 1) * limit, page * limit),
+      meta: { total: matches.length, page, limit, totalPages: Math.max(1, Math.ceil(matches.length / limit)) },
+    });
+  }
+
+  /** GET /api/v1/departments - paged reference data, open ones only. */
+  private serveDepartments(req: IncomingMessage, res: ServerResponse): void {
+    const query = new URL(req.url ?? '/', 'http://core-hub.test').searchParams;
+    const page = Number(query.get('page') ?? '1');
+    const limit = Number(query.get('limit') ?? '20');
+    const items =
+      query.get('includeInactive') === 'true' ? this.departments : this.departments.filter((d) => d.isActive);
+    res.writeHead(200, { 'content-type': 'application/json' });
+    res.end(
+      JSON.stringify({
+        success: true,
+        data: items.slice((page - 1) * limit, page * limit),
+        meta: { total: items.length, page, limit, totalPages: Math.max(1, Math.ceil(items.length / limit)) },
+      }),
+    );
   }
 
   /** Core Hub's error envelope - every 5xx carries INTERNAL_ERROR, so status is what counts. */

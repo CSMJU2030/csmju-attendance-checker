@@ -652,6 +652,179 @@ describe('Attendance Checker (e2e)', () => {
     });
   });
 
+  // --------------------------------------------------------------- roster --
+  describe('Class section roster', () => {
+    const roster = () => `/api/v1/class-sections/${sectionId}/students`;
+    const add = (personCodes: unknown, token = staffToken) =>
+      request(app.getHttpServer()).post(roster()).set(bearer(token)).send({ personCodes });
+    const list = (query = '', token = staffToken) =>
+      request(app.getHttpServer()).get(`${roster()}${query}`).set(bearer(token));
+
+    it('starts empty, adds ids once each and reports the ones already there', async () => {
+      expect((await list().expect(200)).body).toMatchObject({ data: [], meta: { total: 0 } });
+
+      const first = await add(['6504101235', '6504101234', '6504101234']).expect(201);
+      expect(first.body.data).toEqual({ added: 2, alreadyOnRoster: [] });
+
+      const again = await add(['6504101234', '6504101236']).expect(201);
+      expect(again.body.data).toEqual({ added: 1, alreadyOnRoster: ['6504101234'] });
+
+      const all = await list().expect(200);
+      expect(all.body.data.map((row: { personCode: string }) => row.personCode)).toEqual([
+        '6504101234',
+        '6504101235',
+        '6504101236',
+      ]);
+      expect(all.body.data[0]).not.toHaveProperty('fullNameTh');
+      expect((await list('?q=6504101235').expect(200)).body.meta.total).toBe(1);
+    });
+
+    it('rejects malformed ids, an empty list and more than 500 ids', async () => {
+      expect((await add(['65%04'])).status).toBe(400);
+      expect((await add([])).status).toBe(400);
+      expect((await add('6504101234')).status).toBe(400);
+      const many = Array.from({ length: 501 }, (_, index) => String(6504100000 + index));
+      expect((await add(many)).status).toBe(400);
+    });
+
+    it('takes a student off the roster, and 404s for one not on it', async () => {
+      await add(['6504101234']).expect(201);
+      const removed = await request(app.getHttpServer())
+        .delete(`${roster()}/6504101234`)
+        .set(bearer(staffToken))
+        .expect(200);
+      expect(removed.body.data).toEqual({ personCode: '6504101234', removed: true });
+
+      await request(app.getHttpServer()).delete(`${roster()}/6504101234`).set(bearer(staffToken)).expect(404);
+      await request(app.getHttpServer()).delete(`${roster()}/65%2504`).set(bearer(staffToken)).expect(400);
+    });
+
+    it('is managed by the owner and admins only', async () => {
+      expect((await list('', otherStaffToken)).status).toBe(403);
+      expect((await list('', studentToken)).status).toBe(403);
+      expect((await add(['6504101234'], otherStaffToken)).status).toBe(403);
+      expect((await add(['6504101234'], adminToken)).status).toBe(201);
+      await request(app.getHttpServer())
+        .get('/api/v1/class-sections/99999999-9999-4999-8999-999999999999/students')
+        .set(bearer(staffToken))
+        .expect(404);
+    });
+
+    it('marks check-ins from students who are not on the roster', async () => {
+      const opened = await request(app.getHttpServer())
+        .post('/api/v1/attendance-sessions')
+        .set(bearer(staffToken))
+        .send({ classSectionId: sectionId })
+        .expect(201);
+      const sessionId = opened.body.data.id;
+      await request(app.getHttpServer())
+        .post('/api/v1/attendance-records')
+        .set(bearer(studentToken))
+        .send({ code: opened.body.data.code.code, ...ROOM })
+        .expect(201);
+
+      const sessionRecords = () =>
+        request(app.getHttpServer())
+          .get(`/api/v1/attendance-sessions/${sessionId}/records`)
+          .set(bearer(staffToken))
+          .expect(200);
+      const sectionRecords = () =>
+        request(app.getHttpServer())
+          .get(`/api/v1/attendance-records?classSectionId=${sectionId}`)
+          .set(bearer(staffToken))
+          .expect(200);
+
+      // No roster yet: nothing to compare against.
+      expect((await sessionRecords()).body.data[0].inRoster).toBeNull();
+
+      await add(['6599999999']).expect(201);
+      expect((await sessionRecords()).body.data[0].inRoster).toBe(false);
+      expect((await sectionRecords()).body.data[0].inRoster).toBe(false);
+
+      await add(['6504101234']).expect(201);
+      expect((await sessionRecords()).body.data[0].inRoster).toBe(true);
+      expect((await sectionRecords()).body.data[0].inRoster).toBe(true);
+    });
+  });
+
+  // ------------------------------------------------------------ directory --
+  describe('Student directory from Core Hub', () => {
+    beforeAll(() => {
+      const student = (personCode: string, departmentCode: string, entryYear: number, status = 'ACTIVE') => ({
+        personCode,
+        personType: 'STUDENT',
+        fullNameTh: `นักศึกษา ${personCode}`,
+        universityEmail: `${personCode}@example.test`,
+        entryYear,
+        status,
+        faculty: { code: 'SCI', nameTh: 'คณะวิทยาศาสตร์' },
+        department: { code: departmentCode, nameTh: `สาขา ${departmentCode}` },
+      });
+      coreHub.setDirectory([
+        student('6604100001', 'CS', 2566),
+        student('6604100002', 'CS', 2566),
+        student('6704100003', 'CS', 2567),
+        student('6604200004', 'IT', 2566),
+        student('6504100005', 'CS', 2566, 'GRADUATED'),
+        { personCode: 'lecturer.a', personType: 'STAFF', fullNameTh: 'อาจารย์ เอ', status: 'ACTIVE' },
+      ]);
+      coreHub.setDepartments([
+        { code: 'IT', nameTh: 'เทคโนโลยีสารสนเทศ', nameEn: null, facultyCode: 'SCI', isActive: true, updatedAt: '2026-01-01' },
+        { code: 'CS', nameTh: 'วิทยาการคอมพิวเตอร์', nameEn: null, facultyCode: 'SCI', isActive: true, updatedAt: '2026-01-01' },
+        { code: 'OLD', nameTh: 'ปิดแล้ว', nameEn: null, facultyCode: 'SCI', isActive: false, updatedAt: '2026-01-01' },
+      ]);
+    });
+
+    it('lists active students of a department and entry year, without e-mail', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/api/v1/people?departmentCode=CS&entryYear=2566')
+        .set(bearer(staffToken))
+        .expect(200);
+
+      expect(response.body.data.map((row: { personCode: string }) => row.personCode)).toEqual([
+        '6604100001',
+        '6604100002',
+      ]);
+      expect(response.body.data[0]).toEqual({
+        personCode: '6604100001',
+        fullNameTh: 'นักศึกษา 6604100001',
+        entryYear: 2566,
+        departmentCode: 'CS',
+        departmentNameTh: 'สาขา CS',
+      });
+      expect(response.body.meta).toMatchObject({ total: 2, page: 1, limit: 100 });
+      expect(response.headers['cache-control'] ?? '').not.toContain('public');
+
+      const forwarded = new URLSearchParams(coreHub.peopleListQueries.at(-1));
+      expect(Object.fromEntries(forwarded)).toEqual({
+        personType: 'STUDENT',
+        status: 'ACTIVE',
+        page: '1',
+        limit: '100',
+        departmentCode: 'CS',
+        entryYear: '2566',
+      });
+    });
+
+    it('lists open departments sorted by code', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/api/v1/departments')
+        .set(bearer(staffToken))
+        .expect(200);
+      expect(response.body.data).toEqual([
+        { code: 'CS', nameTh: 'วิทยาการคอมพิวเตอร์', facultyCode: 'SCI' },
+        { code: 'IT', nameTh: 'เทคโนโลยีสารสนเทศ', facultyCode: 'SCI' },
+      ]);
+    });
+
+    it('is for staff only and validates the filters', async () => {
+      await request(app.getHttpServer()).get('/api/v1/people').set(bearer(studentToken)).expect(403);
+      await request(app.getHttpServer()).get('/api/v1/departments').set(bearer(studentToken)).expect(403);
+      await request(app.getHttpServer()).get('/api/v1/people?entryYear=66').set(bearer(staffToken)).expect(400);
+      await request(app.getHttpServer()).get('/api/v1/people?limit=500').set(bearer(staffToken)).expect(400);
+    });
+  });
+
   // ------------------------------------------------------------- rotation --
   describe('Core Hub key rotation (spec §40)', () => {
     it('accepts a token signed with a newly rotated key after refreshing JWKS', async () => {

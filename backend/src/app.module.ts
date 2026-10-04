@@ -11,6 +11,7 @@ import { validateEnv } from './config/env.validation';
 import { AttendanceRecordsModule } from './attendance-records/attendance-records.module';
 import { AttendanceSessionsModule } from './attendance-sessions/attendance-sessions.module';
 import { ClassSectionsModule } from './class-sections/class-sections.module';
+import { DirectoryModule } from './directory/directory.module';
 import { HealthModule } from './health/health.module';
 import { PrismaModule } from './prisma/prisma.module';
 
@@ -27,6 +28,7 @@ import { PrismaModule } from './prisma/prisma.module';
     ClassSectionsModule,
     AttendanceSessionsModule,
     AttendanceRecordsModule,
+    DirectoryModule,
   ],
   providers: [
     // Every route is authenticated unless explicitly marked @Public().

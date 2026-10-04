@@ -126,6 +126,41 @@ export interface paths {
         patch: operations["ClassSectionsController_update"];
         trace?: never;
     };
+    "/api/v1/class-sections/{id}/students": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Staff: the roster of a class section, by student id */
+        get: operations["ClassSectionStudentsController_list"];
+        put?: never;
+        /** Staff: add student ids to the roster (up to 500 per call) */
+        post: operations["ClassSectionStudentsController_add"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/class-sections/{id}/students/{personCode}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Staff: take one student off the roster */
+        delete: operations["ClassSectionStudentsController_remove"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/attendance-sessions": {
         parameters: {
             query?: never;
@@ -264,6 +299,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/people": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Staff: active students in Core Hub, by department, entry year or name */
+        get: operations["DirectoryController_students"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/departments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Staff: active departments (Core Hub reference data, cached) */
+        get: operations["DirectoryController_departments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -358,6 +427,29 @@ export interface components {
             deleted: true;
             id: string;
         };
+        RosterStudentDto: {
+            personCode: string;
+            /**
+             * Format: date-time
+             * @description When the student was added to the roster.
+             */
+            addedAt: string;
+        };
+        AddRosterStudentsResultDto: {
+            /** @description How many student ids were newly added. */
+            added: number;
+            /** @description Ids that were already on the roster and were skipped. */
+            alreadyOnRoster: string[];
+        };
+        AddRosterStudentsDto: {
+            /** @description Student ids to add. Ids already on the roster are skipped. */
+            personCodes: string[];
+        };
+        RemovedRosterStudentDto: {
+            /** @enum {boolean} */
+            removed: true;
+            personCode: string;
+        };
         /** @enum {string} */
         AttendanceSessionStatus: "OPEN" | "CLOSED";
         AttendanceSessionDto: {
@@ -395,7 +487,9 @@ export interface components {
             /** Format: uuid */
             classSectionId: string;
         };
-        AttendanceRecordDto: {
+        StaffAttendanceRecordDto: {
+            /** @description On the section's roster? `null` while the section has no roster yet. */
+            inRoster: boolean | null;
             id: string;
             attendanceSessionId: string;
             /** @description Core Hub user id (`sub`) of the student. */
@@ -419,6 +513,7 @@ export interface components {
             term: number;
         };
         AttendanceRecordViewDto: {
+            classSection: components["schemas"]["SectionSummaryDto"] | null;
             id: string;
             attendanceSessionId: string;
             /** @description Core Hub user id (`sub`) of the student. */
@@ -433,7 +528,6 @@ export interface components {
             createdAt: string;
             /** Format: date-time */
             updatedAt: string;
-            classSection: components["schemas"]["SectionSummaryDto"] | null;
         };
         CheckInDto: {
             code: string;
@@ -445,6 +539,18 @@ export interface components {
         AttendanceSummaryDto: {
             /** @description Sessions the student checked in to. */
             total: number;
+        };
+        StudentSummaryDto: {
+            personCode: string;
+            fullNameTh: string;
+            entryYear: number | null;
+            departmentCode: string | null;
+            departmentNameTh: string | null;
+        };
+        DepartmentDto: {
+            code: string;
+            nameTh: string;
+            facultyCode: string;
         };
     };
     responses: never;
@@ -934,6 +1040,203 @@ export interface operations {
             };
         };
     };
+    ClassSectionStudentsController_list: {
+        parameters: {
+            query?: {
+                /** @description Student id, or its leading digits. */
+                q?: string;
+                page?: number;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["RosterStudentDto"][];
+                        meta: components["schemas"]["PageMetaDto"];
+                    };
+                };
+            };
+            /** @description Bad request or VALIDATION_ERROR */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorDto"];
+                };
+            };
+            /** @description No valid Core Hub session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorDto"];
+                };
+            };
+            /** @description The role or ownership does not allow this */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorDto"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorDto"];
+                };
+            };
+        };
+    };
+    ClassSectionStudentsController_add: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddRosterStudentsDto"];
+            };
+        };
+        responses: {
+            /** @description Success */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["AddRosterStudentsResultDto"];
+                    };
+                };
+            };
+            /** @description Bad request or VALIDATION_ERROR */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorDto"];
+                };
+            };
+            /** @description No valid Core Hub session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorDto"];
+                };
+            };
+            /** @description The role or ownership does not allow this */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorDto"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorDto"];
+                };
+            };
+        };
+    };
+    ClassSectionStudentsController_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                personCode: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["RemovedRosterStudentDto"];
+                    };
+                };
+            };
+            /** @description Bad request or VALIDATION_ERROR */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorDto"];
+                };
+            };
+            /** @description No valid Core Hub session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorDto"];
+                };
+            };
+            /** @description The role or ownership does not allow this */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorDto"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorDto"];
+                };
+            };
+        };
+    };
     AttendanceSessionsController_findAll: {
         parameters: {
             query?: {
@@ -1291,7 +1594,7 @@ export interface operations {
                     "application/json": {
                         /** @enum {boolean} */
                         success: true;
-                        data: components["schemas"]["AttendanceRecordDto"][];
+                        data: components["schemas"]["StaffAttendanceRecordDto"][];
                         meta: components["schemas"]["PageMetaDto"];
                     };
                 };
@@ -1360,7 +1663,7 @@ export interface operations {
                     "application/json": {
                         /** @enum {boolean} */
                         success: true;
-                        data: components["schemas"]["AttendanceRecordDto"][];
+                        data: components["schemas"]["StaffAttendanceRecordDto"][];
                         meta: components["schemas"]["PageMetaDto"];
                     };
                 };
@@ -1564,6 +1867,128 @@ export interface operations {
             };
             /** @description The role or ownership does not allow this */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorDto"];
+                };
+            };
+        };
+    };
+    DirectoryController_students: {
+        parameters: {
+            query?: {
+                page?: number;
+                limit?: number;
+                /** @description Department code from GET /api/v1/departments. */
+                departmentCode?: string;
+                /** @description Buddhist-era year the student entered, e.g. 2566. */
+                entryYear?: number;
+                /** @description Student id or part of a name. */
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["StudentSummaryDto"][];
+                        meta: components["schemas"]["PageMetaDto"];
+                    };
+                };
+            };
+            /** @description Bad request or VALIDATION_ERROR */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorDto"];
+                };
+            };
+            /** @description No valid Core Hub session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorDto"];
+                };
+            };
+            /** @description The role or ownership does not allow this */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorDto"];
+                };
+            };
+            /** @description Core Hub is unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorDto"];
+                };
+            };
+        };
+    };
+    DirectoryController_departments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["DepartmentDto"][];
+                        meta: components["schemas"]["PageMetaDto"];
+                    };
+                };
+            };
+            /** @description No valid Core Hub session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorDto"];
+                };
+            };
+            /** @description The role or ownership does not allow this */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorDto"];
+                };
+            };
+            /** @description Core Hub is unavailable */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

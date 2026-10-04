@@ -47,6 +47,7 @@ model ClassSection {
   ownerCoreUserId String @map("owner_core_user_id")
 
   sessions AttendanceSession[]
+  students ClassSectionStudent[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -54,6 +55,29 @@ model ClassSection {
   @@unique([courseCode, sectionCode, academicYear, term])
   @@index([ownerCoreUserId])
   @@map("class_sections")
+}
+
+/// One student on a class section's roster. Core Hub has no enrollment data,
+/// so the lecturer builds the roster here (pasted student ids, or a whole
+/// department/entry year from Core Hub's /people). Only the student id is
+/// kept - names are never stored (reference-data.md 8).
+model ClassSectionStudent {
+  id String @id @default(uuid())
+
+  classSectionId    String @map("class_section_id")
+  /// Student id (Core Hub `personCode`).
+  personCode        String @map("person_code")
+  /// Core Hub user (`sub`) who added the student.
+  addedByCoreUserId String @map("added_by_core_user_id")
+
+  classSection ClassSection @relation(fields: [classSectionId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([classSectionId, personCode])
+  @@index([personCode])
+  @@map("class_section_students")
 }
 
 /// One attendance round opened by staff. The rotating 6-digit code is derived

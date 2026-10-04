@@ -1,6 +1,6 @@
 import { formatDate, formatTime } from "@/components/shared/kit/format";
 import { firstParam } from "./search-params";
-import type { AttendanceRecord } from "./types";
+import type { StaffAttendanceRecord } from "./types";
 
 type Param = string | string[] | undefined;
 
@@ -99,12 +99,15 @@ function cell(value: string): string {
 const BOM = String.fromCharCode(0xfeff);
 
 /** CSV for Excel: a UTF-8 BOM so Thai text opens correctly, and CRLF line ends. */
-export function recordsCsv(records: AttendanceRecord[]): string {
-  const header = ["วันที่", "เวลา", "รหัสนักศึกษา", "ระยะห่างจากจุดเช็คชื่อ (เมตร)"];
+const ROSTER_LABEL = (inRoster: boolean | null) => (inRoster === null ? "" : inRoster ? "อยู่" : "ไม่อยู่");
+
+export function recordsCsv(records: StaffAttendanceRecord[]): string {
+  const header = ["วันที่", "เวลา", "รหัสนักศึกษา", "ในรายชื่อกลุ่มเรียน", "ระยะห่างจากจุดเช็คชื่อ (เมตร)"];
   const rows = records.map((record) => [
     formatDate(record.checkedInAt),
     formatTime(record.checkedInAt),
     record.personCode ?? "",
+    ROSTER_LABEL(record.inRoster),
     String(record.distanceMeters),
   ]);
   return `${BOM}${[header, ...rows].map((row) => row.map(cell).join(",")).join("\r\n")}\r\n`;

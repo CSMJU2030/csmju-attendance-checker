@@ -9,6 +9,7 @@ import { isValidCode } from '../attendance-sessions/attendance-code';
 import { CoreHubIdentity } from '../auth/core-hub-identity';
 import { Permission } from '../auth/permissions';
 import { assertCanManageSection } from '../class-sections/class-sections.service';
+import { rosterMembership } from '../class-sections/roster';
 import { PeopleService } from '../core-hub/people.service';
 import { PaginationQueryDto } from '../common/dto/pagination.dto';
 import { AppException } from '../common/errors';
@@ -27,6 +28,8 @@ type SectionSummary = Pick<
 >;
 
 export type AttendanceRecordView = AttendanceRecord & { classSection: SectionSummary | null };
+
+export type StaffAttendanceRecord = AttendanceRecord & { inRoster: boolean | null };
 
 export interface AttendanceSummary {
   /** Sessions the student checked in to. */
@@ -178,7 +181,7 @@ export class AttendanceRecordsService {
   async findForSection(
     query: QueryAttendanceRecordsDto,
     user: CoreHubIdentity,
-  ): Promise<{ items: AttendanceRecord[]; total: number }> {
+  ): Promise<{ items: StaffAttendanceRecord[]; total: number }> {
     const from = query.from ? new Date(query.from) : undefined;
     const to = query.to ? new Date(query.to) : undefined;
     if (from && to && from >= to) {
@@ -210,7 +213,12 @@ export class AttendanceRecordsService {
       }),
       this.prisma.attendanceRecord.count({ where }),
     ]);
-    return { items, total };
+    const inRoster = await rosterMembership(
+      this.prisma,
+      section.id,
+      items.map((item) => item.personCode),
+    );
+    return { items: items.map((item) => ({ ...item, inRoster: inRoster(item.personCode) })), total };
   }
 
   /** How many sessions the student checked in to. */

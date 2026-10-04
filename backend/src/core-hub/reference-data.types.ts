@@ -10,6 +10,12 @@ export interface Faculty extends ReferenceItem {
   nameEn: string;
 }
 
+export interface Department extends ReferenceItem {
+  nameTh: string;
+  nameEn: string | null;
+  facultyCode: string;
+}
+
 export type RoomType = 'LECTURE' | 'LAB' | 'SEMINAR' | 'MEETING' | 'PROJECT' | 'OFFICE';
 
 export interface Room extends ReferenceItem {
