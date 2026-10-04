@@ -39,6 +39,12 @@ export type Department = Schemas["DepartmentDto"];
 /** An open Core Hub course, for the class section form. */
 export type CourseSummary = Schemas["CourseSummaryDto"];
 
+/** Attendance statistics; rates are 0-1, absent = closed session without a check-in. */
+export type StatsSummary = Schemas["StatsSummaryDto"];
+export type SectionStat = Schemas["SectionStatDto"];
+export type SectionStatDetail = Schemas["SectionStatDetailDto"];
+export type StudentStat = Schemas["StudentStatDto"];
+
 export type PageMeta = Schemas["PageMetaDto"];
 export type ErrorCode = Schemas["ErrorCode"];
 

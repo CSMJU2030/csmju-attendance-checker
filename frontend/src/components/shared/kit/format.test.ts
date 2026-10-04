@@ -5,6 +5,7 @@ import {
   formatDateTime,
   formatDayLabel,
   formatNumber,
+  formatPercent,
   formatTerm,
   formatTime,
   toBuddhistYear,
@@ -44,5 +45,13 @@ describe("display formats - ui-design-system.md 11.3", () => {
     expect(formatDayLabel("2026-09-30T01:00:00Z", now)).toBe("วันนี้");
     expect(formatDayLabel("2026-09-29T08:00:00Z", now)).toBe("เมื่อวาน");
     expect(formatDayLabel("2026-09-27T08:00:00Z", now)).toBe("27 กันยายน 2569");
+  });
+});
+
+describe("formatPercent", () => {
+  it("rounds a 0-1 rate to a whole percentage and shows - when there is none", () => {
+    expect(formatPercent(9 / 16)).toBe("56%");
+    expect(formatPercent(0)).toBe("0%");
+    expect(formatPercent(null)).toBe("-");
   });
 });

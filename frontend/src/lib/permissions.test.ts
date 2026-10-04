@@ -44,8 +44,8 @@ describe("navFor", () => {
 
   it("shows each role only the menus it can use", () => {
     expect(hrefs("STUDENT")).toEqual(["/", "/check-in", "/attendance-records"]);
-    expect(hrefs("STAFF")).toEqual(["/", "/class-sections"]);
-    expect(hrefs("ADMIN")).toEqual(["/", "/check-in", "/attendance-records", "/class-sections"]);
+    expect(hrefs("STAFF")).toEqual(["/", "/class-sections", "/stats"]);
+    expect(hrefs("ADMIN")).toEqual(["/", "/check-in", "/attendance-records", "/class-sections", "/stats"]);
     expect(hrefs("ALUMNI")).toEqual(["/"]);
   });
 });

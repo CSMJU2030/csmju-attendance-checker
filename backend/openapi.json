@@ -2521,6 +2521,269 @@
           "directory"
         ]
       }
+    },
+    "/api/v1/attendance-stats/summary": {
+      "get": {
+        "operationId": "AttendanceStatsController_summary",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "data"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/StatsSummaryDto"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid Core Hub session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The role or ownership does not allow this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Staff: totals across the sections the caller may see",
+        "tags": [
+          "attendance-stats"
+        ]
+      }
+    },
+    "/api/v1/attendance-stats/sections": {
+      "get": {
+        "operationId": "AttendanceStatsController_sections",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "data",
+                    "meta"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/SectionStatDto"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/PageMetaDto"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request or VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid Core Hub session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The role or ownership does not allow this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Staff: attendance rate and at-risk count per section",
+        "tags": [
+          "attendance-stats"
+        ]
+      }
+    },
+    "/api/v1/attendance-stats/sections/{id}": {
+      "get": {
+        "operationId": "AttendanceStatsController_section",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "data"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/SectionStatDetailDto"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request or VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid Core Hub session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The role or ownership does not allow this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Staff: one section with every student, at-risk students first",
+        "tags": [
+          "attendance-stats"
+        ]
+      }
     }
   },
   "info": {
@@ -3303,6 +3566,210 @@
           "code",
           "nameTh",
           "facultyCode"
+        ]
+      },
+      "StatsSummaryDto": {
+        "type": "object",
+        "properties": {
+          "sections": {
+            "type": "number"
+          },
+          "closedSessions": {
+            "type": "number"
+          },
+          "students": {
+            "type": "number"
+          },
+          "attendanceRate": {
+            "type": "number",
+            "nullable": true,
+            "description": "0-1, across every visible section; null before the first closed session."
+          },
+          "atRiskStudents": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "sections",
+          "closedSessions",
+          "students",
+          "attendanceRate",
+          "atRiskStudents"
+        ]
+      },
+      "StudentSource": {
+        "type": "string",
+        "enum": [
+          "ROSTER",
+          "CHECKED_IN"
+        ],
+        "description": "ROSTER: the section's roster. CHECKED_IN: no roster yet, so only students who checked in at least once."
+      },
+      "SectionStatDto": {
+        "type": "object",
+        "properties": {
+          "studentSource": {
+            "description": "ROSTER: the section's roster. CHECKED_IN: no roster yet, so only students who checked in at least once.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/StudentSource"
+              }
+            ]
+          },
+          "classSectionId": {
+            "type": "string"
+          },
+          "courseCode": {
+            "type": "string"
+          },
+          "courseName": {
+            "type": "string"
+          },
+          "sectionCode": {
+            "type": "string"
+          },
+          "academicYear": {
+            "type": "number"
+          },
+          "term": {
+            "type": "number"
+          },
+          "closedSessions": {
+            "type": "number",
+            "description": "Only closed sessions count: an open one may still be taking check-ins."
+          },
+          "studentCount": {
+            "type": "number"
+          },
+          "attendanceRate": {
+            "type": "number",
+            "nullable": true,
+            "description": "0-1 share of expected check-ins that happened; null before the first closed session."
+          },
+          "atRiskCount": {
+            "type": "number"
+          },
+          "offRosterCount": {
+            "type": "number",
+            "description": "Students who checked in but are not on the roster."
+          }
+        },
+        "required": [
+          "studentSource",
+          "classSectionId",
+          "courseCode",
+          "courseName",
+          "sectionCode",
+          "academicYear",
+          "term",
+          "closedSessions",
+          "studentCount",
+          "attendanceRate",
+          "atRiskCount",
+          "offRosterCount"
+        ]
+      },
+      "StudentStatDto": {
+        "type": "object",
+        "properties": {
+          "personCode": {
+            "type": "string"
+          },
+          "attended": {
+            "type": "number",
+            "description": "Closed sessions the student checked in to."
+          },
+          "absent": {
+            "type": "number",
+            "description": "Closed sessions without a check-in from the student."
+          },
+          "absenceRate": {
+            "type": "number",
+            "description": "0-1 share of the closed sessions the student missed."
+          },
+          "atRisk": {
+            "type": "boolean",
+            "description": "Missed at least 30% of the closed sessions."
+          }
+        },
+        "required": [
+          "personCode",
+          "attended",
+          "absent",
+          "absenceRate",
+          "atRisk"
+        ]
+      },
+      "SectionStatDetailDto": {
+        "type": "object",
+        "properties": {
+          "studentSource": {
+            "description": "ROSTER: the section's roster. CHECKED_IN: no roster yet, so only students who checked in at least once.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/StudentSource"
+              }
+            ]
+          },
+          "classSectionId": {
+            "type": "string"
+          },
+          "courseCode": {
+            "type": "string"
+          },
+          "courseName": {
+            "type": "string"
+          },
+          "sectionCode": {
+            "type": "string"
+          },
+          "academicYear": {
+            "type": "number"
+          },
+          "term": {
+            "type": "number"
+          },
+          "closedSessions": {
+            "type": "number",
+            "description": "Only closed sessions count: an open one may still be taking check-ins."
+          },
+          "studentCount": {
+            "type": "number"
+          },
+          "attendanceRate": {
+            "type": "number",
+            "nullable": true,
+            "description": "0-1 share of expected check-ins that happened; null before the first closed session."
+          },
+          "atRiskCount": {
+            "type": "number"
+          },
+          "offRosterCount": {
+            "type": "number",
+            "description": "Students who checked in but are not on the roster."
+          },
+          "students": {
+            "description": "At-risk students first, then by absence rate.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StudentStatDto"
+            }
+          }
+        },
+        "required": [
+          "studentSource",
+          "classSectionId",
+          "courseCode",
+          "courseName",
+          "sectionCode",
+          "academicYear",
+          "term",
+          "closedSessions",
+          "studentCount",
+          "attendanceRate",
+          "atRiskCount",
+          "offRosterCount",
+          "students"
         ]
       }
     }
