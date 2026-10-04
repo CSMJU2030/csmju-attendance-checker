@@ -154,6 +154,19 @@ class Table {
     return row;
   }
 
+  async createMany({ data, skipDuplicates }: { data: Row[]; skipDuplicates?: boolean }): Promise<{ count: number }> {
+    let count = 0;
+    for (const row of data) {
+      try {
+        await this.create({ data: row });
+        count += 1;
+      } catch (error) {
+        if (!skipDuplicates) throw error;
+      }
+    }
+    return { count };
+  }
+
   async update({ where, data }: { where: Row; data: Row; include?: Row }): Promise<Row> {
     const row = this.findByWhere(where);
     if (!row) {
@@ -193,6 +206,7 @@ export class InMemoryPrisma {
   attendanceRecord = new Table([], [['attendanceSessionId', 'coreUserId']], () => ({
     checkedInAt: new Date(),
   }));
+  classSectionStudent = new Table([], [['classSectionId', 'personCode']]);
 
   async $connect(): Promise<void> {}
   async $disconnect(): Promise<void> {}
@@ -203,5 +217,6 @@ export class InMemoryPrisma {
     this.classSection.rows = [];
     this.attendanceSession.rows = [];
     this.attendanceRecord.rows = [];
+    this.classSectionStudent.rows = [];
   }
 }

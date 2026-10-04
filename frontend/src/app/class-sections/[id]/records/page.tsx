@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import {
   Alert,
+  Badge,
   Button,
   ButtonLink,
   Card,
@@ -27,7 +28,7 @@ import {
   recordsPageQuery,
 } from "@/lib/record-filters";
 import { pageParam } from "@/lib/search-params";
-import type { AttendanceRecord, ClassSection } from "@/lib/types";
+import type { ClassSection, StaffAttendanceRecord } from "@/lib/types";
 
 export const metadata: Metadata = { title: "ประวัติการเช็คชื่อของกลุ่มเรียน" };
 
@@ -63,7 +64,7 @@ export default async function SectionRecordsPage({
   const page = pageParam(query.page);
   const result = invalidRange
     ? null
-    : await apiGet<AttendanceRecord[]>(`/api/v1/attendance-records?${recordsApiQuery(section.id, filters, page, PAGE_SIZE)}`);
+    : await apiGet<StaffAttendanceRecord[]>(`/api/v1/attendance-records?${recordsApiQuery(section.id, filters, page, PAGE_SIZE)}`);
   const hrefFor = (target: number) => {
     const next = recordsPageQuery(filters, target);
     return next ? `${selfHref}?${next}` : selfHref;
@@ -178,22 +179,27 @@ export default async function SectionRecordsPage({
   );
 }
 
-function PersonCode({ value }: { value: string | null }) {
-  return value ? (
-    <span className="font-mono text-on-surface tabular-nums">{value}</span>
-  ) : (
-    <span className="text-on-surface-variant">ไม่มีรหัสนักศึกษา</span>
+function PersonCode({ value, inRoster }: { value: string | null; inRoster: boolean | null }) {
+  return (
+    <span className="inline-flex flex-wrap items-center gap-2">
+      {value ? (
+        <span className="font-mono text-on-surface tabular-nums">{value}</span>
+      ) : (
+        <span className="text-on-surface-variant">ไม่มีรหัสนักศึกษา</span>
+      )}
+      {inRoster === false ? <Badge tone="warning">ไม่อยู่ในรายชื่อ</Badge> : null}
+    </span>
   );
 }
 
-function RecordTable({ records }: { records: AttendanceRecord[] }) {
+function RecordTable({ records }: { records: StaffAttendanceRecord[] }) {
   return (
     <>
       <ul className="flex flex-col divide-y divide-outline-variant/40 md:hidden">
         {records.map((record) => (
           <li key={record.id} className="flex items-center gap-3 p-4">
             <span className="flex min-w-0 flex-1 flex-col gap-1">
-              <PersonCode value={record.personCode} />
+              <PersonCode value={record.personCode} inRoster={record.inRoster} />
               <span className="text-sm/relaxed text-on-surface-variant tabular-nums">
                 {formatDate(record.checkedInAt)} {formatTime(record.checkedInAt)} · ห่าง {formatNumber(record.distanceMeters)} ม.
               </span>
@@ -219,7 +225,7 @@ function RecordTable({ records }: { records: AttendanceRecord[] }) {
                 <td className="px-6 tabular-nums">{formatDate(record.checkedInAt)}</td>
                 <td className="px-6 tabular-nums">{formatTime(record.checkedInAt)}</td>
                 <td className="px-6">
-                  <PersonCode value={record.personCode} />
+                  <PersonCode value={record.personCode} inRoster={record.inRoster} />
                 </td>
                 <td className="px-6 text-right tabular-nums">{formatNumber(record.distanceMeters)} ม.</td>
               </tr>

@@ -5,7 +5,7 @@ import { Alert, Button, DownloadIcon } from "@/components/shared/kit";
 import { apiRequest } from "@/lib/api-client";
 import { errorMessage } from "@/lib/errors";
 import { type RecordFilters, recordsApiQuery, recordsCsv } from "@/lib/record-filters";
-import type { AttendanceRecord } from "@/lib/types";
+import type { StaffAttendanceRecord } from "@/lib/types";
 
 const PAGE_SIZE = 100;
 /** 50 pages of 100 - far beyond one section's term, and a bound on the loop. */
@@ -35,9 +35,9 @@ export function RecordsCsvButton({
     setBusy(true);
     setError(null);
     try {
-      const records: AttendanceRecord[] = [];
+      const records: StaffAttendanceRecord[] = [];
       for (let page = 1; page <= MAX_PAGES; page += 1) {
-        const result = await apiRequest<AttendanceRecord[]>(
+        const result = await apiRequest<StaffAttendanceRecord[]>(
           "GET",
           `/api/v1/attendance-records?${recordsApiQuery(sectionId, filters, page, PAGE_SIZE)}`,
         );

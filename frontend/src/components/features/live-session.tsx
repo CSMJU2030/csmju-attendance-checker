@@ -18,7 +18,7 @@ import {
 import { Modal } from "@/csmju";
 import { apiRequest } from "@/lib/api-client";
 import { errorMessage } from "@/lib/errors";
-import type { AttendanceRecord, AttendanceSession, CurrentCode } from "@/lib/types";
+import type { AttendanceSession, CurrentCode, StaffAttendanceRecord } from "@/lib/types";
 import { SessionStatusBadge } from "./session-status";
 
 const RECORDS_POLL_MS = 5_000;
@@ -56,7 +56,7 @@ export function LiveSession({ initialSession, sectionLabel }: { initialSession: 
   const [code, setCode] = useState<CurrentCode | null>(null);
   const [codeError, setCodeError] = useState<string | null>(null);
   const [secondsLeft, setSecondsLeft] = useState(0);
-  const [records, setRecords] = useState<AttendanceRecord[]>([]);
+  const [records, setRecords] = useState<StaffAttendanceRecord[]>([]);
   const [total, setTotal] = useState(0);
   const [recordsError, setRecordsError] = useState<string | null>(null);
   const [loadedRecords, setLoadedRecords] = useState(false);
@@ -85,7 +85,7 @@ export function LiveSession({ initialSession, sectionLabel }: { initialSession: 
   }, [session.id, router]);
 
   const loadRecords = useCallback(async () => {
-    const result = await apiRequest<AttendanceRecord[]>(
+    const result = await apiRequest<StaffAttendanceRecord[]>(
       "GET",
       `/api/v1/attendance-sessions/${session.id}/records?limit=100`,
     );
@@ -290,6 +290,7 @@ export function LiveSession({ initialSession, sectionLabel }: { initialSession: 
                       {formatTime(record.checkedInAt)} · ห่าง {record.distanceMeters} เมตร
                     </span>
                   </span>
+                  {record.inRoster === false ? <Badge tone="warning">ไม่อยู่ในรายชื่อ</Badge> : null}
                   {isNew ? <Badge tone="success">ใหม่</Badge> : null}
                 </li>
               );

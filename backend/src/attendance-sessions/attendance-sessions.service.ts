@@ -8,6 +8,7 @@ import {
 import { CoreHubIdentity } from '../auth/core-hub-identity';
 import { Permission, can } from '../auth/permissions';
 import { ClassSectionsService, assertCanManageSection } from '../class-sections/class-sections.service';
+import { rosterMembership } from '../class-sections/roster';
 import { PaginationQueryDto } from '../common/dto/pagination.dto';
 import { AppException } from '../common/errors';
 import { PrismaService } from '../prisma/prisma.service';
@@ -128,8 +129,8 @@ export class AttendanceSessionsService {
     id: string,
     query: PaginationQueryDto,
     user: CoreHubIdentity,
-  ): Promise<{ items: AttendanceRecord[]; total: number }> {
-    await this.findManaged(id, user);
+  ): Promise<{ items: Array<AttendanceRecord & { inRoster: boolean | null }>; total: number }> {
+    const session = await this.findManaged(id, user);
 
     const where: Prisma.AttendanceRecordWhereInput = { attendanceSessionId: id };
     const [items, total] = await Promise.all([
@@ -142,7 +143,12 @@ export class AttendanceSessionsService {
       this.prisma.attendanceRecord.count({ where }),
     ]);
 
-    return { items, total };
+    const inRoster = await rosterMembership(
+      this.prisma,
+      session.classSectionId,
+      items.map((item) => item.personCode),
+    );
+    return { items: items.map((item) => ({ ...item, inRoster: inRoster(item.personCode) })), total };
   }
 
   /** Check-ins per session, in one grouped query. */

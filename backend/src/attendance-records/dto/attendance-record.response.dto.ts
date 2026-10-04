@@ -17,6 +17,12 @@ export class AttendanceRecordDto {
   updatedAt!: Date;
 }
 
+/** A check-in as staff see it: also says whether the student is on the roster. */
+export class StaffAttendanceRecordDto extends AttendanceRecordDto {
+  /** On the section's roster? `null` while the section has no roster yet. */
+  inRoster!: boolean | null;
+}
+
 export class SectionSummaryDto {
   courseCode!: string;
   courseName!: string;

@@ -8,11 +8,11 @@ import {
   recordsCsv,
   recordsPageQuery,
 } from "./record-filters";
-import type { AttendanceRecord } from "./types";
+import type { StaffAttendanceRecord } from "./types";
 
 const SECTION = "11111111-1111-4111-8111-111111111111";
 
-function record(overrides: Partial<AttendanceRecord>): AttendanceRecord {
+function record(overrides: Partial<StaffAttendanceRecord>): StaffAttendanceRecord {
   return {
     id: "r1",
     attendanceSessionId: "s1",
@@ -21,6 +21,7 @@ function record(overrides: Partial<AttendanceRecord>): AttendanceRecord {
     // 09:05 in Bangkok
     checkedInAt: "2026-09-29T02:05:00.000Z",
     distanceMeters: 12,
+    inRoster: null,
     createdAt: "2026-09-29T02:05:00.000Z",
     updatedAt: "2026-09-29T02:05:00.000Z",
     ...overrides,
@@ -80,12 +81,12 @@ describe("date range", () => {
 
 describe("recordsCsv", () => {
   it("starts with a BOM, uses CRLF and shows Bangkok time in the Buddhist era", () => {
-    const csv = recordsCsv([record({}), record({ id: "r2", personCode: null })]);
+    const csv = recordsCsv([record({ inRoster: true }), record({ id: "r2", personCode: null, inRoster: false })]);
     expect(csv.charCodeAt(0)).toBe(0xfeff);
     const lines = csv.slice(1).split("\r\n");
-    expect(lines[0]).toBe("วันที่,เวลา,รหัสนักศึกษา,ระยะห่างจากจุดเช็คชื่อ (เมตร)");
-    expect(lines[1]).toBe("29 ก.ย. 2569,09:05 น.,6504101234,12");
-    expect(lines[2]).toBe("29 ก.ย. 2569,09:05 น.,,12");
+    expect(lines[0]).toBe("วันที่,เวลา,รหัสนักศึกษา,ในรายชื่อกลุ่มเรียน,ระยะห่างจากจุดเช็คชื่อ (เมตร)");
+    expect(lines[1]).toBe("29 ก.ย. 2569,09:05 น.,6504101234,อยู่,12");
+    expect(lines[2]).toBe("29 ก.ย. 2569,09:05 น.,,ไม่อยู่,12");
     expect(lines[3]).toBe("");
   });
 

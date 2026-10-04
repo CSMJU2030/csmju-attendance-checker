@@ -101,3 +101,55 @@ describe('PeopleService.myPersonCode', () => {
     });
   });
 });
+
+describe('PeopleService.searchStudents', () => {
+  const filter = { departmentCode: 'CS', entryYear: 2566, page: 2, limit: 100 };
+
+  it('asks GET /people for active students only and passes on just the roster fields', async () => {
+    fetchMock.mockResolvedValueOnce(
+      respond({
+        success: true,
+        data: [{ ...person, entryYear: 2566, department: { code: 'CS', nameTh: 'วิทยาการคอมพิวเตอร์' } }],
+        meta: { total: 101, page: 2, limit: 100, totalPages: 2 },
+      }),
+    );
+
+    await expect(new PeopleService(config).searchStudents(TOKEN, filter)).resolves.toEqual({
+      items: [
+        {
+          personCode: '6500000002',
+          fullNameTh: 'ชื่อ ทดสอบ',
+          entryYear: 2566,
+          departmentCode: 'CS',
+          departmentNameTh: 'วิทยาการคอมพิวเตอร์',
+        },
+      ],
+      total: 101,
+    });
+
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(String(url)).toBe(
+      'http://core.test/api/v1/people?personType=STUDENT&status=ACTIVE&page=2&limit=100&departmentCode=CS&entryYear=2566',
+    );
+    expect((init?.headers as Record<string, string>).authorization).toBe(`Bearer ${TOKEN}`);
+  });
+
+  it('answers a Core Hub failure or a malformed answer with 503', async () => {
+    fetchMock.mockResolvedValueOnce(respond({ success: false }, 500));
+    await expect(new PeopleService(config).searchStudents(TOKEN, filter)).rejects.toMatchObject({
+      code: ErrorCode.SERVICE_UNAVAILABLE,
+    });
+
+    fetchMock.mockResolvedValueOnce(respond({ success: true, data: { not: 'a list' } }));
+    await expect(new PeopleService(config).searchStudents(TOKEN, filter)).rejects.toMatchObject({
+      code: ErrorCode.SERVICE_UNAVAILABLE,
+    });
+  });
+
+  it('answers a Core Hub 403 (no people:read) with 403', async () => {
+    fetchMock.mockResolvedValueOnce(respond({ success: false }, 403));
+    await expect(new PeopleService(config).searchStudents(TOKEN, filter)).rejects.toMatchObject({
+      status: 403,
+    });
+  });
+});

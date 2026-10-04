@@ -10,7 +10,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiCookieAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { AttendanceRecordDto } from '../attendance-records/dto/attendance-record.response.dto';
+import { StaffAttendanceRecordDto } from '../attendance-records/dto/attendance-record.response.dto';
 import { CoreHubIdentity } from '../auth/core-hub-identity';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { RequirePermissions } from '../auth/decorators/require-permissions.decorator';
@@ -93,7 +93,7 @@ export class AttendanceSessionsController {
   @Get(':id/records')
   @RequirePermissions(...MANAGE)
   @ApiOperation({ summary: 'Staff: the check-ins of one session, in order' })
-  @ApiEnvelope(AttendanceRecordDto, { collection: true })
+  @ApiEnvelope(StaffAttendanceRecordDto, { collection: true })
   @ApiErrors(HttpStatus.BAD_REQUEST, HttpStatus.NOT_FOUND)
   async findRecords(
     @Param('id', ParseUUIDPipe) id: string,

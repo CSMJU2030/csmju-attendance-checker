@@ -14,6 +14,7 @@ export type Permission =
   | "class-section:delete:own"
   | "attendance-session:manage:any"
   | "attendance-session:manage:own"
+  | "people:search"
   | "attendance:check-in"
   | "attendance-record:read:own";
 
@@ -23,6 +24,7 @@ const STAFF: Permission[] = [
   "class-section:update:own",
   "class-section:delete:own",
   "attendance-session:manage:own",
+  "people:search",
 ];
 
 const ROLE_PERMISSIONS: Record<SubsystemRole, Permission[]> = {

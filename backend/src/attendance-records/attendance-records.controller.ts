@@ -10,9 +10,9 @@ import { PaginationQueryDto, buildPaginationMeta } from '../common/dto/paginatio
 import { ApiEnvelope, ApiErrors } from '../openapi/api-envelope';
 import { AttendanceRecordsService } from './attendance-records.service';
 import {
-  AttendanceRecordDto,
   AttendanceRecordViewDto,
   AttendanceSummaryDto,
+  StaffAttendanceRecordDto,
 } from './dto/attendance-record.response.dto';
 import { CheckInDto } from './dto/check-in.dto';
 import { QueryAttendanceRecordsDto } from './dto/query-attendance-records.dto';
@@ -45,7 +45,7 @@ export class AttendanceRecordsController {
     Permission.ATTENDANCE_SESSION_MANAGE_OWN,
   )
   @ApiOperation({ summary: 'Staff: search the check-ins of a class section, newest first' })
-  @ApiEnvelope(AttendanceRecordDto, { collection: true })
+  @ApiEnvelope(StaffAttendanceRecordDto, { collection: true })
   @ApiErrors(HttpStatus.BAD_REQUEST, HttpStatus.NOT_FOUND)
   async findForSection(
     @Query() query: QueryAttendanceRecordsDto,
