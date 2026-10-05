@@ -6,6 +6,7 @@ import { useState } from "react";
 import CsmjuLogo from "./CsmjuLogo";
 import {
   AddIcon,
+  ArrowBackIcon,
   CampaignIcon,
   CloseIcon,
   DashboardIcon,
@@ -51,6 +52,14 @@ export type NavItem = {
   icon: NavIconName;
 };
 
+/**
+ * Every subsystem's sign-out (auth-contract.md 5): a POST to its own
+ * /auth/logout, which next.config.ts passes on to the backend. The backend
+ * clears the session cookie and answers 303 to Core Hub's /logout. A link
+ * (GET) would not reach that route.
+ */
+const LOGOUT_ACTION = "/auth/logout";
+
 const FOOTER_LINKS = [
   "ติดต่อเรา",
   "นโยบายความเป็นส่วนตัว",
@@ -63,17 +72,20 @@ export default function CsmjuAppShell({
   nav,
   primaryAction,
   user,
-  logoutHref,
+  coreHubUrl,
   children,
 }: {
   /** Subsystem name shown in the mobile top bar, e.g. "ระบบครุภัณฑ์". */
   displayName: string;
   nav: NavItem[];
+  /**
+   * Core Hub web origin (env CORE_HUB_WEB_URL), for the "back to the portal"
+   * link every subsystem shows (ui-design-system.md 1, 5.1). No link when unset.
+   */
+  coreHubUrl?: string;
   /** Optional gradient button under the logo, e.g. { label: "สร้างประกาศใหม่", href: "/news/new" }. */
   primaryAction?: { label: string; href: string };
   user: { initials: string; roleLabel: string };
-  /** Core logout URL (auth-contract.md). Subsystems must not implement logout themselves. */
-  logoutHref: string;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -98,7 +110,7 @@ export default function CsmjuAppShell({
           navOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="mb-8 px-4 pt-4">
+        <div className="mb-8 shrink-0 px-4 pt-4">
           <div className="mb-6 flex items-center justify-between gap-2">
             <CsmjuLogo framed priority className="w-full" />
             <button
@@ -110,6 +122,20 @@ export default function CsmjuAppShell({
               <CloseIcon className="h-5 w-5" />
             </button>
           </div>
+
+          {coreHubUrl && (
+            // Out of this subsystem to the Core Hub portal the user signed in
+            // from — a real navigation to another origin, so <a>, not Link.
+            <a
+              href={coreHubUrl}
+              className={`flex items-center gap-2 rounded-lg px-3 py-2 text-label-md text-white/80 transition-colors hover:bg-white/10 hover:text-white ${
+                primaryAction ? "mb-4" : ""
+              }`}
+            >
+              <ArrowBackIcon className="h-4 w-4 shrink-0" />
+              กลับ CSMJU Portal
+            </a>
+          )}
 
           {primaryAction && (
             <Link
@@ -123,7 +149,8 @@ export default function CsmjuAppShell({
           )}
         </div>
 
-        <nav className="mt-2 flex-1 overflow-y-auto">
+        {/* The menu scrolls on its own so sign-out below stays on screen. */}
+        <nav className="mt-2 min-h-0 flex-1 overflow-y-auto overscroll-contain">
           <ul className="space-y-1">
             {nav.map(({ href, label, labelEn, icon }) => {
               const Icon = NAV_ICONS[icon];
@@ -153,13 +180,15 @@ export default function CsmjuAppShell({
           </ul>
         </nav>
 
-        <a
-          href={logoutHref}
-          className="mx-4 mt-4 flex items-center justify-center gap-2 rounded-lg border border-white/25 bg-white/10 py-2.5 text-label-md text-white backdrop-blur-sm transition-colors hover:bg-white/20"
-        >
-          <LogoutIcon className="h-4 w-4" />
-          ออกจากระบบ
-        </a>
+        <form action={LOGOUT_ACTION} method="post" className="mx-4 mt-4 shrink-0">
+          <button
+            type="submit"
+            className="flex w-full items-center justify-center gap-2 rounded-lg border border-white/25 bg-white/10 py-2.5 text-label-md text-white backdrop-blur-sm transition-colors hover:bg-white/20"
+          >
+            <LogoutIcon className="h-4 w-4" />
+            ออกจากระบบ
+          </button>
+        </form>
       </aside>
 
       {/* MAIN */}

@@ -1,4 +1,4 @@
-/** Colour family a status badge renders with (design-system.md §3.1). */
+/** Colour family a status badge renders with (ui-design-system.md §3.1). */
 export type StatusTone = "success" | "info" | "warning" | "error" | "neutral";
 
 export const TONE_STYLES: Record<StatusTone, { badge: string; dot: string; label: string }> = {
