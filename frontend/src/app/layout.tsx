@@ -5,7 +5,7 @@ import { CsmjuAppShell } from "@/csmju";
 import { AccessGate } from "@/components/shared/access-gate";
 import { CORE_ROLE_LABEL } from "@/components/shared/kit";
 import { getMe } from "@/lib/api-server";
-import { DISPLAY_NAME, SHELL_NAME } from "@/lib/config";
+import { CORE_HUB_WEB_URL, DISPLAY_NAME, SHELL_NAME } from "@/lib/config";
 import { navFor } from "@/lib/permissions";
 import "./globals.css";
 
@@ -63,9 +63,9 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
               initials: initialsOf(me.data.email),
               roleLabel: CORE_ROLE_LABEL[me.data.coreRole] ?? me.data.coreRole,
             }}
-            // The shell renders a plain link; sign-out itself is POST /auth/logout,
-            // so the link opens a confirmation page that posts the form.
-            logoutHref="/signout"
+            // "กลับ CSMJU Portal" (ui-design-system.md 5.1). Sign-out is the shell's
+            // own POST /auth/logout form (auth-contract.md 5).
+            coreHubUrl={CORE_HUB_WEB_URL}
           >
             {children}
           </CsmjuAppShell>

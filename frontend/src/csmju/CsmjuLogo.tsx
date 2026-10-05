@@ -2,7 +2,7 @@ import Image from "next/image";
 
 const LOGO_ALT = "โลโก้ สาขาวิทยาการคอมพิวเตอร์ มหาวิทยาลัยแม่โจ้";
 
-/** Full logo is unreadable below this width (design-system.md §14.1). */
+/** Full logo is unreadable below this width (ui-design-system.md §14.1). */
 const MIN_WIDTH = 120;
 
 export default function CsmjuLogo({
