@@ -9,11 +9,6 @@ import type { NextConfig } from "next";
  */
 const backendUrl = (process.env.BACKEND_URL ?? "http://localhost:4202").replace(/\/+$/, "");
 
-// The Docker image builds a self-contained server (frontend/Dockerfile sets
-// NEXT_OUTPUT=standalone). Tracing starts at the repo root because pnpm keeps
-// the dependency store there. `next build` always runs inside frontend/.
-const standalone = process.env.NEXT_OUTPUT === "standalone";
-
 // Sent with every page. HSTS is added to the built server (next build runs
 // with NODE_ENV=production); browsers only honour it over https, which the
 // reverse proxy in front of this server provides, and ignore it on localhost.
@@ -30,7 +25,11 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
-  ...(standalone ? { output: "standalone", outputFileTracingRoot: path.resolve(process.cwd(), "..") } : {}),
+  // deployment.md 3: the image ships only the traced standalone server (DEP-04)
+  output: "standalone",
+  // pnpm keeps dependencies at the workspace root (the repo root), so tracing
+  // has to start there or the standalone bundle misses them
+  outputFileTracingRoot: path.join(__dirname, ".."),
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

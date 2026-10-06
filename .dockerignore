@@ -1,18 +1,14 @@
-# build context ของทั้ง backend และ frontend คือรากของ repo
+# Build context is the repo root (standards docs/deployment.md 3 · DEP-03)
 **/node_modules
 **/.next
 **/dist
 **/generated
 **/coverage
-**/*.tsbuildinfo
+**/.env*
 **/*.log
-
-# ความลับและไฟล์เฉพาะเครื่อง ห้ามเข้า image
-**/.env
-**/.env.local
-**/.env.*.local
-**/*.pem
-**/*.key
-
 .git
 standards
+docs
+**/*.tsbuildinfo
+**/*.pem
+**/*.key

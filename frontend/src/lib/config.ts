@@ -2,11 +2,17 @@
  * Environment-specific values (see frontend/.env.example).
  */
 
-/** Must match `name` in subsystem.yaml and the Core Hub Subsystem Registry. */
-export const SUBSYSTEM_NAME = process.env.NEXT_PUBLIC_SUBSYSTEM_NAME ?? "csmju-attendance-checker";
+/**
+ * Must match `name` in subsystem.yaml and the Core Hub Subsystem Registry.
+ * SUBSYSTEM_ID is what the server gives the web container (deployment.md 4.2).
+ */
+export const SUBSYSTEM_NAME = process.env.SUBSYSTEM_ID ?? "csmju-attendance-checker";
 
-/** Core Hub's web app: the "back to dashboard" link. Public - a plain URL. */
-export const CORE_HUB_WEB_URL = (process.env.NEXT_PUBLIC_CORE_HUB_WEB_URL ?? "https://csmju2030.jowave.com").replace(/\/+$/, "");
+/**
+ * Core Hub's web app: the "กลับ CSMJU Portal" link. Read on the server (the
+ * web container gets CORE_HUB_WEB_URL, deployment.md 4.2); a plain URL.
+ */
+export const CORE_HUB_WEB_URL = (process.env.CORE_HUB_WEB_URL ?? "https://csmju2030.jowave.com").replace(/\/+$/, "");
 
 export const DISPLAY_NAME = "ระบบเช็คชื่อเข้าเรียน";
 
