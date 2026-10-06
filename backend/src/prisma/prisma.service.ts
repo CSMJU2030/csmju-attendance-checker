@@ -13,8 +13,12 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   private readonly logger = new Logger(PrismaService.name);
 
   constructor() {
+    // On the server every subsystem shares one PostgreSQL (max_connections 100),
+    // so each pool stays small: DATABASE_POOL_MAX, default 5 (deployment.md 4).
+    // pg's own default of 10 per subsystem would need 370 connections.
     const adapter = new PrismaPg({
       connectionString: process.env.DATABASE_URL,
+      max: Number(process.env.DATABASE_POOL_MAX) || 5,
     });
 
     super({ adapter });

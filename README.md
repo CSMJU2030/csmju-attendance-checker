@@ -44,11 +44,12 @@ pnpm start:dev:frontend         # frontend → http://localhost:3202
 ## รันด้วย Docker
 
 ```bash
-docker compose up --build        # db :5434 · backend :4202 · frontend :3202
+docker compose up -d --build     # db :5434 · api · web http://localhost:3202
+docker compose ps                # db api web ต้อง healthy
 ```
 
-ต้องมี Core Hub รันบนเครื่อง host (:3000 / :3100) · `BACKEND_URL` และ `NEXT_PUBLIC_*` ของ frontend
-ถูกฝังตอน build image เปลี่ยนค่าแล้วต้อง `docker compose build` ใหม่
+ทำงานแบบเดียวกับบนเซิร์ฟเวอร์ (standards `docs/deployment.md`): api และ web ใช้พอร์ต 4000 / 3000 ใน container
+ต่อ Core Hub จริงเป็นค่าเริ่มต้น · `BACKEND_URL` (`http://api:4000`) ถูกฝังตอน build image
 
 ## ทดสอบ
 

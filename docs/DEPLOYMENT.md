@@ -1,55 +1,63 @@
 # ขึ้นเซิร์ฟเวอร์จริง — csmju-attendance-checker
 
-คู่มือสำหรับคนที่นำระบบเช็คชื่อขึ้นเซิร์ฟเวอร์ (DevOps / PL) · ทดสอบโหมดใช้งานจริงด้วย Docker ในเครื่องแล้ว
+ระบบนี้ขึ้น server กลางของรายวิชาตาม **standards `docs/deployment.md`** (มาตรฐาน 1.8.1) — เอกสารนั้นคือฉบับหลัก
+ไฟล์นี้สรุปเฉพาะส่วนของระบบเช็คชื่อ
 
 ## 1. ภาพรวม
 
 ```
-เบราว์เซอร์ ──https──▶ reverse proxy (TLS) ──▶ หน้าเว็บ :3202 ──▶ ระบบหลังบ้าน :4202 ──▶ PostgreSQL :5432
-                                                    │
-                                                    └── /api/* /auth/* ส่งต่อไปหลังบ้าน (เบราว์เซอร์ไม่ต่อหลังบ้านตรง)
+ผู้ใช้ ─https─► Cloudflare ─► Apache ─► web (Next.js :3000) ─► api (NestJS :4000) ─► PostgreSQL กลาง
+                                         เปิดผ่าน Apache        ไม่เปิดออกนอก          ฐานของระบบเอง
 ```
 
-- เปิดสู่ภายนอก **แค่หน้าเว็บ** ผ่าน https · ระบบหลังบ้านและฐานข้อมูลอยู่ในเครื่อง (`docker-compose.yml` ผูกไว้ที่ `127.0.0.1` แล้ว)
+- **2 image:** `ghcr.io/csmju2030/csmju-attendance-checker-web` และ `-api` — GitHub Actions build ให้เองทุกครั้งที่ merge เข้า `main`
+  (แท็บ **Actions → Images**) · server แค่ดึง image ไปรัน ไม่ build บน server
+- **DevOps ทำบน server:** สร้างฐานข้อมูล + role · compose · Apache · ทีมไม่ต้องเข้าเครื่อง
 - **ต้องเป็น https** — มือถือให้ใช้ตำแหน่ง (GPS) เฉพาะหน้าที่เป็น https และคุกกี้เข้าสู่ระบบในโหมดใช้งานจริงเป็นแบบ `Secure`
-- ระบบไม่เก็บไฟล์ ไม่มีงานตั้งเวลา · ข้อมูลทั้งหมดอยู่ใน PostgreSQL ของระบบเอง
+- ระบบไม่เก็บไฟล์ ไม่มีงานตั้งเวลา · ข้อมูลทั้งหมดอยู่ในฐานข้อมูลของระบบเอง
 
-## 2. ค่าที่ต้องตั้ง (`.env` ข้าง `docker-compose.yml` — ห้าม commit)
+## 2. env ที่ server ต้องตั้ง
 
-ตัวอย่างอยู่ใน `.env.example`
+**api** — รายการเต็มอยู่ใน `backend/.env.example` (DevOps ใช้ไฟล์นั้นเป็นรายการ env)
 
 | ค่า | บนเซิร์ฟเวอร์จริง |
 |---|---|
-| `NODE_ENV` | `production` (คุกกี้ Secure · บังคับตั้งค่า Core Hub ครบ · ตรวจว่า JWKS เป็น https) |
-| `POSTGRES_PASSWORD` | รหัสยาวที่สุ่มขึ้นมา เช่น `node -e "console.log(require('crypto').randomBytes(24).toString('base64url'))"` |
+| `NODE_ENV` · `PORT` · `TZ` | `production` · `4000` · `Asia/Bangkok` |
+| `DATABASE_URL` · `DATABASE_POOL_MAX` | DevOps กำหนด · `5` |
 | `CORE_HUB_URL` · `CORE_HUB_WEB_URL` | `https://csmju2030.jowave.com` |
 | `CORE_HUB_JWKS_URL` | `https://csmju2030.jowave.com/api/v1/.well-known/jwks.json` |
 | `CORE_HUB_ISSUER` · `CORE_HUB_AUDIENCE` | `core-hub` · `csmju2030` (ห้ามเปลี่ยน) |
+| `SUBSYSTEM_ID` · `SUBSYSTEM_NAME` | `csmju-attendance-checker` · `Attendance Checker` |
 
-ถ้าค่าใดขาด ระบบหลังบ้านจะไม่ยอมเปิด และบอกชื่อค่าที่ขาด (`Missing required environment variables: …`)
+ระบบนี้ไม่มีค่าลับของทีมเอง · ถ้าค่าใดขาด api จะไม่ยอมเปิดและบอกชื่อค่าที่ขาด (`Missing required environment variables: …`)
 
-## 3. ขั้นตอน
+**web** — `CORE_HUB_WEB_URL` · `SUBSYSTEM_ID` · `TZ` (`BACKEND_URL` = `http://api:4000` ฝังใน image แล้ว)
 
-1. ดึงโค้ดจาก `main` แล้วสร้าง `.env` ตามข้อ 2
-2. `docker compose up -d --build` — ตอนเปิด ระบบหลังบ้านสร้าง/อัปเดตตารางในฐานข้อมูลเอง (`prisma migrate deploy`)
-3. ตั้ง reverse proxy (เช่น nginx / Caddy) ให้โดเมน https ส่งต่อไปที่ `127.0.0.1:3202` · ส่ง header `Host` และ `X-Forwarded-Proto` ต่อตามปกติ
-4. ตรวจ: `https://<โดเมน>/api/health` ต้องได้ `{"success":true,"data":{"status":"ok",…}}`
-5. **ให้ admin ระบบกลางเปลี่ยน Callback URL ใน Core Hub** จาก `http://localhost:3202/auth/callback` เป็น `https://<โดเมน>/auth/callback`
-   (subsystem-registry ข้อ 7 — ทีมแก้เองไม่ได้หลังอนุมัติ และ callback แบบ localhost จะใช้ไม่ได้เมื่อ server ปิดโหมดทดสอบ)
-6. เปิด `https://<โดเมน>` กด "เข้าสู่ระบบผ่าน Core Hub" แล้วลองเช็คชื่อด้วยมือถือ
+## 3. ก่อนวันเปิดใช้
+
+1. ชื่อเว็บตามแผนคือ `https://csmju-attendance-checker.jowave.com` (รออาจารย์อนุมัติ)
+2. **PL ขอ admin ระบบกลางเปลี่ยน Callback URL ใน Core Hub** จาก `http://localhost:3202/auth/callback`
+   เป็น `https://<ชื่อเว็บ>/auth/callback` — ไม่ต้องยื่นคำขอระบบย่อยใหม่ (ชื่อซ้ำจะถูกปฏิเสธ)
+3. เปิดเว็บ กด "เข้าสู่ระบบผ่าน Core Hub" แล้วลองเช็คชื่อด้วยมือถือจริง
 
 คิวอาร์โค้ดในหน้าอาจารย์สร้างจากที่อยู่ที่เปิดเว็บอยู่ ไม่ต้องตั้งค่าเพิ่ม
 
-## 4. หลังขึ้นระบบ
+## 4. ทดสอบแบบเดียวกับ server ในเครื่อง
 
-- **อัปเดตเวอร์ชัน:** ดึง `main` ใหม่ → `docker compose up -d --build` (migration รันเองตอนเปิด)
-- **สำรองข้อมูล:** `docker exec attendance-checker-db pg_dump -U postgres attendance_checker_db > backup.sql`
-- **ดู log:** `docker logs attendance-checker-api` (log เป็น JSON ไม่มี token · มีรหัสผู้ใช้ของ Core Hub ซึ่งถือเป็นข้อมูลบุคคล เก็บ log อย่างระวัง)
-- **ตรวจสถานะ:** ทั้ง 3 container มี healthcheck — `docker compose ps` ต้องเห็น `healthy`
+```bash
+docker compose up -d --build     # db + api + web → http://localhost:3202 (ใช้ Chrome)
+docker compose ps                # ทั้งสามต้อง healthy
+docker compose logs api          # ต้องเห็น migration ผ่าน และ subsystem.started
+docker compose down              # หยุด (ข้อมูลยังอยู่ใน volume)
+```
+
+api และ web ล็อกแบบเดียวกับ server (ระบบไฟล์อ่านอย่างเดียว · ไม่มีสิทธิ์พิเศษ · ผู้ใช้ `node`)
 
 ## 5. เรื่องที่ควรรู้
 
+- **อัปเดตเวอร์ชัน:** merge เข้า `main` → ได้ image ใหม่ → DevOps `docker compose pull && docker compose up -d` · migration รันเองตอน api เปิด
+- **log** ออก stdout เป็น JSON ไม่มี token · มีรหัสผู้ใช้ของ Core Hub ซึ่งถือเป็นข้อมูลบุคคล
 - **เพดานของ Core Hub:** การเช็คชื่อหนึ่งครั้งเรียก Core Hub `GET /people/me` หนึ่งครั้ง Core Hub จำกัดไว้ **600 ครั้ง / 10 วินาที ต่อ IP**
   ของเซิร์ฟเวอร์ (reference-data ข้อ 7.2) — ถ้าหลายห้องเช็คชื่อพร้อมกันจนเกิน นักศึกษาจะได้ "ระบบขัดข้องชั่วคราว กรุณาลองอีกครั้ง"
-  และลองใหม่ได้ในไม่กี่วินาที (ผลทดสอบโหลดอยู่ใน PR ที่เพิ่มไฟล์นี้)
-- ข้อมูลอ้างอิงจาก Core Hub (รายวิชา สาขา) cache ไว้ 10 นาทีในหน่วยความจำของระบบหลังบ้าน · ข้อมูลบุคคลไม่ cache
+  และลองใหม่ได้ในไม่กี่วินาที · ทดสอบแล้ว 300 คนกดพร้อมกันสำเร็จครบภายใน 2.4 วินาที (PR #20)
+- ข้อมูลอ้างอิงจาก Core Hub (รายวิชา สาขา) cache ไว้ 10 นาทีในหน่วยความจำของ api · ข้อมูลบุคคลไม่ cache
