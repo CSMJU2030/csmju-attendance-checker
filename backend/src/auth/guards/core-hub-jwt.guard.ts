@@ -35,7 +35,7 @@ export class CoreHubJwtGuard implements CanActivate {
     config: ConfigService,
   ) {
     this.sessionCookie = ssoCookieNames(
-      config.get<string>('subsystemId', 'csmju-demo-subsystem'),
+      config.get<string>('subsystemId', 'csmju-attendance-checker'),
     ).session;
   }
 
