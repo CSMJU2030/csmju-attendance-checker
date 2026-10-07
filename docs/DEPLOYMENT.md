@@ -10,7 +10,8 @@
                                อ่านชื่อ → พอร์ต 50xx   127.0.0.1:50xx         ไม่เปิดออกนอก          ฐานของระบบเอง
 ```
 
-- **พอร์ตของระบบนี้คือ `5001`** (รายชื่อพอร์ตของ PM) — ในเครื่องเปิดที่ `http://localhost:5001` · บน server หน้าเว็บอยู่ที่ `127.0.0.1:5001` และ Apache ส่งชื่อเว็บมาที่พอร์ตนี้ (`/etc/apache2/csmju-map.txt`)
+- **พอร์ต:** ในเครื่องหน้าเว็บเปิดที่ `http://localhost:3202` · backend `4202` (แฟ้มบัญชี dev server ของ PM) ·
+  บน server หน้าเว็บอยู่ที่ `127.0.0.1:5001` (รายชื่อพอร์ตของ PM) และ Apache ส่งชื่อเว็บมาที่พอร์ตนี้ (`/etc/apache2/csmju-map.txt`)
 
 - **2 image:** `ghcr.io/csmju2030/csmju-attendance-checker-web` และ `-api` — GitHub Actions build ให้เองทุกครั้งที่ merge เข้า `main`
   (แท็บ **Actions → Images**) · server แค่ดึง image ไปรัน ไม่ build บน server
@@ -41,7 +42,7 @@
 1. ที่อยู่จริงตามรายชื่อของ PM (7 ต.ค. 2569):
    - **URL:** `https://csmju-attendance-checker.jowave.com`
    - **Callback URL:** `https://csmju-attendance-checker.jowave.com/auth/callback` — ต้องตรงทุกตัวอักษร (`https` · ไม่มี `/` ปิดท้าย)
-2. **admin ระบบกลางเปลี่ยน Callback URL ใน Core Hub** จาก `http://localhost:5001/auth/callback` เป็นค่าข้างบนทันทีที่ระบบขึ้น server —
+2. **admin ระบบกลางเปลี่ยน Callback URL ใน Core Hub** จาก `http://localhost:3202/auth/callback` เป็นค่าข้างบนทันทีที่ระบบขึ้น server —
    ไม่ต้องยื่นคำขอระบบย่อยใหม่ (ชื่อซ้ำจะถูกปฏิเสธ) · หลังเปลี่ยนแล้ว**เข้าสู่ระบบจาก localhost ไม่ได้อีก** ต้องทดสอบบนเว็บจริง
    (โค้ดใช้แค่ path `/auth/callback` ไม่ต้องแก้โค้ด)
 3. เปิดเว็บ กด "เข้าสู่ระบบผ่าน Core Hub" แล้วลองเช็คชื่อด้วยมือถือจริง
@@ -51,7 +52,7 @@
 ## 4. ทดสอบแบบเดียวกับ server ในเครื่อง
 
 ```bash
-docker compose up -d --build     # db + api + web → http://localhost:5001 (ใช้ Chrome)
+docker compose up -d --build     # db + api + web → http://localhost:3202 (ใช้ Chrome)
 docker compose ps                # ทั้งสามต้อง healthy
 docker compose logs api          # ต้องเห็น migration ผ่าน และ subsystem.started
 docker compose down              # หยุด (ข้อมูลยังอยู่ใน volume)
