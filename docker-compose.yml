@@ -3,7 +3,7 @@
 #
 #   docker compose up -d db              PostgreSQL only, for `pnpm dev` (port 5434)
 #   docker compose up -d --build         db + api + web, built the way the server runs them
-#                                        -> http://localhost:5001
+#                                        -> http://localhost:3202
 #
 # The server does not use this file. There DevOps runs the same two images against
 # the shared PostgreSQL (standards docs/deployment.md); this file stands in for that
@@ -94,8 +94,8 @@ services:
       SUBSYSTEM_ID: ${SUBSYSTEM_ID:-csmju-attendance-checker}
       TZ: Asia/Bangkok
     ports:
-      # the callback registered in Core Hub is http://localhost:5001/auth/callback
-      - '127.0.0.1:5001:3000'
+      # the callback registered in Core Hub is http://localhost:3202/auth/callback
+      - '127.0.0.1:3202:3000'
 
 volumes:
   csmju-attendance-checker-db-data:
