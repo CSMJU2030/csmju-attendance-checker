@@ -4,11 +4,11 @@
   "private": true,
   "description": "Attendance Checker - Next.js frontend (App Router) of csmju-attendance-checker",
   "scripts": {
-    "dev": "next dev --webpack -p 3202",
-    "start:dev": "next dev --webpack -p 3202",
+    "dev": "next dev --webpack -p 5001",
+    "start:dev": "next dev --webpack -p 5001",
     "build": "next build --webpack",
     "generate:api-types": "openapi-typescript ../backend/openapi.json -o src/lib/api-schema.d.ts",
-    "start": "next start -p 3202",
+    "start": "next start -p 5001",
     "typecheck": "next typegen && tsc --noEmit",
     "lint": "eslint src",
     "test": "vitest run"
