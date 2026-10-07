@@ -11,11 +11,15 @@
 # sends /api/* and /auth/* to http://api:4000.
 
 # Same lock-down as the server (deployment.md 6): a read-only filesystem, no
-# Linux capabilities. Code that writes files outside /tmp fails here first.
+# Linux capabilities, the server's memory caps and rotated logs. Code that
+# writes files outside /tmp or needs more memory fails here first.
 x-hardening: &hardening
   read_only: true
   cap_drop: [ALL]
   security_opt: ['no-new-privileges:true']
+  logging:
+    driver: json-file
+    options: { max-size: '10m', max-file: '3' }
 
 services:
   db:
@@ -64,6 +68,7 @@ services:
       TZ: Asia/Bangkok
     tmpfs:
       - /tmp:size=32m
+    mem_limit: 512m
     # no ports: the browser reaches the API only through web (/api/*, /auth/*)
     extra_hosts:
       # point CORE_HUB_* at http://host.docker.internal:3000 to use a local Core Hub
@@ -83,6 +88,7 @@ services:
       - /tmp:size=32m
       # next/image cache
       - /app/frontend/.next/cache:size=64m
+    mem_limit: 384m
     environment:
       CORE_HUB_WEB_URL: ${CORE_HUB_WEB_URL:-https://csmju2030.jowave.com}
       SUBSYSTEM_ID: ${SUBSYSTEM_ID:-csmju-attendance-checker}
