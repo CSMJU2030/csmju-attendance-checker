@@ -14,9 +14,9 @@ Attendance Checker (ระบบเช็คชื่อเข้าเรีย
 | โฟลเดอร์ | อะไร | พอร์ต |
 |---|---|---|
 | `backend/` | NestJS 11 + Prisma 7.9.1 + PostgreSQL — API, ตรวจ token ผ่าน JWKS, สิทธิ์ทั้งหมด | 4202 |
-| `frontend/` | Next.js 16 (App Router) + Tailwind 4 — หน้าจอทั้งหมด | 3202 |
+| `frontend/` | Next.js 16 (App Router) + Tailwind 4 — หน้าจอทั้งหมด | 5001 |
 
-เบราว์เซอร์คุยกับ frontend (:3202) ที่เดียว frontend ส่ง `/api/*` ต่อไป backend แบบไม่แตะข้อมูล
+เบราว์เซอร์คุยกับ frontend (:5001) ที่เดียว frontend ส่ง `/api/*` ต่อไป backend แบบไม่แตะข้อมูล
 และรับ SSO ที่ `/auth/callback` (ส่ง token ให้ backend ตรวจ แล้ว redirect เข้าหน้าเว็บ)
 
 ## เริ่มทำงาน
@@ -34,17 +34,17 @@ pnpm --filter backend prisma:deploy
 pnpm --filter backend prisma:seed
 
 pnpm start:dev                  # backend  → http://localhost:4202
-pnpm start:dev:frontend         # frontend → http://localhost:3202
+pnpm start:dev:frontend         # frontend → http://localhost:5001
 ```
 
-เปิด http://localhost:3202 แล้วกด "เข้าสู่ระบบผ่าน Core Hub" (บัญชี dev อยู่ใน `standards/fixtures/dev-accounts.json`)
+เปิด http://localhost:5001 แล้วกด "เข้าสู่ระบบผ่าน Core Hub" (บัญชี dev อยู่ใน `standards/fixtures/dev-accounts.json`)
 
-ทะเบียนใน Core Hub ต้องมี `callback_url = http://localhost:3202/auth/callback`
+ทะเบียนใน Core Hub ต้องมี `callback_url = http://localhost:5001/auth/callback`
 
 ## รันด้วย Docker
 
 ```bash
-docker compose up -d --build     # db :5434 · api · web http://localhost:3202
+docker compose up -d --build     # db :5434 · api · web http://localhost:5001
 docker compose ps                # db api web ต้อง healthy
 ```
 
