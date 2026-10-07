@@ -38,9 +38,12 @@
 
 ## 3. ก่อนวันเปิดใช้
 
-1. ชื่อเว็บคือ `https://csmju-attendance-checker.jowave.com` (อาจารย์อนุมัติรูปแบบชื่อแล้ว 6 ต.ค. 2569 — รอ DevOps ขึ้นระบบ)
-2. **PL ขอ admin ระบบกลางเปลี่ยน Callback URL ใน Core Hub** จาก `http://localhost:5001/auth/callback`
-   เป็น `https://<ชื่อเว็บ>/auth/callback` — ไม่ต้องยื่นคำขอระบบย่อยใหม่ (ชื่อซ้ำจะถูกปฏิเสธ)
+1. ที่อยู่จริงตามรายชื่อของ PM (7 ต.ค. 2569):
+   - **URL:** `https://csmju-attendance-checker.jowave.com`
+   - **Callback URL:** `https://csmju-attendance-checker.jowave.com/auth/callback` — ต้องตรงทุกตัวอักษร (`https` · ไม่มี `/` ปิดท้าย)
+2. **admin ระบบกลางเปลี่ยน Callback URL ใน Core Hub** จาก `http://localhost:5001/auth/callback` เป็นค่าข้างบนทันทีที่ระบบขึ้น server —
+   ไม่ต้องยื่นคำขอระบบย่อยใหม่ (ชื่อซ้ำจะถูกปฏิเสธ) · หลังเปลี่ยนแล้ว**เข้าสู่ระบบจาก localhost ไม่ได้อีก** ต้องทดสอบบนเว็บจริง
+   (โค้ดใช้แค่ path `/auth/callback` ไม่ต้องแก้โค้ด)
 3. เปิดเว็บ กด "เข้าสู่ระบบผ่าน Core Hub" แล้วลองเช็คชื่อด้วยมือถือจริง
 
 คิวอาร์โค้ดในหน้าอาจารย์สร้างจากที่อยู่ที่เปิดเว็บอยู่ ไม่ต้องตั้งค่าเพิ่ม
