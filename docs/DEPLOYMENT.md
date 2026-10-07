@@ -1,18 +1,21 @@
 # ขึ้นเซิร์ฟเวอร์จริง — csmju-attendance-checker
 
-ระบบนี้ขึ้น server กลางของรายวิชาตาม **standards `docs/deployment.md`** (มาตรฐาน 1.8.1) — เอกสารนั้นคือฉบับหลัก
+ระบบนี้ขึ้น server กลางของรายวิชาตาม **standards `docs/deployment.md`** (มาตรฐาน 1.8.4) — เอกสารนั้นคือฉบับหลัก
 ไฟล์นี้สรุปเฉพาะส่วนของระบบเช็คชื่อ
 
 ## 1. ภาพรวม
 
 ```
-ผู้ใช้ ─https─► Cloudflare ─► Apache ─► web (Next.js :3000) ─► api (NestJS :4000) ─► PostgreSQL กลาง
-                                         เปิดผ่าน Apache        ไม่เปิดออกนอก          ฐานของระบบเอง
+ผู้ใช้ ─https─► Cloudflare ─► Apache (:443) ─► web (Next.js :3000) ─► api (NestJS :4000) ─► PostgreSQL กลาง
+                               อ่านชื่อ → พอร์ต 50xx   127.0.0.1:50xx         ไม่เปิดออกนอก          ฐานของระบบเอง
 ```
+
+- **พอร์ตบน server:** DevOps จองให้ในไฟล์ `/etc/apache2/csmju-map.txt` (เลขเรียงจาก `5001`) — คนละเลขกับพอร์ต `3202` ที่ใช้ในเครื่อง
 
 - **2 image:** `ghcr.io/csmju2030/csmju-attendance-checker-web` และ `-api` — GitHub Actions build ให้เองทุกครั้งที่ merge เข้า `main`
   (แท็บ **Actions → Images**) · server แค่ดึง image ไปรัน ไม่ build บน server
-- **DevOps ทำบน server:** สร้างฐานข้อมูล + role · compose · Apache · ทีมไม่ต้องเข้าเครื่อง
+- **DevOps ทำบน server:** จองพอร์ต · สร้างฐานข้อมูล + role · compose · ทดสอบบนชื่อเว็บจริงกับทีม · ทีมไม่ต้องเข้าเครื่อง
+- **หน่วยความจำ:** api ไม่เกิน `512m` · web ไม่เกิน `384m` (เกินแล้วถูกปิด) · log หมุนไฟล์ละ 10 MB เก็บ 3 ไฟล์
 - **ต้องเป็น https** — มือถือให้ใช้ตำแหน่ง (GPS) เฉพาะหน้าที่เป็น https และคุกกี้เข้าสู่ระบบในโหมดใช้งานจริงเป็นแบบ `Secure`
 - ระบบไม่เก็บไฟล์ ไม่มีงานตั้งเวลา · ข้อมูลทั้งหมดอยู่ในฐานข้อมูลของระบบเอง
 
@@ -35,7 +38,7 @@
 
 ## 3. ก่อนวันเปิดใช้
 
-1. ชื่อเว็บตามแผนคือ `https://csmju-attendance-checker.jowave.com` (รออาจารย์อนุมัติ)
+1. ชื่อเว็บคือ `https://csmju-attendance-checker.jowave.com` (อาจารย์อนุมัติรูปแบบชื่อแล้ว 6 ต.ค. 2569 — รอ DevOps ขึ้นระบบ)
 2. **PL ขอ admin ระบบกลางเปลี่ยน Callback URL ใน Core Hub** จาก `http://localhost:3202/auth/callback`
    เป็น `https://<ชื่อเว็บ>/auth/callback` — ไม่ต้องยื่นคำขอระบบย่อยใหม่ (ชื่อซ้ำจะถูกปฏิเสธ)
 3. เปิดเว็บ กด "เข้าสู่ระบบผ่าน Core Hub" แล้วลองเช็คชื่อด้วยมือถือจริง
@@ -51,7 +54,12 @@ docker compose logs api          # ต้องเห็น migration ผ่า�
 docker compose down              # หยุด (ข้อมูลยังอยู่ใน volume)
 ```
 
-api และ web ล็อกแบบเดียวกับ server (ระบบไฟล์อ่านอย่างเดียว · ไม่มีสิทธิ์พิเศษ · ผู้ใช้ `node`)
+api และ web ล็อกแบบเดียวกับ server (ระบบไฟล์อ่านอย่างเดียว · ไม่มีสิทธิ์พิเศษ · ผู้ใช้ `node`) ·
+จำกัดหน่วยความจำเท่า server (api `512m` · web `384m`) และหมุน log — ดูการใช้หน่วยความจำด้วย `docker stats`
+
+**ในเครื่องต่างจาก server** (standards ข้อ 6.1): บน server ฐานข้อมูลเป็น role ธรรมดา (ไม่ใช่ `postgres`) จึงห้ามมี `CREATE EXTENSION`
+ใน migration · ไม่มีข้อมูลตัวอย่าง (seed) · ที่อยู่เว็บเป็น `https://…jowave.com` ไม่ใช่ `localhost` — โค้ดของระบบนี้ไม่สร้างที่อยู่เต็มจากคำขอ
+และไม่ฝัง `localhost` (มีแค่ค่าสำรองตอนพัฒนา ซึ่ง server ตั้ง env ทับทั้งหมด)
 
 ## 5. เรื่องที่ควรรู้
 
