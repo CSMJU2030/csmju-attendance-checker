@@ -18,6 +18,7 @@ import {
 } from "@/components/shared/kit";
 import { apiRequest } from "@/lib/api-client";
 import { classifyCheckInFailure } from "@/lib/check-in";
+import { locate } from "@/lib/location";
 import type { AttendanceRecordView } from "@/lib/types";
 import { ATTENDED_LABEL } from "./attendance-record-list";
 import { CodeInput } from "./code-input";
@@ -56,16 +57,6 @@ const GEO_ERROR: Record<number, Notice> = {
     message: "สัญญาณตำแหน่งอ่อน กรุณาขยับไปใกล้หน้าต่างหรือที่โล่ง แล้วลองอีกครั้ง",
   },
 };
-
-function locate(): Promise<GeolocationPosition> {
-  return new Promise((resolve, reject) => {
-    navigator.geolocation.getCurrentPosition(resolve, reject, {
-      enableHighAccuracy: true,
-      timeout: 20_000,
-      maximumAge: 0,
-    });
-  });
-}
 
 /** `initialCode` comes from the classroom QR (`/check-in?code=`), already validated. */
 export function CheckInForm({ initialCode = "" }: { initialCode?: string }) {

@@ -548,6 +548,9 @@ export interface components {
             openedAt: string;
             /** Format: date-time */
             closedAt: string | null;
+            /** @description Where the lecturer stood when opening; null = the class section's point. */
+            latitude: number | null;
+            longitude: number | null;
             /** @description Students who checked in to this session. */
             recordCount: number;
         };
@@ -566,6 +569,9 @@ export interface components {
             openedAt: string;
             /** Format: date-time */
             closedAt: string | null;
+            /** @description Where the lecturer stood when opening; null = the class section's point. */
+            latitude: number | null;
+            longitude: number | null;
             /** @description Students who checked in to this session. */
             recordCount: number;
             code: components["schemas"]["CurrentCodeDto"];
@@ -573,6 +579,10 @@ export interface components {
         OpenAttendanceSessionDto: {
             /** Format: uuid */
             classSectionId: string;
+            latitude?: number;
+            longitude?: number;
+            /** @description `GeolocationCoordinates.accuracy` from the browser, in meters. */
+            accuracyMeters?: number;
         };
         StaffAttendanceRecordDto: {
             /** @description On the section's roster? `null` while the section has no roster yet. */

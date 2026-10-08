@@ -20,6 +20,8 @@ const SESSION = {
   codeSecret: 'c'.repeat(64),
   openedAt: NOW,
   closedAt: null,
+  latitude: null,
+  longitude: null,
 };
 
 const identity = (id: string, role: SubsystemRole): CoreHubIdentity => ({
@@ -75,6 +77,33 @@ describe('AttendanceSessionsService - business rules', () => {
     expect(opened).toMatchObject({ id: 'new-session', status: 'OPEN', classSectionId: SECTION.id });
     expect(opened.code.code).toMatch(/^\d{6}$/);
     expect(opened).not.toHaveProperty('codeSecret');
+  });
+
+  it("keeps the lecturer's location as the session's point", async () => {
+    const opened = await service.open(
+      { classSectionId: SECTION.id, latitude: 18.8925, longitude: 99.0142, accuracyMeters: 12 },
+      OWNER,
+      NOW,
+    );
+
+    expect(opened).toMatchObject({ latitude: 18.8925, longitude: 99.0142 });
+    expect(prisma.attendanceSession.create.mock.calls[0][0].data).not.toHaveProperty('accuracyMeters');
+  });
+
+  it('opens without a location and falls back to the section point', async () => {
+    const opened = await service.open({ classSectionId: SECTION.id }, OWNER, NOW);
+    expect(opened).toMatchObject({ latitude: null, longitude: null });
+  });
+
+  it('refuses an imprecise lecturer location with 400 and opens nothing', async () => {
+    await expect(
+      service.open(
+        { classSectionId: SECTION.id, latitude: 18.8925, longitude: 99.0142, accuracyMeters: 1500 },
+        OWNER,
+        NOW,
+      ),
+    ).rejects.toMatchObject({ status: 400 });
+    expect(prisma.attendanceSession.create).not.toHaveBeenCalled();
   });
 
   it('refuses a second OPEN session for the same section with 409', async () => {

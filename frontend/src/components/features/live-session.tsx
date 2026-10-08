@@ -182,6 +182,7 @@ export function LiveSession({ initialSession, sectionLabel }: { initialSession: 
         <span className="text-sm/relaxed text-on-surface-variant tabular-nums">
           เปิดเมื่อ {formatDateTime(session.openedAt)}
           {session.closedAt ? ` · ปิดเมื่อ ${formatTime(session.closedAt)}` : ""}
+          {session.latitude !== null ? " · วัดระยะจากตำแหน่งตอนเปิดรอบ" : " · วัดระยะจากจุดของกลุ่มเรียน"}
         </span>
       </div>
 

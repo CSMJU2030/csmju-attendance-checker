@@ -32,6 +32,8 @@ const SESSION = {
   codeSecret: 'b'.repeat(64),
   openedAt: OPENED_AT,
   closedAt: null,
+  latitude: null,
+  longitude: null,
   createdAt: OPENED_AT,
   updatedAt: OPENED_AT,
 };
@@ -133,6 +135,20 @@ describe('AttendanceRecordsService.checkIn - business rules', () => {
       status: 409,
       details: { distanceMeters: 111, radiusMeters: 50 },
     });
+  });
+
+  it('measures from where the lecturer opened the session, not the section point', async () => {
+    const now = minutesAfterOpen(1);
+    // the lecturer opened the session about 111 m north of the section's saved point
+    const lecturer = { latitude: ROOM.latitude + 0.001, longitude: ROOM.longitude };
+    prisma.attendanceSession.findMany.mockResolvedValue([{ ...SESSION, ...lecturer }]);
+
+    const record = await service.checkIn({ code: codeAt(now), ...lecturer }, STUDENT, TOKEN, now);
+    expect(record).toMatchObject({ distanceMeters: 0 });
+
+    await expect(
+      service.checkIn({ code: codeAt(now), ...ROOM }, { ...STUDENT, id: 'user-004' }, TOKEN, now),
+    ).rejects.toMatchObject({ status: 409, details: { distanceMeters: 111, radiusMeters: 50 } });
   });
 
   it('rejects an imprecise location fix with 400', async () => {

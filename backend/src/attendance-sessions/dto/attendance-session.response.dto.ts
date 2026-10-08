@@ -11,6 +11,9 @@ export class AttendanceSessionDto {
 
   openedAt!: Date;
   closedAt!: Date | null;
+  /** Where the lecturer stood when opening; null = the class section's point. */
+  latitude!: number | null;
+  longitude!: number | null;
   /** Students who checked in to this session. */
   recordCount!: number;
 }

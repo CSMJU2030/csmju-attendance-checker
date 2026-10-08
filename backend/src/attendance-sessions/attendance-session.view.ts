@@ -8,6 +8,9 @@ export interface AttendanceSessionView {
   status: AttendanceSession['status'];
   openedAt: Date;
   closedAt: Date | null;
+  /** Where the lecturer stood when opening; null = the class section's point. */
+  latitude: number | null;
+  longitude: number | null;
   /** Students who checked in to this session. */
   recordCount: number;
 }
@@ -29,6 +32,8 @@ export function toSessionView(
     status: session.status,
     openedAt: session.openedAt,
     closedAt: session.closedAt,
+    latitude: session.latitude,
+    longitude: session.longitude,
     recordCount: counts.recordCount,
   };
 }

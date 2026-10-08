@@ -14,14 +14,11 @@ import { CourseCatalog, CourseName } from '../core-hub/course-catalog.service';
 import { PeopleService } from '../core-hub/people.service';
 import { PaginationQueryDto } from '../common/dto/pagination.dto';
 import { AppException } from '../common/errors';
-import { distanceInMeters } from '../common/geo';
+import { distanceInMeters, MAX_ACCURACY_METERS } from '../common/geo';
 import { PrismaService } from '../prisma/prisma.service';
 import { CheckInAttempts } from './check-in-attempts';
 import { CheckInDto } from './dto/check-in.dto';
 import { QueryAttendanceRecordsDto } from './dto/query-attendance-records.dto';
-
-/** A location fix less precise than this cannot prove the student is in class. */
-export const MAX_ACCURACY_METERS = 100;
 
 type SectionSummary = Pick<
   ClassSection,
@@ -107,7 +104,13 @@ export class AttendanceRecordsService {
       throw AppException.notFound('ไม่พบกลุ่มเรียนของรอบเช็คชื่อนี้');
     }
 
-    const distance = Math.round(distanceInMeters(dto, section));
+    // The point the lecturer stood on when opening the session, or the
+    // section's saved point when the session was opened without one.
+    const center =
+      session.latitude !== null && session.longitude !== null
+        ? { latitude: session.latitude, longitude: session.longitude }
+        : section;
+    const distance = Math.round(distanceInMeters(dto, center));
     if (distance > section.radiusMeters) {
       throw AppException.conflict(
         `คุณอยู่นอกพื้นที่เช็คชื่อ (ห่าง ${distance} เมตร เกินรัศมี ${section.radiusMeters} เมตร) กรุณาเข้าไปในห้องเรียนแล้วลองอีกครั้ง`,

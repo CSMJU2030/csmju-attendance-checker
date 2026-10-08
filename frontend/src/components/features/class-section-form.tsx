@@ -245,7 +245,7 @@ export function ClassSectionForm({ section }: { section?: ClassSection }) {
             จุดเช็คชื่อ
           </legend>
           <p className="text-sm/relaxed text-on-surface-variant">
-            ยืนอยู่ในห้องเรียนแล้วกดใช้ตำแหน่งปัจจุบัน นักศึกษาต้องอยู่ภายในรัศมีจากจุดนี้จึงจะเช็คชื่อได้
+            ยืนอยู่ในห้องเรียนแล้วกดใช้ตำแหน่งปัจจุบัน ปกติระบบวัดระยะนักศึกษาจากตำแหน่งของเครื่องที่กดเปิดรอบ จุดนี้ใช้แทนเมื่อเครื่องนั้นหาตำแหน่งไม่ได้
           </p>
           <div>
             <Button variant="secondary" onClick={fillMyLocation} loading={locating}>
