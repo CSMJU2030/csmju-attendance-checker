@@ -1,5 +1,11 @@
 const EARTH_RADIUS_METERS = 6_371_000;
 
+/**
+ * A location fix less precise than this cannot prove someone is in the room -
+ * neither the student checking in nor the lecturer setting a session's point.
+ */
+export const MAX_ACCURACY_METERS = 100;
+
 const toRadians = (degrees: number): number => (degrees * Math.PI) / 180;
 
 /** Great-circle distance between two WGS 84 points (haversine formula). */

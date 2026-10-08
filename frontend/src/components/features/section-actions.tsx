@@ -6,13 +6,22 @@ import { ConfirmDeleteModal } from "@/csmju";
 import { Alert, Button, ButtonLink, Card, CardTitle, PresentationIcon, TrashIcon } from "@/components/shared/kit";
 import { apiRequest } from "@/lib/api-client";
 import { errorMessage } from "@/lib/errors";
+import { MAX_ACCURACY_METERS, canLocate, locate } from "@/lib/location";
 import type { AttendanceSession } from "@/lib/types";
 
-/** Primary action of the section page: open a session, or go to the open one. */
+type SessionPoint = { latitude: number; longitude: number; accuracyMeters: number };
+
+/**
+ * Primary action of the section page: open a session, or go to the open one.
+ * Students are measured from where the lecturer stands when opening. When this
+ * device cannot give a precise enough location (a laptop has no GPS), the
+ * lecturer chooses to open with the section's saved point instead.
+ */
 export function OpenSessionAction({ sectionId, openSessionId }: { sectionId: string; openSessionId: string | null }) {
   const router = useRouter();
   const [opening, setOpening] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [noLocation, setNoLocation] = useState<string | null>(null);
 
   if (openSessionId) {
     return (
@@ -25,8 +34,39 @@ export function OpenSessionAction({ sectionId, openSessionId }: { sectionId: str
 
   async function open() {
     setError(null);
+    setNoLocation(null);
+    if (!canLocate()) {
+      setNoLocation("อุปกรณ์นี้ระบุตำแหน่งไม่ได้");
+      return;
+    }
     setOpening(true);
-    const result = await apiRequest<AttendanceSession>("POST", "/api/v1/attendance-sessions", { classSectionId: sectionId });
+    let position: GeolocationPosition;
+    try {
+      position = await locate();
+    } catch {
+      setOpening(false);
+      setNoLocation("หาตำแหน่งของเครื่องนี้ไม่สำเร็จ อาจยังไม่ได้อนุญาตให้เว็บเข้าถึงตำแหน่ง");
+      return;
+    }
+    const accuracy = Math.round(position.coords.accuracy);
+    if (accuracy > MAX_ACCURACY_METERS) {
+      setOpening(false);
+      setNoLocation(`ตำแหน่งของเครื่องนี้คลาดเคลื่อนประมาณ ${accuracy} เมตร มากเกินกว่าจะใช้วัดระยะนักศึกษาได้ (โน้ตบุ๊กส่วนใหญ่ไม่มี GPS)`);
+      return;
+    }
+    await send({
+      latitude: position.coords.latitude,
+      longitude: position.coords.longitude,
+      accuracyMeters: position.coords.accuracy,
+    });
+  }
+
+  /** `point` = where the lecturer stands; none = the section's saved point. */
+  async function send(point?: SessionPoint) {
+    setError(null);
+    setNoLocation(null);
+    setOpening(true);
+    const result = await apiRequest<AttendanceSession>("POST", "/api/v1/attendance-sessions", { classSectionId: sectionId, ...point });
     setOpening(false);
     if (result.ok) {
       router.push(`/attendance-sessions/${result.data.id}`);
@@ -44,6 +84,20 @@ export function OpenSessionAction({ sectionId, openSessionId }: { sectionId: str
         <PresentationIcon size={16} />
         เปิดรอบเช็คชื่อ
       </Button>
+      <p className="text-sm/relaxed text-on-surface-variant">นักศึกษาต้องอยู่ในรัศมีจากตำแหน่งของเครื่องที่กดเปิด</p>
+      {noLocation ? (
+        <Alert
+          tone="warning"
+          title="ใช้ตำแหน่งของเครื่องนี้ไม่ได้"
+          action={
+            <Button variant="secondary" onClick={() => void send()} loading={opening}>
+              เปิดโดยใช้จุดของกลุ่มเรียน
+            </Button>
+          }
+        >
+          {noLocation} · เปิดจากมือถือในห้องเรียน หรือเปิดโดยใช้จุดที่บันทึกไว้ในกลุ่มเรียนแทน
+        </Alert>
+      ) : null}
       {error ? (
         <Alert tone="warning" title="เปิดรอบเช็คชื่อไม่สำเร็จ">
           {error}

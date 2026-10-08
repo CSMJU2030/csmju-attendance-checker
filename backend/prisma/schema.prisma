@@ -96,6 +96,10 @@ model AttendanceSession {
   codeSecret         String                  @map("code_secret")
   openedAt           DateTime                @default(now()) @map("opened_at")
   closedAt           DateTime?               @map("closed_at")
+  /// Where the lecturer stood when opening the session. Students are measured
+  /// from here; null = the class section's saved point.
+  latitude           Float?
+  longitude          Float?
 
   classSection ClassSection       @relation(fields: [classSectionId], references: [id], onDelete: Cascade)
   records      AttendanceRecord[]

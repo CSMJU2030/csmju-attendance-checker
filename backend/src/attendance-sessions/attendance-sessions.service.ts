@@ -11,6 +11,7 @@ import { ClassSectionsService, assertCanManageSection } from '../class-sections/
 import { rosterMembership } from '../class-sections/roster';
 import { PaginationQueryDto } from '../common/dto/pagination.dto';
 import { AppException } from '../common/errors';
+import { MAX_ACCURACY_METERS } from '../common/geo';
 import { PrismaService } from '../prisma/prisma.service';
 import { CurrentCode, currentCode, generateCodeSecret } from './attendance-code';
 import { AttendanceSessionView, SessionCounts, toSessionView } from './attendance-session.view';
@@ -45,12 +46,20 @@ export class AttendanceSessionsService {
       });
     }
 
+    if (dto.accuracyMeters !== undefined && dto.accuracyMeters > MAX_ACCURACY_METERS) {
+      throw AppException.badRequest(
+        `ตำแหน่งจากอุปกรณ์ไม่แม่นยำพอ (คลาดเคลื่อน ${Math.round(dto.accuracyMeters)} เมตร) กรุณาเปิดจากมือถือ หรือเปิดโดยใช้จุดของกลุ่มเรียน`,
+      );
+    }
+
     const session = await this.prisma.attendanceSession.create({
       data: {
         classSectionId: section.id,
         openedByCoreUserId: user.id,
         codeSecret: generateCodeSecret(),
         openedAt: now,
+        latitude: dto.latitude ?? null,
+        longitude: dto.longitude ?? null,
       },
     });
 

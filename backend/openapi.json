@@ -3296,6 +3296,15 @@
             "type": "string",
             "nullable": true
           },
+          "latitude": {
+            "type": "number",
+            "nullable": true,
+            "description": "Where the lecturer stood when opening; null = the class section's point."
+          },
+          "longitude": {
+            "type": "number",
+            "nullable": true
+          },
           "recordCount": {
             "type": "number",
             "description": "Students who checked in to this session."
@@ -3308,6 +3317,8 @@
           "openedByCoreUserId",
           "openedAt",
           "closedAt",
+          "latitude",
+          "longitude",
           "recordCount"
         ]
       },
@@ -3359,6 +3370,15 @@
             "type": "string",
             "nullable": true
           },
+          "latitude": {
+            "type": "number",
+            "nullable": true,
+            "description": "Where the lecturer stood when opening; null = the class section's point."
+          },
+          "longitude": {
+            "type": "number",
+            "nullable": true
+          },
           "recordCount": {
             "type": "number",
             "description": "Students who checked in to this session."
@@ -3374,6 +3394,8 @@
           "openedByCoreUserId",
           "openedAt",
           "closedAt",
+          "latitude",
+          "longitude",
           "recordCount",
           "code"
         ]
@@ -3384,6 +3406,21 @@
           "classSectionId": {
             "type": "string",
             "format": "uuid"
+          },
+          "latitude": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "longitude": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          },
+          "accuracyMeters": {
+            "type": "number",
+            "description": "`GeolocationCoordinates.accuracy` from the browser, in meters.",
+            "minimum": 0
           }
         },
         "required": [
