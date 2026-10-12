@@ -100,5 +100,5 @@ export function recordsCsv(records: StaffAttendanceRecord[]): string {
     ROSTER_LABEL(record.inRoster),
     String(record.distanceMeters),
   ]);
-  return toCsv(header, rows);
+  return toCsv(header, rows, [2]);
 }

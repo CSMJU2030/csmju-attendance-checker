@@ -85,7 +85,7 @@ describe("recordsCsv", () => {
     expect(csv.charCodeAt(0)).toBe(0xfeff);
     const lines = csv.slice(1).split("\r\n");
     expect(lines[0]).toBe("วันที่,เวลา,รหัสนักศึกษา,ในรายชื่อกลุ่มเรียน,ระยะห่างจากจุดเช็คชื่อ (เมตร)");
-    expect(lines[1]).toBe("29 ก.ย. 2569,09:05 น.,6504101234,อยู่,12");
+    expect(lines[1]).toBe('29 ก.ย. 2569,09:05 น.,="6504101234",อยู่,12');
     expect(lines[2]).toBe("29 ก.ย. 2569,09:05 น.,,ไม่อยู่,12");
     expect(lines[3]).toBe("");
   });
