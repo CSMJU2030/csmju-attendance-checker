@@ -31,7 +31,7 @@ describe("at-risk CSV", () => {
     expect(csv.charCodeAt(0)).toBe(0xfeff);
     const lines = csv.slice(1).split("\r\n");
     expect(lines[0]).toBe("รหัสวิชา,ชื่อวิชา,กลุ่ม,ภาคเรียน,รหัสนักศึกษา,มา (รอบ),ขาด (รอบ),รอบที่ปิดแล้ว,ขาด (%)");
-    expect(lines[1]).toBe("10301111-1,การเขียนโปรแกรมคอมพิวเตอร์,1,ภาคเรียนที่ 1/2569,6504101234,2,2,4,50%");
+    expect(lines[1]).toBe('10301111-1,การเขียนโปรแกรมคอมพิวเตอร์,1,ภาคเรียนที่ 1/2569,="6504101234",2,2,4,50%');
   });
 
   it("marks who is at risk in a section export", () => {
@@ -43,7 +43,7 @@ describe("at-risk CSV", () => {
       4,
     );
     const lines = csv.slice(1).split("\r\n");
-    expect(lines[1]).toBe("6501,0,4,4,100%,ใช่");
-    expect(lines[2]).toBe("6502,3,1,4,25%,ไม่ใช่");
+    expect(lines[1]).toBe('="6501",0,4,4,100%,ใช่');
+    expect(lines[2]).toBe('="6502",3,1,4,25%,ไม่ใช่');
   });
 });

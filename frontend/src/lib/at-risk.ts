@@ -27,6 +27,7 @@ export function atRiskCsv(entries: AtRiskEntry[]): string {
       String(entry.closedSessions),
       formatPercent(entry.absenceRate),
     ]),
+    [4],
   );
 }
 
@@ -42,5 +43,6 @@ export function sectionStudentsCsv(students: StudentStat[], closedSessions: numb
       formatPercent(student.absenceRate),
       student.atRisk ? "ใช่" : "ไม่ใช่",
     ]),
+    [0],
   );
 }
