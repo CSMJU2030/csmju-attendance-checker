@@ -132,10 +132,12 @@ export default async function ClassSectionPage({
             <MapPinIcon />
           </span>
           <p className="text-on-surface-variant">
-            นักศึกษาต้องอยู่ภายใน <span className="font-semibold text-on-surface tabular-nums">{section.radiusMeters} เมตร</span> จากจุด{" "}
+            นักศึกษาต้องอยู่ภายใน <span className="font-semibold text-on-surface tabular-nums">{section.radiusMeters} เมตร</span> จากตำแหน่งของเครื่องที่กดเปิดรอบ
+            ถ้าเครื่องนั้นหาตำแหน่งไม่ได้ ใช้จุดของกลุ่มเรียน{" "}
             <span className="font-mono text-sm/relaxed text-on-surface tabular-nums">
               {section.latitude.toFixed(6)}, {section.longitude.toFixed(6)}
             </span>{" "}
+            แทน
             เช็คชื่อได้ตลอดเวลาที่รอบเปิดอยู่ จนกว่าอาจารย์จะปิดรอบ ใครไม่ได้เช็คชื่อในรอบที่ปิดแล้วจะนับว่าขาด
           </p>
         </div>

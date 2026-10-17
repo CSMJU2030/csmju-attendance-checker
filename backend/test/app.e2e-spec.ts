@@ -358,6 +358,22 @@ describe('Attendance Checker (e2e)', () => {
       expect(response.body.error.code).toBe('VALIDATION_ERROR');
     });
 
+    it('accepts a radius up to 1000 m and rejects anything wider', async () => {
+      const wide = await request(app.getHttpServer())
+        .post('/api/v1/class-sections')
+        .set(bearer(staffToken))
+        .send({ ...newSection, sectionCode: '9', radiusMeters: 1000 })
+        .expect(201);
+      expect(wide.body.data.radiusMeters).toBe(1000);
+
+      const tooWide = await request(app.getHttpServer())
+        .post('/api/v1/class-sections')
+        .set(bearer(staffToken))
+        .send({ ...newSection, sectionCode: '8', radiusMeters: 1001 })
+        .expect(400);
+      expect(tooWide.body.error.code).toBe('VALIDATION_ERROR');
+    });
+
     it('no longer accepts a late threshold - attendance has no "late" status', async () => {
       const response = await request(app.getHttpServer())
         .post('/api/v1/class-sections')

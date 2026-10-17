@@ -14,3 +14,17 @@ allowBuilds:
   esbuild: false
   prisma: true
   unrs-resolver: true
+
+# บังคับ dependency ทางอ้อมที่มี advisory ในเส้นทาง production ให้ใช้รุ่นที่แก้แล้ว
+# (SEC-06 · github-workflow.md ข้อ 2.1) — ต้องอยู่ที่ไฟล์นี้ เพราะ pnpm 12 ไม่อ่าน
+# "pnpm.overrides" ใน package.json · ตรวจด้วย `pnpm why <ชื่อ>` · ทำแบบเดียวกับ Core Hub
+#
+# deepmerge-ts กับ mysql2 มาจาก Prisma CLI (prisma อยู่ใน dependencies ของ backend
+# จึงนับเป็น production) — mysql2 เป็น driver MySQL ที่ระบบนี้ไม่ใช้ · Prisma 7.9.1 ยัง pin
+# รุ่นเก่าไว้ · deepmerge-ts >=8 ข้าม major จึงทดสอบ prisma generate / migrate / build แล้ว
+# source-map-js มากับ postcss ของ next · ลบ override ได้เมื่อแพ็กเกจต้นทางอัปเดตแล้ว
+overrides:
+  deepmerge-ts: '>=8.0.0'
+  mysql2: '>=3.23.1'
+  source-map-js: '>=1.2.2'
+  js-yaml: '>=5.4.1'

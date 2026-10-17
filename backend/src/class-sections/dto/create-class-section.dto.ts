@@ -41,6 +41,6 @@ export class CreateClassSectionDto {
   @Type(() => Number)
   @IsInt()
   @Min(10)
-  @Max(500)
+  @Max(1000)
   radiusMeters?: number;
 }
