@@ -267,7 +267,7 @@ export function ClassSectionForm({ section }: { section?: ClassSection }) {
             </FormField>
           </div>
           <div className="grid gap-4 md:grid-cols-2">
-            <FormField id="radiusMeters" label="รัศมีเช็คชื่อ (เมตร)" required hint="10–500 เมตร ค่าแนะนำ 50" error={errors.radiusMeters}>
+            <FormField id="radiusMeters" label="รัศมีเช็คชื่อ (เมตร)" required hint="10–1,000 เมตร ค่าแนะนำ 50" error={errors.radiusMeters}>
               <TextInput
                 {...input("radiusMeters", { inputMode: "numeric", hint: "10–500 เมตร ค่าแนะนำ 50" })}
                 onChange={(event) => set("radiusMeters", event.target.value.replace(/\D/g, ""))}

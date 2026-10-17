@@ -58,7 +58,7 @@ export function validateField(name: FieldName, value: string): string | undefine
       if (value.trim() === "") return "กรอกลองจิจูด หรือกดใช้ตำแหน่งปัจจุบันของฉัน";
       return isNumberIn(value, -180, 180) ? undefined : "ลองจิจูดต้องเป็นตัวเลขระหว่าง -180 ถึง 180";
     case "radiusMeters":
-      return isNumberIn(value, 10, 500, true) ? undefined : "รัศมีต้องเป็นจำนวนเต็ม 10–500 เมตร";
+      return isNumberIn(value, 10, 1000, true) ? undefined : "รัศมีต้องเป็นจำนวนเต็ม 10–1,000 เมตร";
   }
 }
 

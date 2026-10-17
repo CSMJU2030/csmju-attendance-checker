@@ -3139,7 +3139,7 @@
           "radiusMeters": {
             "type": "number",
             "minimum": 10,
-            "maximum": 500
+            "maximum": 1000
           }
         },
         "required": [
@@ -3167,7 +3167,7 @@
           "radiusMeters": {
             "type": "number",
             "minimum": 10,
-            "maximum": 500
+            "maximum": 1000
           }
         }
       },
