@@ -137,6 +137,33 @@ describe('AttendanceRecordsService.checkIn - business rules', () => {
     });
   });
 
+  it("allows for the device's reported accuracy at the edge of the radius", async () => {
+    const now = minutesAfterOpen(1);
+    // about 78 m from the point with a 50 m radius: 28 m too far without any allowance
+    const nearEdge = { latitude: ROOM.latitude + 0.0007, longitude: ROOM.longitude };
+
+    const record = await service.checkIn(
+      { code: codeAt(now), ...nearEdge, accuracyMeters: 30 },
+      STUDENT,
+      TOKEN,
+      now,
+    );
+    // the record keeps the measured distance, not the allowance
+    expect(record).toMatchObject({ distanceMeters: 78 });
+  });
+
+  it('still rejects a student further out than radius plus accuracy', async () => {
+    const now = minutesAfterOpen(1);
+    const nearEdge = { latitude: ROOM.latitude + 0.0007, longitude: ROOM.longitude };
+
+    await expect(
+      service.checkIn({ code: codeAt(now), ...nearEdge, accuracyMeters: 20 }, STUDENT, TOKEN, now),
+    ).rejects.toMatchObject({
+      status: 409,
+      details: { distanceMeters: 78, radiusMeters: 50, accuracyMeters: 20 },
+    });
+  });
+
   it('measures from where the lecturer opened the session, not the section point', async () => {
     const now = minutesAfterOpen(1);
     // the lecturer opened the session about 111 m north of the section's saved point
