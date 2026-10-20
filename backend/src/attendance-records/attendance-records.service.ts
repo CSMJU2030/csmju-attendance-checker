@@ -111,10 +111,14 @@ export class AttendanceRecordsService {
         ? { latitude: session.latitude, longitude: session.longitude }
         : section;
     const distance = Math.round(distanceInMeters(dto, center));
-    if (distance > section.radiusMeters) {
+    // The device says how far off its fix may be (already capped at
+    // MAX_ACCURACY_METERS above). A student inside the room whose fix drifted
+    // out of the radius by no more than that still counts as inside.
+    const tolerance = Math.round(dto.accuracyMeters ?? 0);
+    if (distance - tolerance > section.radiusMeters) {
       throw AppException.conflict(
-        `คุณอยู่นอกพื้นที่เช็คชื่อ (ห่าง ${distance} เมตร เกินรัศมี ${section.radiusMeters} เมตร) กรุณาเข้าไปในห้องเรียนแล้วลองอีกครั้ง`,
-        { distanceMeters: distance, radiusMeters: section.radiusMeters },
+        `คุณอยู่นอกพื้นที่เช็คชื่อ (ห่าง ${distance} เมตร เกินรัศมี ${section.radiusMeters} เมตร แม้เผื่อความคลาดเคลื่อน ${tolerance} เมตรแล้ว) กรุณาเข้าไปในห้องเรียนแล้วลองอีกครั้ง`,
+        { distanceMeters: distance, radiusMeters: section.radiusMeters, accuracyMeters: tolerance },
       );
     }
 
